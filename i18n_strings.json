@@ -1,0 +1,5470 @@
+[
+  {
+    "key": "brandSub",
+    "value": "Web əsaslı mühasibat sistemi"
+  },
+  {
+    "key": "home",
+    "value": "İdarəetmə paneli"
+  },
+  {
+    "key": "accountant",
+    "value": "Baş kitab"
+  },
+  {
+    "key": "purchases",
+    "value": "Alış"
+  },
+  {
+    "key": "sales",
+    "value": "Satış"
+  },
+  {
+    "key": "documents",
+    "value": "Sənədlər"
+  },
+  {
+    "key": "settings",
+    "value": "Tənzimləmələr"
+  },
+  {
+    "key": "goods",
+    "value": "Mal və xidmət"
+  },
+  {
+    "key": "chipLoading",
+    "value": "Yüklənir"
+  },
+  {
+    "key": "profileIndiv",
+    "value": "Fərdi sahibkar profili aktivdir."
+  },
+  {
+    "key": "profileCompany",
+    "value": "Şirkət profili aktivdir."
+  },
+  {
+    "key": "workspace",
+    "value": "İş sahəsi"
+  },
+  {
+    "key": "btnProducts",
+    "value": "Xidmət kataloqu"
+  },
+  {
+    "key": "settings_systemTitle",
+    "value": "Sistem tənzimləmələri"
+  },
+  {
+    "key": "btnReset",
+    "value": "Proqramı sıfırla"
+  },
+  {
+    "key": "menuPlan",
+    "value": "Planı dəyiş"
+  },
+  {
+    "key": "menuTeam",
+    "value": "İstifadəçiləri idarə et"
+  },
+  {
+    "key": "menuPass",
+    "value": "Parolu dəyiş"
+  },
+  {
+    "key": "menuLogout",
+    "value": "Çıxış et"
+  },
+  {
+    "key": "heroCompany",
+    "value": "Şirkət"
+  },
+  {
+    "key": "heroFiscal",
+    "value": "Maliyyə ili"
+  },
+  {
+    "key": "cancel",
+    "value": "Ləğv et"
+  },
+  {
+    "key": "edit",
+    "value": "Düzəliş et"
+  },
+  {
+    "key": "newDoc",
+    "value": "Yeni sənəd"
+  },
+  {
+    "key": "action",
+    "value": "Əməliyyat"
+  },
+  {
+    "key": "yes",
+    "value": "Bəli"
+  },
+  {
+    "key": "loading",
+    "value": "Yüklənir"
+  },
+  {
+    "key": "loadingDesc",
+    "value": "Məlumatlar hazırlanır."
+  },
+  {
+    "key": "listShowing",
+    "value": "qeyd göstərilir"
+  },
+  {
+    "key": "listTotal",
+    "value": "Cəmi:"
+  },
+  {
+    "key": "backup_fillAll",
+    "value": "Yeni istifadəçi üçün bütün sahələri doldurun."
+  },
+  {
+    "key": "openReport",
+    "value": "Hesabatı aç"
+  },
+  {
+    "key": "noMjHint",
+    "value": "Filter şərtlərini dəyişin və ya yeni əməliyyat daxil edin."
+  },
+  {
+    "key": "expandAll",
+    "value": "Hamısını aç"
+  },
+  {
+    "key": "collapseAll",
+    "value": "Hamısını bağla"
+  },
+  {
+    "key": "mj_totalRecords",
+    "value": "Ümumi qeyd"
+  },
+  {
+    "key": "mj_totalDebit",
+    "value": "Ümumi debet"
+  },
+  {
+    "key": "mj_totalCredit",
+    "value": "Ümumi kredit"
+  },
+  {
+    "key": "mj_opsList",
+    "value": "Əməliyyat siyahısı"
+  },
+  {
+    "key": "mj_opsListDesc",
+    "value": "Bütün əl ilə daxil edilmiş müxabirləşmə qeydlərini görün, axtarın, redaktə edin"
+  },
+  {
+    "key": "mj_newEntry",
+    "value": "Yeni müxabirləşmə"
+  },
+  {
+    "key": "mj_newEntryDesc",
+    "value": "Debet/kredit sətirləri ilə yeni manual müxabirləşmə əməliyyatı daxil edin"
+  },
+  {
+    "key": "mj_recentOps",
+    "value": "Son əməliyyatlar"
+  },
+  {
+    "key": "mj_viewAll",
+    "value": "Hamısını gör →"
+  },
+  {
+    "key": "mj_journalList",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "mj_search",
+    "value": "Axtar: jurnal #, təyinat, hesab..."
+  },
+  {
+    "key": "mj_noResult",
+    "value": "Axtarışa uyğun nəticə tapılmadı."
+  },
+  {
+    "key": "mj_noEntries",
+    "value": "Hələ heç bir müxabirləşmə yoxdur."
+  },
+  {
+    "key": "mj_createFirst",
+    "value": "+ İlk müxabirləşməni yarat"
+  },
+  {
+    "key": "mj_formEdit",
+    "value": "Müxabirləşməni redaktə et"
+  },
+  {
+    "key": "mj_formNew",
+    "value": "Yeni müxabirləşmə yarat"
+  },
+  {
+    "key": "mj_btnEdit",
+    "value": "Redaktə"
+  },
+  {
+    "key": "mj_formEyebrowEdit",
+    "value": "Redaktə"
+  },
+  {
+    "key": "mj_lblJournalNum",
+    "value": "Jurnal nömrəsi"
+  },
+  {
+    "key": "mj_lblReference",
+    "value": "Təyinat / Açıqlama"
+  },
+  {
+    "key": "mj_lblAccountFilter",
+    "value": "Hesab növü filtri"
+  },
+  {
+    "key": "mj_balanced",
+    "value": "✓ Jurnal balansdadır"
+  },
+  {
+    "key": "mj_debitTotal",
+    "value": "Debet cəmi"
+  },
+  {
+    "key": "mj_creditTotal",
+    "value": "Kredit cəmi"
+  },
+  {
+    "key": "mj_difference",
+    "value": "Fərq"
+  },
+  {
+    "key": "statusSent",
+    "value": "Göndərilib"
+  },
+  {
+    "key": "statusPaid",
+    "value": "Ödənilib"
+  },
+  {
+    "key": "statusAccepted",
+    "value": "Qəbul edilib"
+  },
+  {
+    "key": "statusOpen",
+    "value": "Açıq"
+  },
+  {
+    "key": "statusClosed",
+    "value": "Bağlanıb"
+  },
+  {
+    "key": "statusApplied",
+    "value": "Tətbiq edilib"
+  },
+  {
+    "key": "statusPartial",
+    "value": "Qismən ödənilib"
+  },
+  {
+    "key": "home_kpi1",
+    "value": "Ümumi faktura məbləği"
+  },
+  {
+    "key": "home_kpi2",
+    "value": "Alınan ödənişlər"
+  },
+  {
+    "key": "home_kpi3",
+    "value": "Bank balansı"
+  },
+  {
+    "key": "home_kpi4",
+    "value": "Xalis pul axını"
+  },
+  {
+    "key": "home_quickLinks",
+    "value": "Sürətli keçidlər"
+  },
+  {
+    "key": "home_salesTitle",
+    "value": "Satış icmalı"
+  },
+  {
+    "key": "home_salesDesc",
+    "value": "Faktura, müştəri və debitor məlumatları."
+  },
+  {
+    "key": "home_purchTitle",
+    "value": "Alış icmalı"
+  },
+  {
+    "key": "home_purchDesc",
+    "value": "Qaimə, təchizatçı və kreditor məlumatları."
+  },
+  {
+    "key": "home_txTitle",
+    "value": "Əməliyyatlar"
+  },
+  {
+    "key": "home_txDesc",
+    "value": "Jurnal, hesab planı və sənəd məlumatları."
+  },
+  {
+    "key": "home_salesInv",
+    "value": "Satış qaimələri"
+  },
+  {
+    "key": "home_purchInv",
+    "value": "Alış qaimələri"
+  },
+  {
+    "key": "home_customers",
+    "value": "Müştərilər"
+  },
+  {
+    "key": "home_vendors",
+    "value": "Təchizatçılar"
+  },
+  {
+    "key": "home_manualJ",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "home_chartAcc",
+    "value": "Hesab planı"
+  },
+  {
+    "key": "home_docs",
+    "value": "Sənədlər"
+  },
+  {
+    "key": "unit_bill",
+    "value": "qaimə"
+  },
+  {
+    "key": "unit_customer",
+    "value": "müştəri"
+  },
+  {
+    "key": "unit_reportTypes",
+    "value": "hesabat növü"
+  },
+  {
+    "key": "hub_bankJournal",
+    "value": "Bank jurnalı"
+  },
+  {
+    "key": "hub_bankJournalDesc",
+    "value": "Bütün bank hesabları və əməliyyatlarına baxın."
+  },
+  {
+    "key": "hub_bankNew",
+    "value": "Yeni bank əməliyyatı"
+  },
+  {
+    "key": "hub_bankNewDesc",
+    "value": "Yeni bank əməliyyatı əlavə edin."
+  },
+  {
+    "key": "hub_customersJournal",
+    "value": "Müştərilər siyahısı"
+  },
+  {
+    "key": "hub_customersJournalDesc",
+    "value": "Bütün müştərilərə baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_customersNew",
+    "value": "Yeni müştəri əlavə et"
+  },
+  {
+    "key": "hub_customersNewDesc",
+    "value": "Müştəri bazasına yeni müştəri qeyd edin."
+  },
+  {
+    "key": "hub_customersCount",
+    "value": "müştəri"
+  },
+  {
+    "key": "hub_invoicesJournal",
+    "value": "Satış qaimələri jurnalı"
+  },
+  {
+    "key": "hub_invoicesJournalDesc",
+    "value": "Bütün satış qaimələrinə baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_invoicesNew",
+    "value": "Yeni satış qaiməsi yarat"
+  },
+  {
+    "key": "hub_invoicesNewDesc",
+    "value": "Müştəriyə yeni satış qaiməsi düzenleyin."
+  },
+  {
+    "key": "hub_billsJournal",
+    "value": "Alış qaimələri jurnalı"
+  },
+  {
+    "key": "hub_billsJournalDesc",
+    "value": "Bütün daxil olmuş qaimələrə baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_billsNew",
+    "value": "Yeni qaimə yarat"
+  },
+  {
+    "key": "hub_billsNewDesc",
+    "value": "Yeni alış qaiməsi əlavə edin, məhsul/xidmət sətirləri və vergi daxil edin."
+  },
+  {
+    "key": "hub_goodsJournal",
+    "value": "Mal və xidmət siyahısı"
+  },
+  {
+    "key": "hub_goodsJournalDesc",
+    "value": "Bütün mal və xidmət adlarına baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_goodsNew",
+    "value": "Yeni mal və xidmət əlavə et"
+  },
+  {
+    "key": "hub_goodsNewDesc",
+    "value": "Siyahıya yeni mal və ya xidmət adı əlavə edin."
+  },
+  {
+    "key": "hub_vendorsJournal",
+    "value": "Təchizatçılar siyahısı"
+  },
+  {
+    "key": "hub_vendorsJournalDesc",
+    "value": "Bütün təchizatçılara baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_vendorsNew",
+    "value": "Yeni təchizatçı əlavə et"
+  },
+  {
+    "key": "hub_vendorsNewDesc",
+    "value": "Yeni təchizatçı məlumatlarını daxil edin."
+  },
+  {
+    "key": "hub_vendorsCount",
+    "value": "təchizatçı"
+  },
+  {
+    "key": "hub_mjJournal",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "hub_mjJournalDesc",
+    "value": "Əl ilə daxil edilmiş bütün müxabirləşmə əməliyyatlarına baxın və redaktə edin."
+  },
+  {
+    "key": "hub_mjNew",
+    "value": "Yeni müxabirləşmə əlavə et"
+  },
+  {
+    "key": "hub_mjNewDesc",
+    "value": "Debet/kredit sətirləri ilə yeni müxabirləşmə əməliyyatı daxil edin."
+  },
+  {
+    "key": "hub_coaJournal",
+    "value": "Hesablar planı siyahısı"
+  },
+  {
+    "key": "hub_coaJournalDesc",
+    "value": "Bütün mühasibat hesablarına baxın, axtarın və redaktə edin."
+  },
+  {
+    "key": "hub_coaNew",
+    "value": "Yeni hesab əlavə et"
+  },
+  {
+    "key": "hub_coaNewDesc",
+    "value": "Hesablar planına yeni mühasibat hesabı əlavə edin."
+  },
+  {
+    "key": "hub_docsArchive",
+    "value": "Sənəd arxivi"
+  },
+  {
+    "key": "hub_docsArchiveDesc",
+    "value": "Bütün sənədlərə baxın, axtarın."
+  },
+  {
+    "key": "hub_docsNew",
+    "value": "Yeni sənəd əlavə et"
+  },
+  {
+    "key": "hub_docsNewDesc",
+    "value": "Yeni sənəd əlavə edin."
+  },
+  {
+    "key": "hub_reports",
+    "value": "Hesabatı aç"
+  },
+  {
+    "key": "hub_manageSubmodules",
+    "value": "Alt modulları buradan idarə et."
+  },
+  {
+    "key": "hub_workflow",
+    "value": "İş axını"
+  },
+  {
+    "key": "hub_workflowDesc",
+    "value": "Əsas modullarda əlavə etmə, axtarış, redaktə və silmə aktivdir."
+  },
+  {
+    "key": "hub_ready",
+    "value": "Hazırdır"
+  },
+  {
+    "key": "journalNewBill",
+    "value": "+ Yeni qaimə"
+  },
+  {
+    "key": "journalNewCust",
+    "value": "+ Yeni müştəri"
+  },
+  {
+    "key": "journalNewVendor",
+    "value": "+ Yeni təchizatçı"
+  },
+  {
+    "key": "journalNewInvoice",
+    "value": "+ Yeni qaimə"
+  },
+  {
+    "key": "billJournalTitle",
+    "value": "Alış qaimələri jurnalı"
+  },
+  {
+    "key": "mjJournalTitle",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "coaJournalTitle",
+    "value": "Hesablar planı"
+  },
+  {
+    "key": "custJournalTitle",
+    "value": "Müştərilər siyahısı"
+  },
+  {
+    "key": "vendorJournalTitle",
+    "value": "Təchizatçılar siyahısı"
+  },
+  {
+    "key": "invoiceJournalTitle",
+    "value": "Satış qaimələri jurnalı"
+  },
+  {
+    "key": "bankJournalTitle",
+    "value": "Bank hesabları"
+  },
+  {
+    "key": "searchBill",
+    "value": "Qaimə axtar..."
+  },
+  {
+    "key": "searchCust",
+    "value": "Müştəri axtar..."
+  },
+  {
+    "key": "searchVendor",
+    "value": "Təchizatçı axtar..."
+  },
+  {
+    "key": "searchInvoice",
+    "value": "Qaimə axtar..."
+  },
+  {
+    "key": "searchDoc",
+    "value": "Sənəd axtar..."
+  },
+  {
+    "key": "noItems",
+    "value": "Heç bir qeyd tapılmadı."
+  },
+  {
+    "key": "noBills",
+    "value": "Hələ qaimə yoxdur."
+  },
+  {
+    "key": "noMj",
+    "value": "Hələ jurnal qeydi yoxdur."
+  },
+  {
+    "key": "noAcc",
+    "value": "Hələ hesab yoxdur."
+  },
+  {
+    "key": "noCust",
+    "value": "Hələ müştəri yoxdur."
+  },
+  {
+    "key": "noVendor",
+    "value": "Hələ təchizatçı yoxdur."
+  },
+  {
+    "key": "noInvoice",
+    "value": "Hələ qaimə yoxdur."
+  },
+  {
+    "key": "noBank",
+    "value": "Hələ bank hesabı yoxdur."
+  },
+  {
+    "key": "noDoc",
+    "value": "Hələ sənəd yoxdur."
+  },
+  {
+    "key": "formTitle_bankEdit",
+    "value": "Bank hesabını redaktə et"
+  },
+  {
+    "key": "formTitle_bankNew",
+    "value": "Yeni bank əməliyyatı"
+  },
+  {
+    "key": "formTitle_docEdit",
+    "value": "Sənədi redaktə et"
+  },
+  {
+    "key": "formTitle_docNew",
+    "value": "Yeni sənəd əlavə et"
+  },
+  {
+    "key": "formTitle_coaEdit",
+    "value": "Hesabı redaktə et"
+  },
+  {
+    "key": "formTitle_coaNew",
+    "value": "Yeni hesab əlavə et"
+  },
+  {
+    "key": "formField_accountName",
+    "value": "Hesab adı"
+  },
+  {
+    "key": "formField_institution",
+    "value": "Filialın adı"
+  },
+  {
+    "key": "formField_accountType",
+    "value": "Hesab növü"
+  },
+  {
+    "key": "formField_title",
+    "value": "Başlıq"
+  },
+  {
+    "key": "formField_relSection",
+    "value": "Əlaqəli bölmə"
+  },
+  {
+    "key": "formField_accountName2",
+    "value": "Hesab adı"
+  },
+  {
+    "key": "formField_accType",
+    "value": "Hesab növü"
+  },
+  {
+    "key": "formField_notes",
+    "value": "Qeydlər"
+  },
+  {
+    "key": "accTypeSavings",
+    "value": "Yığım"
+  },
+  {
+    "key": "docCatContract",
+    "value": "📄 Müqavilə"
+  },
+  {
+    "key": "docCatAttachment",
+    "value": "📎 Hesab əlavəsi"
+  },
+  {
+    "key": "docCatReceipt",
+    "value": "🖨️ Qəbz"
+  },
+  {
+    "key": "settings_system",
+    "value": "Sistem məlumatları"
+  },
+  {
+    "key": "settings_systemDesc",
+    "value": "Cari build və saxlanma vəziyyəti."
+  },
+  {
+    "key": "settings_systemBtn",
+    "value": "İnfo"
+  },
+  {
+    "key": "settings_language",
+    "value": "Dillər"
+  },
+  {
+    "key": "settings_languageDesc",
+    "value": "İnterfeys dilini seçin."
+  },
+  {
+    "key": "settings_params",
+    "value": "Əməliyyat parametrləri"
+  },
+  {
+    "key": "settings_paramsDesc",
+    "value": "Sənəd nömrələnməsi, ödəniş şərtləri və anbar davranışını bu bölmədən idarə et."
+  },
+  {
+    "key": "settings_paramsBtn",
+    "value": "Parametrlər"
+  },
+  {
+    "key": "settings_company",
+    "value": "Şirkət məlumatları"
+  },
+  {
+    "key": "settings_companyDesc",
+    "value": "Şirkət adı, valyuta, maliyyə ili və digər əsas məlumatlar."
+  },
+  {
+    "key": "settings_companyBtn",
+    "value": "Şirkət"
+  },
+  {
+    "key": "settings_save",
+    "value": "Parametrləri saxla"
+  },
+  {
+    "key": "settings_taxId",
+    "value": "VÖEN"
+  },
+  {
+    "key": "settings_companyName",
+    "value": "Şirkət adı"
+  },
+  {
+    "key": "settings_fiscalYear",
+    "value": "Maliyyə ili"
+  },
+  {
+    "key": "settings_uiScale",
+    "value": "İnterfeys miqyası"
+  },
+  {
+    "key": "settings_teamTitle",
+    "value": "Daxili istifadəçilər"
+  },
+  {
+    "key": "settings_addUser",
+    "value": "İstifadəçi əlavə et"
+  },
+  {
+    "key": "sub_title",
+    "value": "Plan və abunəlik"
+  },
+  {
+    "key": "sub_upgrade",
+    "value": "Yüksəlt"
+  },
+  {
+    "key": "confirmDelete",
+    "value": "Silmək istədiyinizə əminsiniz?"
+  },
+  {
+    "key": "confirmReset",
+    "value": "Proqramdakı bütün mövcud məlumatlar sıfırlanacaq. Davam etmək istəyirsiniz?"
+  },
+  {
+    "key": "confirmLogout",
+    "value": "Sistemdən çıxmaq istədiyinizə əminsiniz?"
+  },
+  {
+    "key": "confirmBackup",
+    "value": "Cari məlumatların backup faylı yaradılsın?"
+  },
+  {
+    "key": "confirmRestore",
+    "value": "Backup faylından məlumatlar bərpa olunacaq. Cari məlumatların üzərinə yazıla bilər. Davam etmək istəyirsiniz?"
+  },
+  {
+    "key": "formTitle_editCustomer",
+    "value": "Müştərini redaktə et"
+  },
+  {
+    "key": "formTitle_newCustomer",
+    "value": "Yeni müştəri əlavə et"
+  },
+  {
+    "key": "formTitle_editInvoice",
+    "value": "Satış qaiməsini redaktə et"
+  },
+  {
+    "key": "formTitle_newInvoice",
+    "value": "Yeni satış qaiməsi yarat"
+  },
+  {
+    "key": "formTitle_editVendor",
+    "value": "Təchizatçını redaktə et"
+  },
+  {
+    "key": "formTitle_newVendor",
+    "value": "Yeni təchizatçı əlavə et"
+  },
+  {
+    "key": "formTitle_editGoods",
+    "value": "Mal və xidməti redaktə et"
+  },
+  {
+    "key": "formTitle_newGoods",
+    "value": "Yeni mal və xidmət əlavə et"
+  },
+  {
+    "key": "formTitle_editMj",
+    "value": "Jurnal qeydini redaktə et"
+  },
+  {
+    "key": "formTitle_editCoa",
+    "value": "Hesabı redaktə et"
+  },
+  {
+    "key": "formTitle_newCoa",
+    "value": "Yeni hesab əlavə et"
+  },
+  {
+    "key": "formTitle_editBill",
+    "value": "Qaiməni redaktə et"
+  },
+  {
+    "key": "formTitle_newBill",
+    "value": "Yeni qaimə"
+  },
+  {
+    "key": "formTitle_edit",
+    "value": "Redaktə"
+  },
+  {
+    "key": "formDesc_editing",
+    "value": "Mövcud qeyd yenilənir."
+  },
+  {
+    "key": "formDesc_new",
+    "value": "Yeni qeyd yaradılır."
+  },
+  {
+    "key": "debt_totalReceivable",
+    "value": "Ümumi debitor borcu"
+  },
+  {
+    "key": "debt_totalPayable",
+    "value": "Ümumi kreditor borcu"
+  },
+  {
+    "key": "debt_withDebtCustomer",
+    "value": "Borc qalığı olan müştəri"
+  },
+  {
+    "key": "debt_withDebtVendor",
+    "value": "Borc qalığı olan təchizatçı"
+  },
+  {
+    "key": "debt_highest",
+    "value": "Ən yüksək borc"
+  },
+  {
+    "key": "debt_average",
+    "value": "Orta borc məbləği"
+  },
+  {
+    "key": "debt_descReceivable",
+    "value": "Müştərilərdən alınacaq ödənişlər sıralanmış şəkildə."
+  },
+  {
+    "key": "debt_descPayable",
+    "value": "Təchizatçılara ödəniləcək məbləğlər sıralanmış şəkildə."
+  },
+  {
+    "key": "debt_searchCustomer",
+    "value": "Müştəri axtar..."
+  },
+  {
+    "key": "debt_searchVendor",
+    "value": "Təchizatçı axtar..."
+  },
+  {
+    "key": "noResults",
+    "value": "Axtarış nəticəsi tapılmadı."
+  },
+  {
+    "key": "ops_discountTitle",
+    "value": "Endirim tətbiq edirsiniz?"
+  },
+  {
+    "key": "ops_discountLine",
+    "value": "Sətir səviyyəsində"
+  },
+  {
+    "key": "ops_discountDoc",
+    "value": "Sənəd səviyyəsində"
+  },
+  {
+    "key": "ops_discountBefore",
+    "value": "Vergidən əvvəl endirim"
+  },
+  {
+    "key": "ops_discountAfter",
+    "value": "Vergidən sonra endirim"
+  },
+  {
+    "key": "ops_chargesTitle",
+    "value": "Əlavə ediləcək əlavə xərcləri seçin"
+  },
+  {
+    "key": "ops_adjustments",
+    "value": "Düzəlişlər"
+  },
+  {
+    "key": "ops_shipping",
+    "value": "Daşıma xərcləri"
+  },
+  {
+    "key": "ops_shippingTax",
+    "value": "Daşıma xərcləri üçün vergi avtomatlaşdırılsın"
+  },
+  {
+    "key": "ops_shippingTaxNote",
+    "value": "Müştəri üçün vergi dərəcəsi təyin olunubsa, o dərəcə daşıma xərcinə də tətbiq ediləcək. Müştəri üçün vergi seçilməyibsə, daşıma xərcinə burada seçilən qayda tətbiq olunacaq."
+  },
+  {
+    "key": "ops_taxTitle",
+    "value": "Malları vergi daxil qiymətlə satırsınız?"
+  },
+  {
+    "key": "ops_taxRounding",
+    "value": "Vergi yuvarlaqlaşdırması"
+  },
+  {
+    "key": "ops_roundDoc",
+    "value": "Sənəd səviyyəsində"
+  },
+  {
+    "key": "ops_roundLine",
+    "value": "Sətir səviyyəsində"
+  },
+  {
+    "key": "ops_salesRoundTitle",
+    "value": "Satış əməliyyatlarında yuvarlaqlaşdırma"
+  },
+  {
+    "key": "ops_roundNone",
+    "value": "Yuvarlaqlaşdırma yoxdur"
+  },
+  {
+    "key": "ops_roundNearest",
+    "value": "Məbləği ən yaxın tam ədədə yuvarlaqlaşdır"
+  },
+  {
+    "key": "ops_roundIncrement",
+    "value": "Məbləği ən yaxın artım dəyərinə yuvarlaqlaşdır"
+  },
+  {
+    "key": "ops_salesperson",
+    "value": "Satış təmsilçisi sahəsini əlavə et"
+  },
+  {
+    "key": "ops_quotePrefix",
+    "value": "Təklif prefiksi"
+  },
+  {
+    "key": "ops_numbering",
+    "value": "Nömrələnmə rejimi"
+  },
+  {
+    "key": "ops_numManual",
+    "value": "Əl ilə"
+  },
+  {
+    "key": "ops_paymentTerm",
+    "value": "Standart ödəniş müddəti"
+  },
+  {
+    "key": "ops_7days",
+    "value": "7 gün"
+  },
+  {
+    "key": "ops_15days",
+    "value": "15 gün"
+  },
+  {
+    "key": "ops_30days",
+    "value": "30 gün"
+  },
+  {
+    "key": "ops_45days",
+    "value": "45 gün"
+  },
+  {
+    "key": "ops_stockWarning",
+    "value": "Stok xəbərdarlığı"
+  },
+  {
+    "key": "ops_negativeStock",
+    "value": "Mənfi stok icazəsi"
+  },
+  {
+    "key": "ops_saveHint",
+    "value": "Dəyişiklikləri istənilən vaxt Tənzimləmələr bölməsindən yeniləyə bilərsiniz."
+  },
+  {
+    "key": "inv_form_lineDiscount",
+    "value": "Sətir endirimi"
+  },
+  {
+    "key": "inv_form_docDiscount",
+    "value": "Sənəd endirimi"
+  },
+  {
+    "key": "inv_form_shipping",
+    "value": "Daşıma xərci"
+  },
+  {
+    "key": "inv_form_adjustment",
+    "value": "Düzəliş məbləği"
+  },
+  {
+    "key": "inv_form_adjustment2",
+    "value": "Düzəliş"
+  },
+  {
+    "key": "inv_form_total",
+    "value": "Cəmi"
+  },
+  {
+    "key": "inv_form_totalAmount",
+    "value": "Cəmi məbləğ"
+  },
+  {
+    "key": "tb_empty",
+    "value": "Sınaq balansı üçün məlumat yoxdur."
+  },
+  {
+    "key": "tb_subtotal",
+    "value": "Cəmi"
+  },
+  {
+    "key": "ic_listTitle",
+    "value": "Aktiv Mallar və Xidmətlər"
+  },
+  {
+    "key": "ic_listDesc",
+    "value": "Məhsul kataloqu, alış təsviri, qiymətlər və istifadə vahidləri burada görünür."
+  },
+  {
+    "key": "coa_liability",
+    "value": "Öhdəlik"
+  },
+  {
+    "key": "coa_income",
+    "value": "Gəlir"
+  },
+  {
+    "key": "coa_expense",
+    "value": "Xərc"
+  },
+  {
+    "key": "rpt_summaryTitle",
+    "value": "Hesabat xülasəsi"
+  },
+  {
+    "key": "rpt_summaryDesc",
+    "value": "Cari maliyyə icmalı."
+  },
+  {
+    "key": "rpt_summaryBadge",
+    "value": "Canlı göstəricilər"
+  },
+  {
+    "key": "rpt_indicator",
+    "value": "Göstərici"
+  },
+  {
+    "key": "rpt_value",
+    "value": "Dəyər"
+  },
+  {
+    "key": "rpt_expenses",
+    "value": "Xərclər"
+  },
+  {
+    "key": "rpt_collected",
+    "value": "Toplanan vəsait"
+  },
+  {
+    "key": "rpt_compareTitle",
+    "value": "Müqayisəli baxış"
+  },
+  {
+    "key": "rpt_compareDesc",
+    "value": "Cari dövr ilə əvvəlki dövr yanaşı göstərilir."
+  },
+  {
+    "key": "rpt_item",
+    "value": "Maddə"
+  },
+  {
+    "key": "rpt_currentPeriod",
+    "value": "Cari dövr"
+  },
+  {
+    "key": "rpt_prevPeriod",
+    "value": "Əvvəlki dövr"
+  },
+  {
+    "key": "rpt_diff",
+    "value": "Fərq"
+  },
+  {
+    "key": "rpt_compareEmpty",
+    "value": "Müqayisə üçün məlumat yoxdur."
+  },
+  {
+    "key": "rpt_openingBal",
+    "value": "Açılış qalığı"
+  },
+  {
+    "key": "rpt_increase",
+    "value": "Artım"
+  },
+  {
+    "key": "rpt_closingBal",
+    "value": "Son qalıq"
+  },
+  {
+    "key": "rpt_equityEmpty",
+    "value": "Kapital məlumatı yoxdur."
+  },
+  {
+    "key": "rpt_printItem",
+    "value": "Maddə"
+  },
+  {
+    "key": "rpt_printAmount",
+    "value": "Məbləğ"
+  },
+  {
+    "key": "rpt_printNoteText",
+    "value": "Bu hesabat sistemdə mövcud əməliyyat, jurnal və sənəd yazılışları əsasında avtomatik formalaşdırılıb. Çapdan əvvəl yekun rəqəmlərin təsdiqi tövsiyə olunur."
+  },
+  {
+    "key": "rpt_printSource",
+    "value": "Hazırlanma mənbəyi"
+  },
+  {
+    "key": "rpt_printPrepared",
+    "value": "Hazırladı"
+  },
+  {
+    "key": "rpt_printApproved",
+    "value": "Təsdiq etdi"
+  },
+  {
+    "key": "rpt_printFooter",
+    "value": "Tetavio ERP | Hesabat forması"
+  },
+  {
+    "key": "rpt_fiscalYear",
+    "value": "Maliyyə ili"
+  },
+  {
+    "key": "rpt_printSubtitle",
+    "value": "Rəsmi maliyyə hesabatı forması"
+  },
+  {
+    "key": "rpt_company",
+    "value": "Şirkət"
+  },
+  {
+    "key": "rpt_reportPeriod",
+    "value": "Hesabat dövrü"
+  },
+  {
+    "key": "team_colUser",
+    "value": "İstifadəçi"
+  },
+  {
+    "key": "team_colAction",
+    "value": "Əməliyyat"
+  },
+  {
+    "key": "team_colManage",
+    "value": "İdarəetmə"
+  },
+  {
+    "key": "team_colPerms",
+    "value": "Səlahiyyətlər"
+  },
+  {
+    "key": "team_emptyAdmin",
+    "value": "İstifadəçi yoxdur."
+  },
+  {
+    "key": "team_emptyTeam",
+    "value": "Daxili istifadəçi yoxdur."
+  },
+  {
+    "key": "team_totalUsers",
+    "value": "Ümumi istifadəçi"
+  },
+  {
+    "key": "team_paidPlans",
+    "value": "Ödənişli planlar"
+  },
+  {
+    "key": "team_expiringSoon",
+    "value": "Bitməyə yaxın"
+  },
+  {
+    "key": "team_existingTitle",
+    "value": "Mövcud daxili istifadəçilər"
+  },
+  {
+    "key": "team_existingDesc",
+    "value": "Yaradılmış əməkdaş hesabları və onların giriş sahələri."
+  },
+  {
+    "key": "team_userUnit",
+    "value": "istifadəçi"
+  },
+  {
+    "key": "team_annual",
+    "value": "İllik"
+  },
+  {
+    "key": "team_monthly",
+    "value": "1 aylıq"
+  },
+  {
+    "key": "lp_stat1",
+    "value": "Emal olunan sənədlər"
+  },
+  {
+    "key": "lp_stat2",
+    "value": "Aktiv şirkət profilləri"
+  },
+  {
+    "key": "lp_stat3",
+    "value": "Yaradılan hesabatlar"
+  },
+  {
+    "key": "lp_stat4",
+    "value": "Qeydə alınan əməliyyatlar"
+  },
+  {
+    "key": "mj_conflict",
+    "value": "Eyni hesab həm debet, həm kredit tərəfdədir"
+  },
+  {
+    "key": "mj_conflictHint",
+    "value": "kodlu hesabı hər iki tərəfdə istifadə etmək olmaz."
+  },
+  {
+    "key": "mj_balanced",
+    "value": "Jurnal balansdadır"
+  },
+  {
+    "key": "mj_balancedHint",
+    "value": "Debet və kredit məbləğləri bərabərdir, jurnal yadda saxlanmağa hazırdır."
+  },
+  {
+    "key": "mj_unbalancedHint",
+    "value": "Debet və kredit cəmləri eyni olmalıdır."
+  },
+  {
+    "key": "mj_diff",
+    "value": "Fərq"
+  },
+  {
+    "key": "inv_panelTitle",
+    "value": "Alış və Satış"
+  },
+  {
+    "key": "inv_panelDesc",
+    "value": "Əməliyyat parametrlərinə bağlı vergi və müxabirləşmə məntiqi ilə stok hərəkəti yarat."
+  },
+  {
+    "key": "inv_panelBadge",
+    "value": "Stok hərəkəti"
+  },
+  {
+    "key": "inv_selectedItem",
+    "value": "Seçilmiş kart"
+  },
+  {
+    "key": "inv_currentStock",
+    "value": "Cari qalıq"
+  },
+  {
+    "key": "inv_noTracking",
+    "value": "Stok izlənmir"
+  },
+  {
+    "key": "inv_salesTax",
+    "value": "Satış vergisi"
+  },
+  {
+    "key": "inv_purchaseTax",
+    "value": "Alış vergisi"
+  },
+  {
+    "key": "inv_item",
+    "value": "Mal və ya xidmət"
+  },
+  {
+    "key": "inv_movementType",
+    "value": "Əməliyyat növü"
+  },
+  {
+    "key": "inv_unitPrice",
+    "value": "Vahid qiyməti"
+  },
+  {
+    "key": "inv_taxRate",
+    "value": "Vergi dərəcəsi"
+  },
+  {
+    "key": "inv_partner",
+    "value": "Tərəfdaş"
+  },
+  {
+    "key": "inv_partnerCust",
+    "value": "Müştəri"
+  },
+  {
+    "key": "inv_partnerVend",
+    "value": "Təchizatçı"
+  },
+  {
+    "key": "inv_taxCalc",
+    "value": "Vergi hesablaması"
+  },
+  {
+    "key": "inv_baseAmt",
+    "value": "Əsas məbləğ"
+  },
+  {
+    "key": "inv_posting",
+    "value": "Müxabirləşmə"
+  },
+  {
+    "key": "inv_saveBtn",
+    "value": "Hərəkəti yadda saxla"
+  },
+  {
+    "key": "inv_postingPurchase",
+    "value": "Dt 201 və 241 / Ct 531"
+  },
+  {
+    "key": "inv_movSale",
+    "value": "Satış"
+  },
+  {
+    "key": "inv_movPurchase",
+    "value": "Alış"
+  },
+  {
+    "key": "inv_recentTitle",
+    "value": "Son stok hərəkətləri"
+  },
+  {
+    "key": "inv_recentDesc",
+    "value": "ƏDV və yekun məbləğ göstərilir. Müxabirləşmə sınaq balansına avtomatik düşür."
+  },
+  {
+    "key": "inv_txUnit",
+    "value": "əməliyyat"
+  },
+  {
+    "key": "inv_empty",
+    "value": "Stok hərəkəti yoxdur."
+  },
+  {
+    "key": "ic_formTitleEdit",
+    "value": "Mal və ya Xidməti Redaktə Et"
+  },
+  {
+    "key": "ic_formTitleNew",
+    "value": "Mal və ya Xidmət Əlavə Et"
+  },
+  {
+    "key": "ic_formDesc",
+    "value": "Məhsul kartını Tetavio Books strukturuna uyğun şəkildə doldur."
+  },
+  {
+    "key": "ic_inventoryBadge",
+    "value": "Anbar izləməsi"
+  },
+  {
+    "key": "ic_inventoryHint",
+    "value": "Satış və alış əməliyyatlarına əsasən stok balansını görmək üçün bu kartda anbar izləməsini aktiv et."
+  },
+  {
+    "key": "ic_unit",
+    "value": "İstifadə vahidi"
+  },
+  {
+    "key": "ic_openingQty",
+    "value": "Açılış miqdarı"
+  },
+  {
+    "key": "ic_tracking",
+    "value": "Anbar izləməsi"
+  },
+  {
+    "key": "ic_imgPlaceholder",
+    "value": "Şəkil əlavə et"
+  },
+  {
+    "key": "ic_imgHint",
+    "value": "Şəkilləri bura sürüklə və ya seç"
+  },
+  {
+    "key": "ic_salesInfo",
+    "value": "Satış Məlumatı"
+  },
+  {
+    "key": "ic_purchInfo",
+    "value": "Alış Məlumatı"
+  },
+  {
+    "key": "ic_salePrice",
+    "value": "Satış qiyməti"
+  },
+  {
+    "key": "ic_desc",
+    "value": "Təsvir"
+  },
+  {
+    "key": "ic_purchPrice",
+    "value": "Alış qiyməti"
+  },
+  {
+    "key": "ic_prefVendor",
+    "value": "Əsas təchizatçı"
+  },
+  {
+    "key": "ic_reorderPt",
+    "value": "Minimum ehtiyat həddi"
+  },
+  {
+    "key": "ic_typeService",
+    "value": "Xidmət"
+  },
+  {
+    "key": "ic_updateBtn",
+    "value": "Yenilə"
+  },
+  {
+    "key": "goods_tabAll",
+    "value": "Hamısı"
+  },
+  {
+    "key": "goods_tabServices",
+    "value": "Xidmətlər"
+  },
+  {
+    "key": "goods_emptyAll",
+    "value": "Hələ nomenklatura qeydi yoxdur."
+  },
+  {
+    "key": "goods_emptyServices",
+    "value": "Xidmətlər qeydi yoxdur."
+  },
+  {
+    "key": "bank_recentTitle",
+    "value": "Son əməliyyatlar"
+  },
+  {
+    "key": "bank_recentDesc",
+    "value": "Məlumat xarakterli bank əməliyyatları."
+  },
+  {
+    "key": "bank_txUnit",
+    "value": "əməliyyat"
+  },
+  {
+    "key": "bank_emptyTx",
+    "value": "Əməliyyat yoxdur."
+  },
+  {
+    "key": "settings_companyInfo",
+    "value": "Şirkət məlumatları"
+  },
+  {
+    "key": "settings_profileDesc",
+    "value": "Şirkət və sistem məlumatlarını yenilə."
+  },
+  {
+    "key": "settings_entityType",
+    "value": "Şəxs növü"
+  },
+  {
+    "key": "settings_entityIndiv",
+    "value": "Fiziki şəxs"
+  },
+  {
+    "key": "settings_entityCompany",
+    "value": "Hüquqi şəxs"
+  },
+  {
+    "key": "settings_companyOwnerName",
+    "value": "Şirkət / sahibkar adı"
+  },
+  {
+    "key": "settings_mobile",
+    "value": "Mobil nömrə"
+  },
+  {
+    "key": "settings_uiSmall",
+    "value": "Kiçik"
+  },
+  {
+    "key": "settings_uiLarge",
+    "value": "Böyük"
+  },
+  {
+    "key": "settings_db",
+    "value": "Məlumat bazası"
+  },
+  {
+    "key": "settings_dbDesc",
+    "value": "Lokal cihazda qorunur və təkrar açılışda saxlanır."
+  },
+  {
+    "key": "settings_activeCompany",
+    "value": "Aktiv şirkət"
+  },
+  {
+    "key": "tb_grandTotal",
+    "value": "Ümumi cəm"
+  },
+  {
+    "key": "tb_accountCount",
+    "value": "Hesab sayı"
+  },
+  {
+    "key": "tb_closingDebitTotal",
+    "value": "Son debet cəmi"
+  },
+  {
+    "key": "tb_closingCreditTotal",
+    "value": "Son kredit cəmi"
+  },
+  {
+    "key": "tb_balanceStatus",
+    "value": "Balans vəziyyəti"
+  },
+  {
+    "key": "tb_isBalanced",
+    "value": "Balansdadır"
+  },
+  {
+    "key": "tb_openingD",
+    "value": "Açılış D"
+  },
+  {
+    "key": "tb_openingK",
+    "value": "Açılış K"
+  },
+  {
+    "key": "tb_movementD",
+    "value": "Dövriyyə D"
+  },
+  {
+    "key": "tb_movementK",
+    "value": "Dövriyyə K"
+  },
+  {
+    "key": "tb_tabAll",
+    "value": "Hamısı"
+  },
+  {
+    "key": "tb_acLiab",
+    "value": "Öhdəlik"
+  },
+  {
+    "key": "tb_acInc",
+    "value": "Gəlir"
+  },
+  {
+    "key": "tb_acExp",
+    "value": "Xərc"
+  },
+  {
+    "key": "bill_item",
+    "value": "Mal / Xidmət"
+  },
+  {
+    "key": "bill_rate",
+    "value": "Qiymət"
+  },
+  {
+    "key": "bill_amount",
+    "value": "Məbləğ"
+  },
+  {
+    "key": "bill_addRow",
+    "value": "+ Yeni sətir əlavə et"
+  },
+  {
+    "key": "bill_discountAmt",
+    "value": "Endirim məbləği"
+  },
+  {
+    "key": "bill_notesPlaceholder",
+    "value": "Əlavə qeydlər..."
+  },
+  {
+    "key": "mj_lines",
+    "value": "Jurnal sətirləri"
+  },
+  {
+    "key": "mj_addLine",
+    "value": "+ Sətir əlavə et"
+  },
+  {
+    "key": "mj_selectAccount",
+    "value": "Hesab seçin"
+  },
+  {
+    "key": "mj_accountTypeFilter",
+    "value": "Hesab növü filtri"
+  },
+  {
+    "key": "ic_codeOptional",
+    "value": "Kod (istəyə bağlı)"
+  },
+  {
+    "key": "ic_serviceNoteTitle",
+    "value": "Xidmət qeydi"
+  },
+  {
+    "key": "ic_goodsNoteDesc",
+    "value": "Bu qeyd mal kimi işarələnəcək və Mallar tabında görünəcək."
+  },
+  {
+    "key": "ic_serviceNoteDesc",
+    "value": "Bu qeyd xidmət kimi işarələnəcək və Xidmətlər tabında görünəcək."
+  },
+  {
+    "key": "ops_liveTitle",
+    "value": "Əməliyyat parametrləri ilə bağlı sahələr"
+  },
+  {
+    "key": "ops_liveDesc",
+    "value": "Bu forma aid qaydalar Tənzimləmələr bölməsində seçdiyiniz parametrlərdən canlı olaraq gəlir."
+  },
+  {
+    "key": "ops_liveBadge",
+    "value": "Canlı bağlılıq"
+  },
+  {
+    "key": "ops_paymentDuration",
+    "value": "Ödəniş müddəti"
+  },
+  {
+    "key": "rpt_period",
+    "value": "Dövr"
+  },
+  {
+    "key": "rpt_periodThisQuarter",
+    "value": "Bu rüb"
+  },
+  {
+    "key": "fp_assets",
+    "value": "Aktivlər"
+  },
+  {
+    "key": "fp_currentAssets",
+    "value": "Cari aktivlər"
+  },
+  {
+    "key": "fp_totalCurrentAssets",
+    "value": "Cəmi cari aktivlər"
+  },
+  {
+    "key": "fp_nonCurrentAssets",
+    "value": "Uzunmüddətli aktivlər"
+  },
+  {
+    "key": "fp_totalNonCurrentAssets",
+    "value": "Cəmi uzunmüddətli aktivlər"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Cəmi aktivlər"
+  },
+  {
+    "key": "fp_liabEquity",
+    "value": "Kapital və öhdəliklər"
+  },
+  {
+    "key": "fp_liabilities",
+    "value": "Öhdəliklər"
+  },
+  {
+    "key": "fp_totalLiabilities",
+    "value": "Cəmi öhdəliklər"
+  },
+  {
+    "key": "fp_totalEquity",
+    "value": "Cəmi kapital"
+  },
+  {
+    "key": "fp_totalLiabEquity",
+    "value": "Kapital və öhdəliklərin cəmi"
+  },
+  {
+    "key": "fp_liquidFunds",
+    "value": "Pul vəsaitləri və ekvivalentləri"
+  },
+  {
+    "key": "fp_shortReceivables",
+    "value": "Qısamüddətli debitor borcları"
+  },
+  {
+    "key": "fp_shortAdvances",
+    "value": "Verilmiş avanslar"
+  },
+  {
+    "key": "fp_recoverableVat",
+    "value": "Əvəzləşdirilən vergi tələbləri"
+  },
+  {
+    "key": "fp_shortLiabilities",
+    "value": "Qısamüddətli öhdəliklər"
+  },
+  {
+    "key": "fp_longLiabilities",
+    "value": "Uzunmüddətli öhdəliklər"
+  },
+  {
+    "key": "fp_shareCapital",
+    "value": "Nizamnamə və əlavə kapital"
+  },
+  {
+    "key": "fp_retainedEarnings",
+    "value": "Bölüşdürülməmiş mənfəət"
+  },
+  {
+    "key": "fp_periodResult",
+    "value": "Dövrün maliyyə nəticəsi"
+  },
+  {
+    "key": "fp_prefix",
+    "value": "Aktivlər / "
+  },
+  {
+    "key": "fp_reportTitle",
+    "value": "Maliyyə vəziyyəti haqqında hesabat"
+  },
+  {
+    "key": "fp_reportSubtitle",
+    "value": "Balans hesabları sınaq balansından qruplaşdırılır və aktivlər ayrı, kapital və öhdəliklər ayrı təqdim olunur."
+  },
+  {
+    "key": "fp_badge",
+    "value": "Balans hesabatı"
+  },
+  {
+    "key": "fp_balanced",
+    "value": "Balans tənliyi qorunur — Aktivlər = Öhdəliklər + Kapital"
+  },
+  {
+    "key": "fp_unbalanced",
+    "value": "Balans fərqi"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Cəmi aktivlər"
+  },
+  {
+    "key": "fp_totalLiab",
+    "value": "Cəmi öhdəliklər"
+  },
+  {
+    "key": "fp_totalCap",
+    "value": "Cəmi kapital"
+  },
+  {
+    "key": "pl_revenue",
+    "value": "Gəlirlər"
+  },
+  {
+    "key": "pl_cogs",
+    "value": "Maya dəyəri və ümumi mənfəət"
+  },
+  {
+    "key": "pl_opex",
+    "value": "Əməliyyat xərcləri"
+  },
+  {
+    "key": "pl_taxNet",
+    "value": "Vergi və xalis nəticə"
+  },
+  {
+    "key": "pl_grossProfit",
+    "value": "Ümumi mənfəət"
+  },
+  {
+    "key": "pl_ebt",
+    "value": "Vergidən əvvəl mənfəət"
+  },
+  {
+    "key": "pl_netProfit",
+    "value": "Xalis mənfəət"
+  },
+  {
+    "key": "pl_netLoss",
+    "value": "Xalis zərər"
+  },
+  {
+    "key": "pl_netResult",
+    "value": "Xalis mənfəət / zərər"
+  },
+  {
+    "key": "pl_salesRev",
+    "value": "Satış gəlirləri"
+  },
+  {
+    "key": "pl_otherOpIncome",
+    "value": "Sair əməliyyat gəlirləri"
+  },
+  {
+    "key": "pl_finIncome",
+    "value": "Maliyyə gəlirləri"
+  },
+  {
+    "key": "pl_totalRev",
+    "value": "Cəmi gəlirlər"
+  },
+  {
+    "key": "pl_costOfSales",
+    "value": "Satışın maya dəyəri"
+  },
+  {
+    "key": "pl_selling",
+    "value": "Kommersiya xərcləri"
+  },
+  {
+    "key": "pl_admin",
+    "value": "İnzibati xərclər"
+  },
+  {
+    "key": "pl_finEx",
+    "value": "Maliyyə xərcləri"
+  },
+  {
+    "key": "pl_otherOpEx",
+    "value": "Sair əməliyyat xərcləri"
+  },
+  {
+    "key": "pl_totalOpEx",
+    "value": "Cəmi əməliyyat xərcləri"
+  },
+  {
+    "key": "pl_incomeTax",
+    "value": "Mənfəət vergisi"
+  },
+  {
+    "key": "pl_reportTitle",
+    "value": "Mənfəət və zərər haqqında hesabat"
+  },
+  {
+    "key": "pl_reportSubtitle",
+    "value": "Gəlir və xərc hesabları ayrıca qruplaşdırılır, ümumi mənfəət və xalis nəticə mərhələli şəkildə hesablanır."
+  },
+  {
+    "key": "pl_badge",
+    "value": "Maliyyə nəticəsi"
+  },
+  {
+    "key": "pl_profit",
+    "value": "Mənfəət"
+  },
+  {
+    "key": "pl_loss",
+    "value": "Zərər"
+  },
+  {
+    "key": "pl_grossMargin",
+    "value": "Ümumi marj"
+  },
+  {
+    "key": "pl_totalRevenue",
+    "value": "Cəmi gəlirlər"
+  },
+  {
+    "key": "pl_operatingExpenses",
+    "value": "Əməliyyat xərcləri"
+  },
+  {
+    "key": "pl_netOutcome",
+    "value": "Xalis nəticə"
+  },
+  {
+    "key": "cf_netFlow",
+    "value": "Xalis axın"
+  },
+  {
+    "key": "cf_reportTitle",
+    "value": "Pul vəsaitlərinin hərəkəti haqqında hesabat"
+  },
+  {
+    "key": "cf_reportSubtitle",
+    "value": "Pul axını əməliyyat, investisiya və maliyyələşdirmə fəaliyyətləri üzrə ayrıca bloklara bölünür."
+  },
+  {
+    "key": "cf_badge",
+    "value": "Birbaşa metod"
+  },
+  {
+    "key": "cf_opIn",
+    "value": "Müştərilərdən daxilolmalar"
+  },
+  {
+    "key": "cf_opOut",
+    "value": "Təchizatçı və əməliyyat ödənişləri"
+  },
+  {
+    "key": "cf_opNet",
+    "value": "Xalis əməliyyat pul axını"
+  },
+  {
+    "key": "cf_invIn",
+    "value": "İnvestisiya daxilolmaları"
+  },
+  {
+    "key": "cf_invOut",
+    "value": "İnvestisiya çıxışları"
+  },
+  {
+    "key": "cf_invNet",
+    "value": "Xalis investisiya pul axını"
+  },
+  {
+    "key": "cf_finIn",
+    "value": "Maliyyələşdirmə daxilolmaları"
+  },
+  {
+    "key": "cf_finOut",
+    "value": "Maliyyələşdirmə çıxışları"
+  },
+  {
+    "key": "cf_finNet",
+    "value": "Xalis maliyyələşdirmə pul axını"
+  },
+  {
+    "key": "cf_operatingActivity",
+    "value": "Əməliyyat fəaliyyəti"
+  },
+  {
+    "key": "cf_investingActivity",
+    "value": "İnvestisiya fəaliyyəti"
+  },
+  {
+    "key": "cf_financingActivity",
+    "value": "Maliyyələşdirmə fəaliyyəti"
+  },
+  {
+    "key": "cf_opCashFlow",
+    "value": "Əməliyyat axını"
+  },
+  {
+    "key": "cf_invCashFlow",
+    "value": "İnvestisiya axını"
+  },
+  {
+    "key": "cf_finCashFlow",
+    "value": "Maliyyələşdirmə axını"
+  },
+  {
+    "key": "cf_netChange",
+    "value": "Xalis dəyişmə"
+  },
+  {
+    "key": "cf_openingCash",
+    "value": "Dövrün əvvəli"
+  },
+  {
+    "key": "cf_closingCash",
+    "value": "Dövrün sonu"
+  },
+  {
+    "key": "cf_periodChange",
+    "value": "Dövr üzrə xalis pul dəyişməsi"
+  },
+  {
+    "key": "cf_openingCashFlow",
+    "value": "Dövrün əvvəlinə pul vəsaitləri"
+  },
+  {
+    "key": "cf_closingCashFlow",
+    "value": "Dövrün sonuna pul vəsaitləri"
+  },
+  {
+    "key": "cf_netPeriodChange",
+    "value": "Dövr üzrə xalis dəyişmə"
+  },
+  {
+    "key": "eq_movementSummary",
+    "value": "Kapital hərəkətinin xülasəsi"
+  },
+  {
+    "key": "eq_recentJournal",
+    "value": "Son jurnal təsirləri"
+  },
+  {
+    "key": "eq_noJournal",
+    "value": "Kapital hesablarına təsir edən ayrıca manual jurnal tapılmadı."
+  },
+  {
+    "key": "eq_movementNote",
+    "value": "Açılış kapitalı {opening}, dövr üzrə artım {increase}, azalma isə {decrease} təşkil edir."
+  },
+  {
+    "key": "eq_reportTitle",
+    "value": "Kapitalda dəyişikliklər haqqında hesabat"
+  },
+  {
+    "key": "eq_reportSubtitle",
+    "value": "Kapital hesabları üzrə açılış qalığı, dövr içi artım-azalma və bağlanış qalığı sınaq balansından çıxarılır."
+  },
+  {
+    "key": "eq_badge",
+    "value": "Kapital hesabatı"
+  },
+  {
+    "key": "eq_shareCapital",
+    "value": "Nizamnamə kapitalı"
+  },
+  {
+    "key": "eq_additionalCapital",
+    "value": "Əlavə kapital"
+  },
+  {
+    "key": "eq_retainedProfit",
+    "value": "Bölüşdürülməmiş mənfəət"
+  },
+  {
+    "key": "eq_periodResult",
+    "value": "Dövrün maliyyə nəticəsi"
+  },
+  {
+    "key": "eq_totalCapital",
+    "value": "Cəmi kapital"
+  },
+  {
+    "key": "auth_currentPass",
+    "value": "Mövcud parol"
+  },
+  {
+    "key": "auth_confirmPass",
+    "value": "Yeni parolu təkrarlayın"
+  },
+  {
+    "key": "auth_updateBtn",
+    "value": "Parolu yenilə"
+  },
+  {
+    "key": "acct_teamTitle",
+    "value": "Daxili istifadəçilər"
+  },
+  {
+    "key": "acct_passTitle",
+    "value": "Parolu dəyiş"
+  },
+  {
+    "key": "acct_planTitle",
+    "value": "Plan və abunəlik"
+  },
+  {
+    "key": "acct_adminDesc",
+    "value": "İstifadəçilərin paketlərini, bitmə tarixlərini və ümumi vəziyyəti buradan idarə et."
+  },
+  {
+    "key": "acct_teamDesc",
+    "value": "Öz əməkdaşların üçün daxili girişlər yarat və rol limitlərini idarə et."
+  },
+  {
+    "key": "acct_passDesc",
+    "value": "Mövcud parolu daxil edin və yeni parol təyin edin."
+  },
+  {
+    "key": "acct_planDesc",
+    "value": "Cari planı gör, qalan vaxtı yoxla və planını dəyiş."
+  },
+  {
+    "key": "team_createTitle",
+    "value": "Yeni işçi istifadəçisi yarat"
+  },
+  {
+    "key": "team_createDesc",
+    "value": "Hər rol üçün ayrıca limit var və səlahiyyətlər rola görə avtomatik tətbiq olunur."
+  },
+  {
+    "key": "team_createBtn",
+    "value": "İstifadəçi yarat"
+  },
+  {
+    "key": "team_fullName",
+    "value": "Ad və soyad"
+  },
+  {
+    "key": "team_permsLabel",
+    "value": "Səlahiyyətlər"
+  },
+  {
+    "key": "team_manageBtn",
+    "value": "İstifadəçiləri idarə et"
+  },
+  {
+    "key": "sub_currentPlanDesc",
+    "value": "İstifadə etdiyiniz paket və aktivlik müddəti."
+  },
+  {
+    "key": "sub_priceModel",
+    "value": "Qiymət modeli"
+  },
+  {
+    "key": "sub_price",
+    "value": "Qiymət"
+  },
+  {
+    "key": "sub_opLimit",
+    "value": "Əməliyyat limiti"
+  },
+  {
+    "key": "sub_demoFree",
+    "value": "Ödənişsiz demo"
+  },
+  {
+    "key": "sub_fullAccess",
+    "value": "Tam giriş"
+  },
+  {
+    "key": "sub_isPlan",
+    "value": "Aktiv plandır"
+  },
+  {
+    "key": "sub_activate",
+    "value": "Planı aktiv et"
+  },
+  {
+    "key": "sub_paymentTitle",
+    "value": "Ödəniş mərhələsi"
+  },
+  {
+    "key": "sub_paymentDesc",
+    "value": "Bu hissə hazırda test mərhələsindədir. Real ödəniş məlumatlarını sonradan əlavə edəcəyik."
+  },
+  {
+    "key": "sub_selectedPlan",
+    "value": "Seçilmiş plan"
+  },
+  {
+    "key": "sub_duration",
+    "value": "Müddət"
+  },
+  {
+    "key": "sub_days",
+    "value": "gün"
+  },
+  {
+    "key": "sub_backToPlans",
+    "value": "Planlara qayıt"
+  },
+  {
+    "key": "sub_completeTest",
+    "value": "Test ödənişini tamamla"
+  },
+  {
+    "key": "sub_opUnit",
+    "value": "əməliyyat limiti"
+  },
+  {
+    "key": "sub_opUnitShort",
+    "value": "əməliyyat"
+  },
+  {
+    "key": "sub_freeOps",
+    "value": "5 əməliyyat limiti"
+  },
+  {
+    "key": "sub_freeSummary",
+    "value": "Başlanğıc istifadə üçün pulsuz plan"
+  },
+  {
+    "key": "sub_demoSummary",
+    "value": "Yeni istifadəçi üçün 14 günlük sınaq imkanı"
+  },
+  {
+    "key": "sub_standardSummary",
+    "value": "Kiçik komandalar üçün baza plan"
+  },
+  {
+    "key": "sub_professionalSummary",
+    "value": "Daha aktiv əməliyyat axını üçün"
+  },
+  {
+    "key": "sub_premiumSummary",
+    "value": "Geniş istifadə və yüksək çeviklik üçün"
+  },
+  {
+    "key": "sub_eliteSummary",
+    "value": "Peşəkar və intensiv istifadəçilər üçün"
+  },
+  {
+    "key": "sub_ultimateSummary",
+    "value": "Maksimum səviyyəli xidmət paketi"
+  },
+  {
+    "key": "inv_form_baseAmt",
+    "value": "Əsas məbləğ"
+  },
+  {
+    "key": "inv_form_shippingShort",
+    "value": "Daşıma"
+  },
+  {
+    "key": "inv_form_salesperson",
+    "value": "Satış təmsilçisi"
+  },
+  {
+    "key": "selectPlaceholder",
+    "value": "Seçin..."
+  },
+  {
+    "key": "mod_itemsCatalog",
+    "value": "Mal və Xidmətlər"
+  },
+  {
+    "key": "mod_itemsCatalogSingular",
+    "value": "Mal və ya xidmət"
+  },
+  {
+    "key": "mod_itemsCatalogSummary",
+    "value": "Məhsul və xidmətlər."
+  },
+  {
+    "key": "mod_customers",
+    "value": "Müştərilər"
+  },
+  {
+    "key": "mod_customersSingular",
+    "value": "Müştəri"
+  },
+  {
+    "key": "mod_customersSummary",
+    "value": "Müştəri bazası və debitor borcları."
+  },
+  {
+    "key": "mod_quotes",
+    "value": "Təkliflər"
+  },
+  {
+    "key": "mod_quotesSingular",
+    "value": "Təklif"
+  },
+  {
+    "key": "mod_quotesSummary",
+    "value": "Satış təklifləri."
+  },
+  {
+    "key": "mod_invoices",
+    "value": "Satış qaimələri"
+  },
+  {
+    "key": "mod_invoicesSingular",
+    "value": "Satış qaiməsi"
+  },
+  {
+    "key": "mod_invoicesSummary",
+    "value": "Satış qaimələri."
+  },
+  {
+    "key": "mod_salesReceipts",
+    "value": "Satış qəbzləri"
+  },
+  {
+    "key": "mod_salesReceiptsSingular",
+    "value": "Satış qəbzi"
+  },
+  {
+    "key": "mod_salesReceiptsSummary",
+    "value": "Birbaşa alınan satış ödənişləri."
+  },
+  {
+    "key": "mod_recurringInvoices",
+    "value": "Təkrarlanan fakturalar"
+  },
+  {
+    "key": "mod_recurringInvoicesSingular",
+    "value": "Təkrarlanan faktura"
+  },
+  {
+    "key": "mod_recurringInvoicesSummary",
+    "value": "Dövri faktura profilləri."
+  },
+  {
+    "key": "mod_paymentsReceived",
+    "value": "Alınan ödənişlər"
+  },
+  {
+    "key": "mod_paymentsReceivedSingular",
+    "value": "Ödəniş"
+  },
+  {
+    "key": "mod_paymentsReceivedSummary",
+    "value": "Faktura üzrə daxil olan ödənişlər."
+  },
+  {
+    "key": "mod_creditNotes",
+    "value": "Kredit notları"
+  },
+  {
+    "key": "mod_creditNotesSummary",
+    "value": "Qaytarma və kredit sənədləri."
+  },
+  {
+    "key": "mod_vendors",
+    "value": "Təchizatçılar"
+  },
+  {
+    "key": "mod_vendorsSingular",
+    "value": "Təchizatçı"
+  },
+  {
+    "key": "mod_vendorsSummary",
+    "value": "Təchizatçı bazası və kreditor borcları."
+  },
+  {
+    "key": "mod_goods",
+    "value": "Mal və xidmət kataloqu"
+  },
+  {
+    "key": "mod_goodsSingular",
+    "value": "Mal və xidmət"
+  },
+  {
+    "key": "mod_goodsSummary",
+    "value": "Mal və xidmət adlarının siyahısı."
+  },
+  {
+    "key": "mod_incomingGoodsServices",
+    "value": "Mal və xidmətlər"
+  },
+  {
+    "key": "mod_incomingGoodsServicesSingular",
+    "value": "Qaimə"
+  },
+  {
+    "key": "mod_incomingGoodsServicesSummary",
+    "value": "Alınmış mal və xidmətlərin qaimələri."
+  },
+  {
+    "key": "mod_expenses",
+    "value": "Xərclər"
+  },
+  {
+    "key": "mod_expensesSingular",
+    "value": "Xərc"
+  },
+  {
+    "key": "mod_expensesSummary",
+    "value": "Əməliyyat xərcləri."
+  },
+  {
+    "key": "mod_billsSummary",
+    "value": "Təchizatçı öhdəlikləri."
+  },
+  {
+    "key": "mod_manualJournals",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "mod_manualJournalsSingular",
+    "value": "Əl ilə daxil edilən əməliyyat"
+  },
+  {
+    "key": "mod_manualJournalsSummary",
+    "value": "Əl ilə daxil edilən müxabirləşmə əməliyyatları."
+  },
+  {
+    "key": "mod_chartOfAccounts",
+    "value": "Hesablar planı"
+  },
+  {
+    "key": "mod_chartOfAccountsSummary",
+    "value": "Mühasibat hesabları."
+  },
+  {
+    "key": "mod_operationsJournal",
+    "value": "Əməliyyatlar jurnalı"
+  },
+  {
+    "key": "mod_operationsJournalSingular",
+    "value": "Əməliyyatlar jurnalı"
+  },
+  {
+    "key": "mod_operationsJournalSummary",
+    "value": "Əl ilə və avtomatik daxil edilmiş bütün müxabirləşmələr."
+  },
+  {
+    "key": "mod_trialBalance",
+    "value": "Sınaq balansı"
+  },
+  {
+    "key": "mod_trialBalanceSingular",
+    "value": "Sınaq balansı"
+  },
+  {
+    "key": "mod_trialBalanceSummary",
+    "value": "Açılış qalığı, dövriyyə və son qalıq üzrə sınaq balansı."
+  },
+  {
+    "key": "mod_receivablesSummary",
+    "value": "Müştərilərdən alınacaq ödənişlər və debitor qalıqları."
+  },
+  {
+    "key": "mod_payablesSummary",
+    "value": "Təchizatçılara ödəniləcək məbləğlər və kreditor qalıqları."
+  },
+  {
+    "key": "mod_financialPositionReport",
+    "value": "Maliyyə vəziyyəti haqqında hesabat"
+  },
+  {
+    "key": "mod_financialPositionReportSingular",
+    "value": "Maliyyə vəziyyəti hesabatı"
+  },
+  {
+    "key": "mod_financialPositionReportSummary",
+    "value": "Aktiv, öhdəlik və kapitalın cari vəziyyəti."
+  },
+  {
+    "key": "mod_profitLossReport",
+    "value": "Mənfəət və zərər haqqında hesabat"
+  },
+  {
+    "key": "mod_profitLossReportSingular",
+    "value": "Mənfəət və zərər hesabatı"
+  },
+  {
+    "key": "mod_profitLossReportSummary",
+    "value": "Gəlir, xərc və xalis nəticə göstəriciləri."
+  },
+  {
+    "key": "mod_cashFlowReport",
+    "value": "Pul vəsaitlərinin hərəkəti haqqında hesabat"
+  },
+  {
+    "key": "mod_cashFlowReportSingular",
+    "value": "Pul vəsaitlərinin hərəkəti hesabatı"
+  },
+  {
+    "key": "mod_cashFlowReportSummary",
+    "value": "Pul daxilolmaları və çıxışlarının icmalı."
+  },
+  {
+    "key": "mod_equityChangesReport",
+    "value": "Kapitalda dəyişikliklər hesabatı"
+  },
+  {
+    "key": "mod_equityChangesReportSingular",
+    "value": "Kapital hesabatı"
+  },
+  {
+    "key": "mod_equityChangesReportSummary",
+    "value": "Kapital, ehtiyatlar və bölüşdürülməmiş mənfəət üzrə dəyişikliklər."
+  },
+  {
+    "key": "mod_openReport",
+    "value": "Hesabatı aç"
+  },
+  {
+    "key": "opt_service",
+    "value": "Xidmət"
+  },
+  {
+    "key": "opt_warehouseGoods",
+    "value": "Anbar malı"
+  },
+  {
+    "key": "opt_nonWarehouseGoods",
+    "value": "Qeyri-anbar malı"
+  },
+  {
+    "key": "opt_yes",
+    "value": "Bəli"
+  },
+  {
+    "key": "opt_sent",
+    "value": "Göndərilib"
+  },
+  {
+    "key": "opt_accepted",
+    "value": "Qəbul edilib"
+  },
+  {
+    "key": "opt_partiallyPaid",
+    "value": "Qismən ödənilib"
+  },
+  {
+    "key": "opt_open",
+    "value": "Açıq"
+  },
+  {
+    "key": "opt_applied",
+    "value": "Tətbiq edilib"
+  },
+  {
+    "key": "opt_closed",
+    "value": "Bağlanıb"
+  },
+  {
+    "key": "opt_cash",
+    "value": "Nağd"
+  },
+  {
+    "key": "opt_bankTransfer",
+    "value": "Bank köçürməsi"
+  },
+  {
+    "key": "opt_weekly",
+    "value": "Həftəlik"
+  },
+  {
+    "key": "opt_monthly",
+    "value": "Aylıq"
+  },
+  {
+    "key": "opt_quarterly",
+    "value": "Rüblük"
+  },
+  {
+    "key": "opt_rent",
+    "value": "İcarə"
+  },
+  {
+    "key": "opt_software",
+    "value": "Proqram təminatı"
+  },
+  {
+    "key": "opt_office",
+    "value": "Ofis ləvazimatları"
+  },
+  {
+    "key": "opt_unit",
+    "value": "Ölçü vahidi"
+  },
+  {
+    "key": "opt_type",
+    "value": "Növ"
+  },
+  {
+    "key": "opt_liability",
+    "value": "Öhdəlik"
+  },
+  {
+    "key": "opt_income",
+    "value": "Gəlir"
+  },
+  {
+    "key": "opt_expense",
+    "value": "Xərc"
+  },
+  {
+    "key": "opt_description",
+    "value": "Təsvir"
+  },
+  {
+    "key": "opt_reference",
+    "value": "Təyinat"
+  },
+  {
+    "key": "opt_nextDate",
+    "value": "Növbəti tarix"
+  },
+  {
+    "key": "opt_mode",
+    "value": "Üsul"
+  },
+  {
+    "key": "opt_salesAccount",
+    "value": "Satış hesabı"
+  },
+  {
+    "key": "opt_purchaseAccount",
+    "value": "Alış hesabı"
+  },
+  {
+    "key": "opt_salesDescription",
+    "value": "Satış təsviri"
+  },
+  {
+    "key": "opt_purchaseDescription",
+    "value": "Alış təsviri"
+  },
+  {
+    "key": "opt_enableSalesInfo",
+    "value": "Satış məlumatı aktivdir"
+  },
+  {
+    "key": "opt_enablePurchaseInfo",
+    "value": "Alış məlumatı aktivdir"
+  },
+  {
+    "key": "opt_preferredVendor",
+    "value": "Əsas təchizatçı"
+  },
+  {
+    "key": "opt_reorderPoint",
+    "value": "Minimum ehtiyat həddi"
+  },
+  {
+    "key": "opt_notes",
+    "value": "Qeydlər"
+  },
+  {
+    "key": "opt_adjustment",
+    "value": "Düzəliş"
+  },
+  {
+    "key": "opt_subTotal",
+    "value": "Alt cəmi"
+  },
+  {
+    "key": "opt_vendor",
+    "value": "Təchizatçı"
+  },
+  {
+    "key": "opt_manual",
+    "value": "Əl ilə"
+  },
+  {
+    "key": "opt_bankIn",
+    "value": "Mədaxil"
+  },
+  {
+    "key": "opt_bankOut",
+    "value": "Məxaric"
+  },
+  {
+    "key": "module_vendors",
+    "value": "Təchizatçılar"
+  },
+  {
+    "key": "module_invoices",
+    "value": "Satış qaimələri"
+  },
+  {
+    "key": "module_bills",
+    "value": "Alış qaimələri"
+  },
+  {
+    "key": "module_mj",
+    "value": "Əl ilə daxil edilən əməliyyatlar"
+  },
+  {
+    "key": "module_coa",
+    "value": "Hesablar planı"
+  },
+  {
+    "key": "mod_sing_customers",
+    "value": "Müştəri"
+  },
+  {
+    "key": "mod_sing_vendors",
+    "value": "Təchizatçı"
+  },
+  {
+    "key": "mod_sing_invoices",
+    "value": "Satış qaiməsi"
+  },
+  {
+    "key": "mod_sing_bills",
+    "value": "Alış qaiməsi"
+  },
+  {
+    "key": "mod_sum_customers",
+    "value": "Müştəri bazası və debitor borcları."
+  },
+  {
+    "key": "mod_sum_vendors",
+    "value": "Təchizatçı bazası və kreditor borcları."
+  },
+  {
+    "key": "mod_sum_invoices",
+    "value": "Satış qaimələri."
+  },
+  {
+    "key": "mod_sum_bills",
+    "value": "Alış qaimələri."
+  },
+  {
+    "key": "mod_sum_mj",
+    "value": "Əl ilə daxil edilən düzəlişlər."
+  },
+  {
+    "key": "mod_sum_coa",
+    "value": "Mühasibat hesabları."
+  },
+  {
+    "key": "ops_discountBefore_val",
+    "value": "Vergidən əvvəl endirim"
+  },
+  {
+    "key": "mov_sale",
+    "value": "Satış"
+  },
+  {
+    "key": "mov_purchase",
+    "value": "Alış"
+  },
+  {
+    "key": "brandSub",
+    "value": "Web tabanlı muhasebe sistemi"
+  },
+  {
+    "key": "accountant",
+    "value": "Genel Yardımcı"
+  },
+  {
+    "key": "purchases",
+    "value": "Satın alma"
+  },
+  {
+    "key": "sales",
+    "value": "Satış"
+  },
+  {
+    "key": "goods",
+    "value": "Ürünler ve hizmetler"
+  },
+  {
+    "key": "chipLoading",
+    "value": "Yükleniyor"
+  },
+  {
+    "key": "profileIndiv",
+    "value": "Bireysel girişimci profili aktif."
+  },
+  {
+    "key": "profileCompany",
+    "value": "Şirket profili aktif."
+  },
+  {
+    "key": "workspace",
+    "value": "Çalışma alanı"
+  },
+  {
+    "key": "btnProducts",
+    "value": "Hizmet kataloğu"
+  },
+  {
+    "key": "settings_systemTitle",
+    "value": "Sistem ayarları"
+  },
+  {
+    "key": "btnReset",
+    "value": "Sıfırla"
+  },
+  {
+    "key": "btnRestore",
+    "value": "Geri yükle"
+  },
+  {
+    "key": "menuPlan",
+    "value": "Planı değiştir"
+  },
+  {
+    "key": "menuTeam",
+    "value": "Kullanıcıları yönet"
+  },
+  {
+    "key": "menuAdmin",
+    "value": "Süper yönetici paneli"
+  },
+  {
+    "key": "menuPass",
+    "value": "Şifre değiştir"
+  },
+  {
+    "key": "menuLogout",
+    "value": "Çıkış yap"
+  },
+  {
+    "key": "heroCompany",
+    "value": "Şirket"
+  },
+  {
+    "key": "heroFiscal",
+    "value": "Mali yıl"
+  },
+  {
+    "key": "cancel",
+    "value": "İptal"
+  },
+  {
+    "key": "edit",
+    "value": "Düzenle"
+  },
+  {
+    "key": "newRecord",
+    "value": "Yeni kayıt"
+  },
+  {
+    "key": "action",
+    "value": "İşlem"
+  },
+  {
+    "key": "no",
+    "value": "Hayır"
+  },
+  {
+    "key": "loading",
+    "value": "Yükleniyor"
+  },
+  {
+    "key": "loadingDesc",
+    "value": "Veriler hazırlanıyor."
+  },
+  {
+    "key": "listShowing",
+    "value": "kayıt gösteriliyor"
+  },
+  {
+    "key": "backup_fillAll",
+    "value": "Yeni kullanıcılar için tüm alanları doldurun."
+  },
+  {
+    "key": "openReport",
+    "value": "Raporu aç"
+  },
+  {
+    "key": "noMjHint",
+    "value": "Filtre kriterlerini değiştirin veya yeni kayıt ekleyin."
+  },
+  {
+    "key": "expandAll",
+    "value": "Tümünü aç"
+  },
+  {
+    "key": "collapseAll",
+    "value": "Tümünü kapat"
+  },
+  {
+    "key": "mj_totalRecords",
+    "value": "Toplam kayıt"
+  },
+  {
+    "key": "mj_totalDebit",
+    "value": "Toplam borç"
+  },
+  {
+    "key": "mj_opsList",
+    "value": "İşlem listesi"
+  },
+  {
+    "key": "mj_opsListDesc",
+    "value": "Elle girilen tüm yevmiye kayıtlarını görüntüle, ara ve düzenle"
+  },
+  {
+    "key": "mj_newEntry",
+    "value": "Yeni kayıt"
+  },
+  {
+    "key": "mj_newEntryDesc",
+    "value": "Borç/alacak satırları ile yeni manuel yevmiye işlemi girin"
+  },
+  {
+    "key": "mj_recentOps",
+    "value": "Son işlemler"
+  },
+  {
+    "key": "mj_viewAll",
+    "value": "Tümünü gör →"
+  },
+  {
+    "key": "mj_search",
+    "value": "Ara: yevmiye #, açıklama, hesap..."
+  },
+  {
+    "key": "mj_noResult",
+    "value": "Sonuç bulunamadı."
+  },
+  {
+    "key": "mj_noEntries",
+    "value": "Henüz yevmiye kaydı yok."
+  },
+  {
+    "key": "mj_createFirst",
+    "value": "+ İlk kaydı oluştur"
+  },
+  {
+    "key": "mj_formEdit",
+    "value": "Kaydı düzenle"
+  },
+  {
+    "key": "mj_formNew",
+    "value": "Yeni kayıt oluştur"
+  },
+  {
+    "key": "mj_btnEdit",
+    "value": "Düzenle"
+  },
+  {
+    "key": "mj_formEyebrowEdit",
+    "value": "Düzenle"
+  },
+  {
+    "key": "mj_formEyebrowNew",
+    "value": "Yeni kayıt"
+  },
+  {
+    "key": "mj_lblJournalNum",
+    "value": "Yevmiye numarası"
+  },
+  {
+    "key": "mj_lblReference",
+    "value": "Açıklama"
+  },
+  {
+    "key": "mj_lblAccountFilter",
+    "value": "Hesap türü filtresi"
+  },
+  {
+    "key": "mj_conflictSameAcc",
+    "value": "⚠ Aynı hesap çakışması"
+  },
+  {
+    "key": "mj_debitTotal",
+    "value": "Toplam borç"
+  },
+  {
+    "key": "statusSent",
+    "value": "Gönderildi"
+  },
+  {
+    "key": "statusPaid",
+    "value": "Ödendi"
+  },
+  {
+    "key": "statusOverdue",
+    "value": "Gecikmiş"
+  },
+  {
+    "key": "statusOpen",
+    "value": "Açık"
+  },
+  {
+    "key": "statusClosed",
+    "value": "Kapalı"
+  },
+  {
+    "key": "statusApplied",
+    "value": "Uygulandı"
+  },
+  {
+    "key": "statusPartial",
+    "value": "Kısmen ödendi"
+  },
+  {
+    "key": "home_kpi1",
+    "value": "Toplam fatura tutarı"
+  },
+  {
+    "key": "home_kpi2",
+    "value": "Alınan ödemeler"
+  },
+  {
+    "key": "home_kpi4",
+    "value": "Net nakit akışı"
+  },
+  {
+    "key": "home_quickLinks",
+    "value": "Hızlı bağlantılar"
+  },
+  {
+    "key": "home_salesTitle",
+    "value": "Satış özeti"
+  },
+  {
+    "key": "home_salesDesc",
+    "value": "Fatura, müşteri ve alacak verileri."
+  },
+  {
+    "key": "home_purchTitle",
+    "value": "Satın alma özeti"
+  },
+  {
+    "key": "home_purchDesc",
+    "value": "İrsaliye, tedarikçi ve borç verileri."
+  },
+  {
+    "key": "home_txTitle",
+    "value": "İşlemler"
+  },
+  {
+    "key": "home_txDesc",
+    "value": "Yevmiye, hesap planı ve belge verileri."
+  },
+  {
+    "key": "home_salesInv",
+    "value": "Satış faturaları"
+  },
+  {
+    "key": "home_purchInv",
+    "value": "Satın alma irsaliyeleri"
+  },
+  {
+    "key": "home_customers",
+    "value": "Müşteriler"
+  },
+  {
+    "key": "home_vendors",
+    "value": "Tedarikçiler"
+  },
+  {
+    "key": "home_payables",
+    "value": "Borçlar"
+  },
+  {
+    "key": "home_chartAcc",
+    "value": "Hesap planı"
+  },
+  {
+    "key": "unit_record",
+    "value": "kayıt"
+  },
+  {
+    "key": "unit_customer",
+    "value": "müşteri"
+  },
+  {
+    "key": "unit_reportTypes",
+    "value": "rapor türü"
+  },
+  {
+    "key": "hub_bankJournal",
+    "value": "Banka günlüğü"
+  },
+  {
+    "key": "hub_bankJournalDesc",
+    "value": "Tüm banka hesaplarını ve işlemlerini görüntüleyin."
+  },
+  {
+    "key": "hub_bankNew",
+    "value": "Yeni banka işlemi"
+  },
+  {
+    "key": "hub_bankNewDesc",
+    "value": "Yeni banka işlemi ekleyin."
+  },
+  {
+    "key": "hub_customersJournal",
+    "value": "Müşteri listesi"
+  },
+  {
+    "key": "hub_customersJournalDesc",
+    "value": "Tüm müşterileri görüntüleyin ve düzenleyin."
+  },
+  {
+    "key": "hub_customersNew",
+    "value": "Yeni müşteri ekle"
+  },
+  {
+    "key": "hub_customersNewDesc",
+    "value": "Veritabanına yeni müşteri kaydedin."
+  },
+  {
+    "key": "hub_customersCount",
+    "value": "müşteri"
+  },
+  {
+    "key": "hub_invoicesJournal",
+    "value": "Satış faturası günlüğü"
+  },
+  {
+    "key": "hub_invoicesJournalDesc",
+    "value": "Tüm satış faturalarını görüntüleyin."
+  },
+  {
+    "key": "hub_invoicesNew",
+    "value": "Yeni satış faturası"
+  },
+  {
+    "key": "hub_invoicesNewDesc",
+    "value": "Müşteriye yeni satış faturası oluşturun."
+  },
+  {
+    "key": "hub_billsJournal",
+    "value": "Satın alma günlüğü"
+  },
+  {
+    "key": "hub_billsJournalDesc",
+    "value": "Tüm satın alma irsaliyelerini görüntüleyin."
+  },
+  {
+    "key": "hub_billsNewDesc",
+    "value": "Ürün/hizmet satırları ve vergi ile yeni irsaliye ekleyin."
+  },
+  {
+    "key": "hub_billsCount",
+    "value": "kayıt"
+  },
+  {
+    "key": "hub_goodsJournal",
+    "value": "Ürün ve hizmet listesi"
+  },
+  {
+    "key": "hub_goodsJournalDesc",
+    "value": "Tüm ürün ve hizmet adlarını görüntüleyin ve düzenleyin."
+  },
+  {
+    "key": "hub_goodsNew",
+    "value": "Yeni ürün veya hizmet ekle"
+  },
+  {
+    "key": "hub_goodsNewDesc",
+    "value": "Kataloğa yeni ürün veya hizmet adı ekleyin."
+  },
+  {
+    "key": "hub_goodsCount",
+    "value": "kayıt"
+  },
+  {
+    "key": "hub_vendorsJournal",
+    "value": "Tedarikçi listesi"
+  },
+  {
+    "key": "hub_vendorsJournalDesc",
+    "value": "Tüm tedarikçileri görüntüleyin ve düzenleyin."
+  },
+  {
+    "key": "hub_vendorsNew",
+    "value": "Yeni tedarikçi ekle"
+  },
+  {
+    "key": "hub_vendorsNewDesc",
+    "value": "Yeni tedarikçi bilgilerini girin."
+  },
+  {
+    "key": "hub_vendorsCount",
+    "value": "tedarikçi"
+  },
+  {
+    "key": "hub_mjJournalDesc",
+    "value": "Tüm manuel yevmiye kayıtlarını görüntüleyin."
+  },
+  {
+    "key": "hub_mjNew",
+    "value": "Yeni yevmiye kaydı"
+  },
+  {
+    "key": "hub_mjNewDesc",
+    "value": "Borç/alacak satırlarıyla yeni kayıt ekleyin."
+  },
+  {
+    "key": "hub_mjCount",
+    "value": "kayıt"
+  },
+  {
+    "key": "hub_coaJournal",
+    "value": "Hesap planı listesi"
+  },
+  {
+    "key": "hub_coaJournalDesc",
+    "value": "Tüm muhasebe hesaplarını görüntüleyin."
+  },
+  {
+    "key": "hub_coaNewDesc",
+    "value": "Hesap planına yeni muhasebe hesabı ekleyin."
+  },
+  {
+    "key": "hub_docsArchive",
+    "value": "Belge arşivi"
+  },
+  {
+    "key": "hub_docsArchiveDesc",
+    "value": "Tüm belgeleri görüntüleyin ve arayın."
+  },
+  {
+    "key": "hub_reports",
+    "value": "Raporu aç"
+  },
+  {
+    "key": "hub_manageSubmodules",
+    "value": "Alt modülleri buradan yönetin."
+  },
+  {
+    "key": "hub_moduleUnit",
+    "value": "modül"
+  },
+  {
+    "key": "hub_workflow",
+    "value": "İş akışı"
+  },
+  {
+    "key": "hub_workflowDesc",
+    "value": "Temel modüllerde ekleme, arama, düzenleme ve silme aktif."
+  },
+  {
+    "key": "hub_ready",
+    "value": "Hazır"
+  },
+  {
+    "key": "journalNewCust",
+    "value": "+ Yeni müşteri"
+  },
+  {
+    "key": "journalNewVendor",
+    "value": "+ Yeni tedarikçi"
+  },
+  {
+    "key": "billJournalTitle",
+    "value": "Satın alma irsaliye günlüğü"
+  },
+  {
+    "key": "coaJournalTitle",
+    "value": "Hesap planı"
+  },
+  {
+    "key": "custJournalTitle",
+    "value": "Müşteri listesi"
+  },
+  {
+    "key": "vendorJournalTitle",
+    "value": "Tedarikçi listesi"
+  },
+  {
+    "key": "invoiceJournalTitle",
+    "value": "Satış faturası günlüğü"
+  },
+  {
+    "key": "bankJournalTitle",
+    "value": "Banka hesapları"
+  },
+  {
+    "key": "searchBill",
+    "value": "İrsaliye ara..."
+  },
+  {
+    "key": "searchCust",
+    "value": "Müşteri ara..."
+  },
+  {
+    "key": "searchVendor",
+    "value": "Tedarikçi ara..."
+  },
+  {
+    "key": "noItems",
+    "value": "Kayıt bulunamadı."
+  },
+  {
+    "key": "noBills",
+    "value": "Henüz irsaliye yok."
+  },
+  {
+    "key": "noMj",
+    "value": "Kayıt bulunamadı."
+  },
+  {
+    "key": "noMjHint",
+    "value": "Filtre kriterlerini değiştirin veya yeni kayıt ekleyin."
+  },
+  {
+    "key": "noAcc",
+    "value": "Henüz hesap yok."
+  },
+  {
+    "key": "noCust",
+    "value": "Henüz müşteri yok."
+  },
+  {
+    "key": "noVendor",
+    "value": "Henüz tedarikçi yok."
+  },
+  {
+    "key": "noInvoice",
+    "value": "Henüz fatura yok."
+  },
+  {
+    "key": "noBank",
+    "value": "Henüz banka hesabı yok."
+  },
+  {
+    "key": "noDoc",
+    "value": "Henüz belge yok."
+  },
+  {
+    "key": "formTitle_bankEdit",
+    "value": "Banka hesabını düzenle"
+  },
+  {
+    "key": "formTitle_bankNew",
+    "value": "Yeni banka hesabı"
+  },
+  {
+    "key": "formTitle_docEdit",
+    "value": "Belgeyi düzenle"
+  },
+  {
+    "key": "formTitle_coaEdit",
+    "value": "Hesabı düzenle"
+  },
+  {
+    "key": "formField_accountName",
+    "value": "Hesap adı"
+  },
+  {
+    "key": "formField_accountType",
+    "value": "Hesap türü"
+  },
+  {
+    "key": "formField_title",
+    "value": "Başlık"
+  },
+  {
+    "key": "formField_relSection",
+    "value": "İlgili bölüm"
+  },
+  {
+    "key": "formField_accountName2",
+    "value": "Hesap adı"
+  },
+  {
+    "key": "formField_accType",
+    "value": "Hesap türü"
+  },
+  {
+    "key": "docCatContract",
+    "value": "📄 Sözleşme"
+  },
+  {
+    "key": "settings_languageDesc",
+    "value": "Tercih ettiğiniz arayüz dilini seçin."
+  },
+  {
+    "key": "settings_paramsDesc",
+    "value": "Belge numaralandırması, ödeme koşulları ve stok davranışını yönetin."
+  },
+  {
+    "key": "settings_company",
+    "value": "Şirket bilgileri"
+  },
+  {
+    "key": "settings_companyDesc",
+    "value": "Şirket adı, para birimi, mali yıl ve diğer temel bilgiler."
+  },
+  {
+    "key": "settings_companyBtn",
+    "value": "Şirket"
+  },
+  {
+    "key": "settings_save",
+    "value": "Ayarları kaydet"
+  },
+  {
+    "key": "settings_companyName",
+    "value": "Şirket adı"
+  },
+  {
+    "key": "settings_fiscalYear",
+    "value": "Mali yıl"
+  },
+  {
+    "key": "settings_uiScale",
+    "value": "Arayüz ölçeği"
+  },
+  {
+    "key": "settings_teamTitle",
+    "value": "Dahili kullanıcılar"
+  },
+  {
+    "key": "settings_addUser",
+    "value": "Kullanıcı ekle"
+  },
+  {
+    "key": "sub_upgrade",
+    "value": "Yükselt"
+  },
+  {
+    "key": "sub_free",
+    "value": "Ücretsiz"
+  },
+  {
+    "key": "confirmDelete",
+    "value": "Silmek istediğinizden emin misiniz?"
+  },
+  {
+    "key": "confirmReset",
+    "value": "Uygulamadaki tüm veriler sıfırlanacak. Devam etmek istiyor musunuz?"
+  },
+  {
+    "key": "confirmLogout",
+    "value": "Çıkış yapmak istediğinizden emin misiniz?"
+  },
+  {
+    "key": "confirmBackup",
+    "value": "Mevcut verilerin yedek dosyası oluşturulsun mu?"
+  },
+  {
+    "key": "confirmRestore",
+    "value": "Yedek dosyasındaki veriler geri yüklenecek. Mevcut veriler üzerine yazılabilir. Devam edilsin mi?"
+  },
+  {
+    "key": "formTitle_editCustomer",
+    "value": "Müşteriyi düzenle"
+  },
+  {
+    "key": "formTitle_newCustomer",
+    "value": "Yeni müşteri ekle"
+  },
+  {
+    "key": "formTitle_editInvoice",
+    "value": "Faturayı düzenle"
+  },
+  {
+    "key": "formTitle_newInvoice",
+    "value": "Yeni fatura oluştur"
+  },
+  {
+    "key": "formTitle_editVendor",
+    "value": "Tedarikçiyi düzenle"
+  },
+  {
+    "key": "formTitle_newVendor",
+    "value": "Yeni tedarikçi ekle"
+  },
+  {
+    "key": "formTitle_editGoods",
+    "value": "Ürün / hizmeti düzenle"
+  },
+  {
+    "key": "formTitle_newGoods",
+    "value": "Yeni ürün / hizmet ekle"
+  },
+  {
+    "key": "formTitle_editMj",
+    "value": "Yevmiye kaydını düzenle"
+  },
+  {
+    "key": "formTitle_newMj",
+    "value": "Yeni yevmiye kaydı"
+  },
+  {
+    "key": "formTitle_editCoa",
+    "value": "Hesabı düzenle"
+  },
+  {
+    "key": "formTitle_editBill",
+    "value": "Faturayı düzenle"
+  },
+  {
+    "key": "formTitle_edit",
+    "value": "Düzenle"
+  },
+  {
+    "key": "formDesc_editing",
+    "value": "Mevcut kayıt güncelleniyor."
+  },
+  {
+    "key": "formDesc_new",
+    "value": "Yeni kayıt oluşturuluyor."
+  },
+  {
+    "key": "debt_totalPayable",
+    "value": "Toplam borç"
+  },
+  {
+    "key": "debt_withDebtCustomer",
+    "value": "Bakiyeli müşteriler"
+  },
+  {
+    "key": "debt_withDebtVendor",
+    "value": "Bakiyeli tedarikçiler"
+  },
+  {
+    "key": "debt_highest",
+    "value": "En yüksek borç"
+  },
+  {
+    "key": "debt_average",
+    "value": "Ortalama borç"
+  },
+  {
+    "key": "debt_descReceivable",
+    "value": "Müşterilerden alınacak ödemeler, sıralı."
+  },
+  {
+    "key": "debt_descPayable",
+    "value": "Tedarikçilere ödenecek tutarlar, sıralı."
+  },
+  {
+    "key": "debt_searchCustomer",
+    "value": "Müşteri ara..."
+  },
+  {
+    "key": "debt_searchVendor",
+    "value": "Tedarikçi ara..."
+  },
+  {
+    "key": "debt_emptyReceivable",
+    "value": "Alacak bakiyesi olan müşteri yok."
+  },
+  {
+    "key": "debt_emptyPayable",
+    "value": "Borç bakiyesi olan tedarikçi yok."
+  },
+  {
+    "key": "noResults",
+    "value": "Sonuç bulunamadı."
+  },
+  {
+    "key": "ops_discountTitle",
+    "value": "İndirim uyguluyor musunuz?"
+  },
+  {
+    "key": "ops_discountNone",
+    "value": "İndirim yok"
+  },
+  {
+    "key": "ops_discountLine",
+    "value": "Satır düzeyinde"
+  },
+  {
+    "key": "ops_discountDoc",
+    "value": "Belge düzeyinde"
+  },
+  {
+    "key": "ops_discountBefore",
+    "value": "Vergiden önce indirim"
+  },
+  {
+    "key": "ops_chargesTitle",
+    "value": "Eklenecek ek ücretleri seçin"
+  },
+  {
+    "key": "ops_adjustments",
+    "value": "Düzeltmeler"
+  },
+  {
+    "key": "ops_shipping",
+    "value": "Kargo ücretleri"
+  },
+  {
+    "key": "ops_shippingTax",
+    "value": "Kargo ücretlerinde vergiyi otomatikleştir"
+  },
+  {
+    "key": "ops_shippingTaxNote",
+    "value": "Müşteri için vergi oranı belirlenmişse, o oran kargo ücretine de uygulanır. Belirlenmemişse, burada seçilen kural uygulanır."
+  },
+  {
+    "key": "ops_taxTitle",
+    "value": "Ürünleri vergi dahil fiyatla mı satıyorsunuz?"
+  },
+  {
+    "key": "ops_taxExclusive",
+    "value": "Vergi hariç"
+  },
+  {
+    "key": "ops_roundDoc",
+    "value": "Belge düzeyinde"
+  },
+  {
+    "key": "ops_roundLine",
+    "value": "Satır düzeyinde"
+  },
+  {
+    "key": "ops_salesRoundTitle",
+    "value": "Satış işlemlerinde yuvarlama"
+  },
+  {
+    "key": "ops_roundNearest",
+    "value": "En yakın tam sayıya yuvarla"
+  },
+  {
+    "key": "ops_roundIncrement",
+    "value": "En yakın artışa yuvarla"
+  },
+  {
+    "key": "ops_salesperson",
+    "value": "Satış temsilcisi alanı ekle"
+  },
+  {
+    "key": "ops_invoicePrefix",
+    "value": "Fatura öneki"
+  },
+  {
+    "key": "ops_quotePrefix",
+    "value": "Teklif öneki"
+  },
+  {
+    "key": "ops_numbering",
+    "value": "Numaralandırma modu"
+  },
+  {
+    "key": "ops_paymentTerm",
+    "value": "Standart ödeme vadesi"
+  },
+  {
+    "key": "ops_7days",
+    "value": "7 gün"
+  },
+  {
+    "key": "ops_15days",
+    "value": "15 gün"
+  },
+  {
+    "key": "ops_30days",
+    "value": "30 gün"
+  },
+  {
+    "key": "ops_45days",
+    "value": "45 gün"
+  },
+  {
+    "key": "ops_defaultTax",
+    "value": "Varsayılan vergi"
+  },
+  {
+    "key": "ops_stockWarning",
+    "value": "Stok uyarısı"
+  },
+  {
+    "key": "ops_saveHint",
+    "value": "Bu ayarları istediğiniz zaman Ayarlar bölümünden güncelleyebilirsiniz."
+  },
+  {
+    "key": "inv_form_lineDiscount",
+    "value": "Satır indirimi"
+  },
+  {
+    "key": "inv_form_shipping",
+    "value": "Kargo ücreti"
+  },
+  {
+    "key": "inv_form_adjustment",
+    "value": "Düzeltme tutarı"
+  },
+  {
+    "key": "inv_form_discount",
+    "value": "İndirim"
+  },
+  {
+    "key": "inv_form_adjustment2",
+    "value": "Düzeltme"
+  },
+  {
+    "key": "tb_empty",
+    "value": "Mizan için veri yok."
+  },
+  {
+    "key": "ic_listTitle",
+    "value": "Aktif Ürünler ve Hizmetler"
+  },
+  {
+    "key": "ic_listDesc",
+    "value": "Ürün kataloğu, satın alma açıklaması, fiyatlar ve kullanım birimleri."
+  },
+  {
+    "key": "coa_asset",
+    "value": "Varlık"
+  },
+  {
+    "key": "coa_liability",
+    "value": "Yükümlülük"
+  },
+  {
+    "key": "coa_equity",
+    "value": "Özkaynak"
+  },
+  {
+    "key": "rpt_summaryTitle",
+    "value": "Rapor özeti"
+  },
+  {
+    "key": "rpt_summaryDesc",
+    "value": "Güncel finansal genel bakış."
+  },
+  {
+    "key": "rpt_summaryBadge",
+    "value": "Canlı göstergeler"
+  },
+  {
+    "key": "rpt_indicator",
+    "value": "Gösterge"
+  },
+  {
+    "key": "rpt_value",
+    "value": "Değer"
+  },
+  {
+    "key": "rpt_payables",
+    "value": "Borçlar"
+  },
+  {
+    "key": "rpt_compareTitle",
+    "value": "Karşılaştırmalı görünüm"
+  },
+  {
+    "key": "rpt_compareDesc",
+    "value": "Mevcut ve önceki dönem yan yana gösterilir."
+  },
+  {
+    "key": "rpt_currentPeriod",
+    "value": "Mevcut dönem"
+  },
+  {
+    "key": "rpt_prevPeriod",
+    "value": "Önceki dönem"
+  },
+  {
+    "key": "rpt_compareEmpty",
+    "value": "Karşılaştırma için veri yok."
+  },
+  {
+    "key": "rpt_openingBal",
+    "value": "Açılış bakiyesi"
+  },
+  {
+    "key": "rpt_increase",
+    "value": "Artış"
+  },
+  {
+    "key": "rpt_decrease",
+    "value": "Azalış"
+  },
+  {
+    "key": "rpt_closingBal",
+    "value": "Kapanış bakiyesi"
+  },
+  {
+    "key": "rpt_equityEmpty",
+    "value": "Özkaynak verisi yok."
+  },
+  {
+    "key": "rpt_printNoteText",
+    "value": "Bu rapor sistemdeki mevcut işlemler, yevmiyeler ve belge kayıtlarına göre otomatik olarak oluşturulmuştur. Yazdırmadan önce nihai rakamları doğrulamanız önerilir."
+  },
+  {
+    "key": "rpt_printSource",
+    "value": "Oluşturan"
+  },
+  {
+    "key": "rpt_printPrepared",
+    "value": "Hazırlayan"
+  },
+  {
+    "key": "rpt_fiscalYear",
+    "value": "Mali yıl"
+  },
+  {
+    "key": "rpt_company",
+    "value": "Şirket"
+  },
+  {
+    "key": "rpt_reportPeriod",
+    "value": "Rapor dönemi"
+  },
+  {
+    "key": "team_colUser",
+    "value": "Kullanıcı"
+  },
+  {
+    "key": "team_colAction",
+    "value": "İşlem"
+  },
+  {
+    "key": "team_colManage",
+    "value": "Yönetim"
+  },
+  {
+    "key": "team_colPerms",
+    "value": "İzinler"
+  },
+  {
+    "key": "team_emptyAdmin",
+    "value": "Kullanıcı yok."
+  },
+  {
+    "key": "team_emptyTeam",
+    "value": "Dahili kullanıcı yok."
+  },
+  {
+    "key": "team_totalUsers",
+    "value": "Toplam kullanıcı"
+  },
+  {
+    "key": "team_paidPlans",
+    "value": "Ücretli planlar"
+  },
+  {
+    "key": "team_expiringSoon",
+    "value": "Süresi dolmak üzere"
+  },
+  {
+    "key": "team_existingTitle",
+    "value": "Mevcut dahili kullanıcılar"
+  },
+  {
+    "key": "team_existingDesc",
+    "value": "Oluşturulan personel hesapları ve erişim alanları."
+  },
+  {
+    "key": "team_userUnit",
+    "value": "kullanıcı"
+  },
+  {
+    "key": "team_annual",
+    "value": "Yıllık"
+  },
+  {
+    "key": "team_monthly",
+    "value": "Aylık"
+  },
+  {
+    "key": "lp_stat1",
+    "value": "İşlenen belgeler"
+  },
+  {
+    "key": "lp_stat2",
+    "value": "Aktif şirket profilleri"
+  },
+  {
+    "key": "lp_stat3",
+    "value": "Oluşturulan raporlar"
+  },
+  {
+    "key": "lp_stat4",
+    "value": "Kaydedilen işlemler"
+  },
+  {
+    "key": "mj_conflict",
+    "value": "Aynı hesap hem borç hem alacak tarafında"
+  },
+  {
+    "key": "mj_conflictHint",
+    "value": "kodlu hesap her iki tarafta kullanılamaz."
+  },
+  {
+    "key": "mj_balancedHint",
+    "value": "Borç ve alacak tutarları eşit — yevmiye kaydedilmeye hazır."
+  },
+  {
+    "key": "mj_unbalanced",
+    "value": "Yevmiye dengede değil"
+  },
+  {
+    "key": "mj_unbalancedHint",
+    "value": "Borç ve alacak toplamları eşit olmalıdır."
+  },
+  {
+    "key": "inv_panelTitle",
+    "value": "Alış ve Satış"
+  },
+  {
+    "key": "inv_panelDesc",
+    "value": "Operasyonel parametrelere bağlı vergi ve muhasebe mantığıyla stok hareketi oluşturun."
+  },
+  {
+    "key": "inv_selectedItem",
+    "value": "Seçili kart"
+  },
+  {
+    "key": "inv_salesTax",
+    "value": "Satış vergisi"
+  },
+  {
+    "key": "inv_purchaseTax",
+    "value": "Alış vergisi"
+  },
+  {
+    "key": "inv_item",
+    "value": "Ürün veya hizmet"
+  },
+  {
+    "key": "inv_movementType",
+    "value": "Hareket türü"
+  },
+  {
+    "key": "inv_taxRate",
+    "value": "Vergi oranı"
+  },
+  {
+    "key": "inv_partnerCust",
+    "value": "Müşteri"
+  },
+  {
+    "key": "inv_partnerVend",
+    "value": "Tedarikçi"
+  },
+  {
+    "key": "inv_taxCalc",
+    "value": "Vergi hesabı"
+  },
+  {
+    "key": "inv_posting",
+    "value": "Muhasebe kaydı"
+  },
+  {
+    "key": "inv_movSale",
+    "value": "Satış"
+  },
+  {
+    "key": "inv_movPurchase",
+    "value": "Alış"
+  },
+  {
+    "key": "inv_recentDesc",
+    "value": "KDV ve toplam tutar gösterilir. Kayıt otomatik olarak deneme bakiyesine yansır."
+  },
+  {
+    "key": "inv_txUnit",
+    "value": "işlem"
+  },
+  {
+    "key": "ic_formTitleEdit",
+    "value": "Ürün veya Hizmeti Düzenle"
+  },
+  {
+    "key": "ic_formTitleNew",
+    "value": "Ürün veya Hizmet Ekle"
+  },
+  {
+    "key": "ic_formDesc",
+    "value": "Ürün kartını Tetavio Books yapısına uygun doldurun."
+  },
+  {
+    "key": "ic_inventoryHint",
+    "value": "Satış ve alış işlemlerine göre stok bakiyesini görmek için bu kartta stok takibini etkinleştirin."
+  },
+  {
+    "key": "ic_type",
+    "value": "Tür"
+  },
+  {
+    "key": "ic_unit",
+    "value": "Kullanım birimi"
+  },
+  {
+    "key": "ic_openingQty",
+    "value": "Açılış miktarı"
+  },
+  {
+    "key": "ic_imgHint",
+    "value": "Resimleri buraya sürükle veya seç"
+  },
+  {
+    "key": "ic_salesInfo",
+    "value": "Satış Bilgileri"
+  },
+  {
+    "key": "ic_purchInfo",
+    "value": "Alış Bilgileri"
+  },
+  {
+    "key": "ic_salePrice",
+    "value": "Satış fiyatı"
+  },
+  {
+    "key": "ic_desc",
+    "value": "Açıklama"
+  },
+  {
+    "key": "ic_purchPrice",
+    "value": "Alış fiyatı"
+  },
+  {
+    "key": "ic_prefVendor",
+    "value": "Tercih edilen tedarikçi"
+  },
+  {
+    "key": "ic_typeGoods",
+    "value": "Ürün"
+  },
+  {
+    "key": "ic_updateBtn",
+    "value": "Güncelle"
+  },
+  {
+    "key": "goods_tabAll",
+    "value": "Tümü"
+  },
+  {
+    "key": "goods_tabGoods",
+    "value": "Ürünler"
+  },
+  {
+    "key": "goods_emptyAll",
+    "value": "Henüz nomenklatür kaydı yok."
+  },
+  {
+    "key": "goods_emptyGoods",
+    "value": "Ürün kaydı yok."
+  },
+  {
+    "key": "goods_emptyServices",
+    "value": "Hizmet kaydı yok."
+  },
+  {
+    "key": "bank_recentTitle",
+    "value": "Son işlemler"
+  },
+  {
+    "key": "bank_recentDesc",
+    "value": "Bilgilendirme amaçlı banka işlemleri."
+  },
+  {
+    "key": "bank_txUnit",
+    "value": "işlem"
+  },
+  {
+    "key": "bank_emptyTx",
+    "value": "İşlem yok."
+  },
+  {
+    "key": "settings_companyInfo",
+    "value": "Şirket bilgileri"
+  },
+  {
+    "key": "settings_profileDesc",
+    "value": "Şirket ve sistem bilgilerini güncelleyin."
+  },
+  {
+    "key": "settings_entityType",
+    "value": "Kişi türü"
+  },
+  {
+    "key": "settings_entityCompany",
+    "value": "Tüzel kişi"
+  },
+  {
+    "key": "settings_companyOwnerName",
+    "value": "Şirket / girişimci adı"
+  },
+  {
+    "key": "settings_mobile",
+    "value": "Cep numarası"
+  },
+  {
+    "key": "settings_uiSmall",
+    "value": "Küçük"
+  },
+  {
+    "key": "settings_uiLarge",
+    "value": "Büyük"
+  },
+  {
+    "key": "settings_db",
+    "value": "Veritabanı"
+  },
+  {
+    "key": "settings_dbDesc",
+    "value": "Cihazda yerel olarak saklanır ve yeniden başlatıldığında korunur."
+  },
+  {
+    "key": "settings_activeCompany",
+    "value": "Aktif şirket"
+  },
+  {
+    "key": "tb_accountCount",
+    "value": "Hesap sayısı"
+  },
+  {
+    "key": "tb_closingDebitTotal",
+    "value": "Kapanış borç toplamı"
+  },
+  {
+    "key": "tb_closingCreditTotal",
+    "value": "Kapanış alacak toplamı"
+  },
+  {
+    "key": "tb_isUnbalanced",
+    "value": "Dengeli değil"
+  },
+  {
+    "key": "tb_openingD",
+    "value": "Açılış B"
+  },
+  {
+    "key": "tb_openingK",
+    "value": "Açılış A"
+  },
+  {
+    "key": "tb_closingDebit",
+    "value": "Kapanış borç"
+  },
+  {
+    "key": "tb_closingCredit",
+    "value": "Kapanış alacak"
+  },
+  {
+    "key": "tb_tabAll",
+    "value": "Tümü"
+  },
+  {
+    "key": "tb_acAsset",
+    "value": "Varlık"
+  },
+  {
+    "key": "tb_acLiab",
+    "value": "Yükümlülük"
+  },
+  {
+    "key": "tb_acEq",
+    "value": "Özkaynak"
+  },
+  {
+    "key": "bill_addRow",
+    "value": "+ Satır ekle"
+  },
+  {
+    "key": "bill_discountAmt",
+    "value": "İndirim tutarı"
+  },
+  {
+    "key": "mj_lines",
+    "value": "Yevmiye satırları"
+  },
+  {
+    "key": "mj_addLine",
+    "value": "+ Satır ekle"
+  },
+  {
+    "key": "mj_selectAccount",
+    "value": "Hesap seçin"
+  },
+  {
+    "key": "mj_accountTypeFilter",
+    "value": "Hesap türü filtresi"
+  },
+  {
+    "key": "ic_codeOptional",
+    "value": "Kod (isteğe bağlı)"
+  },
+  {
+    "key": "ic_goodsNoteTitle",
+    "value": "Ürün kaydı"
+  },
+  {
+    "key": "ic_serviceNoteTitle",
+    "value": "Hizmet kaydı"
+  },
+  {
+    "key": "ic_goodsNoteDesc",
+    "value": "Bu kayıt ürün olarak etiketlenecek ve Ürünler sekmesinde görünecek."
+  },
+  {
+    "key": "ic_serviceNoteDesc",
+    "value": "Bu kayıt hizmet olarak etiketlenecek ve Hizmetler sekmesinde görünecek."
+  },
+  {
+    "key": "ops_liveTitle",
+    "value": "Operasyonel parametrelerle bağlantılı alanlar"
+  },
+  {
+    "key": "ops_liveDesc",
+    "value": "Bu formaya ait kurallar, Ayarlar bölümünde seçtiğiniz parametrelerden canlı olarak gelir."
+  },
+  {
+    "key": "ops_liveBadge",
+    "value": "Canlı bağlantı"
+  },
+  {
+    "key": "ops_paymentDuration",
+    "value": "Ödeme vadesi"
+  },
+  {
+    "key": "rpt_period",
+    "value": "Dönem"
+  },
+  {
+    "key": "rpt_reportModule",
+    "value": "Rapor modülü"
+  },
+  {
+    "key": "rpt_periodThisQuarter",
+    "value": "Bu çeyrek"
+  },
+  {
+    "key": "rpt_periodThisYear",
+    "value": "Cari yıl"
+  },
+  {
+    "key": "fp_assets",
+    "value": "Varlıklar"
+  },
+  {
+    "key": "fp_currentAssets",
+    "value": "Dönen varlıklar"
+  },
+  {
+    "key": "fp_totalCurrentAssets",
+    "value": "Toplam dönen varlıklar"
+  },
+  {
+    "key": "fp_nonCurrentAssets",
+    "value": "Duran varlıklar"
+  },
+  {
+    "key": "fp_totalNonCurrentAssets",
+    "value": "Toplam duran varlıklar"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Toplam varlıklar"
+  },
+  {
+    "key": "fp_liabEquity",
+    "value": "Özkaynak ve yükümlülükler"
+  },
+  {
+    "key": "fp_liabilities",
+    "value": "Yükümlülükler"
+  },
+  {
+    "key": "fp_totalLiabilities",
+    "value": "Toplam yükümlülükler"
+  },
+  {
+    "key": "fp_equity",
+    "value": "Özkaynak"
+  },
+  {
+    "key": "fp_totalEquity",
+    "value": "Toplam özkaynak"
+  },
+  {
+    "key": "fp_totalLiabEquity",
+    "value": "Toplam özkaynak ve yükümlülükler"
+  },
+  {
+    "key": "fp_shortReceivables",
+    "value": "Kısa vadeli alacaklar"
+  },
+  {
+    "key": "fp_shortAdvances",
+    "value": "Kısa vadeli avanslar"
+  },
+  {
+    "key": "fp_shortLiabilities",
+    "value": "Kısa vadeli yükümlülükler"
+  },
+  {
+    "key": "fp_longLiabilities",
+    "value": "Uzun vadeli yükümlülükler"
+  },
+  {
+    "key": "fp_retainedEarnings",
+    "value": "Dağıtılmamış kârlar"
+  },
+  {
+    "key": "fp_periodResult",
+    "value": "Dönem sonucu"
+  },
+  {
+    "key": "fp_prefix",
+    "value": "Varlıklar / "
+  },
+  {
+    "key": "fp_reportSubtitle",
+    "value": "Bilanço hesapları mizan hesabından gruplandırılır, varlıklar özkaynak ve yükümlülüklerden ayrı gösterilir."
+  },
+  {
+    "key": "fp_badge",
+    "value": "Bilanço"
+  },
+  {
+    "key": "fp_balanced",
+    "value": "Denge korunuyor — Varlıklar = Yükümlülükler + Özkaynak"
+  },
+  {
+    "key": "fp_unbalanced",
+    "value": "Denge farkı"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Toplam varlıklar"
+  },
+  {
+    "key": "fp_totalLiab",
+    "value": "Toplam yükümlülükler"
+  },
+  {
+    "key": "fp_totalCap",
+    "value": "Toplam özkaynak"
+  },
+  {
+    "key": "pl_cogs",
+    "value": "Satış maliyeti ve brüt kâr"
+  },
+  {
+    "key": "pl_taxNet",
+    "value": "Vergi ve net sonuç"
+  },
+  {
+    "key": "pl_grossProfit",
+    "value": "Brüt kâr"
+  },
+  {
+    "key": "pl_ebt",
+    "value": "Vergi öncesi kâr"
+  },
+  {
+    "key": "pl_salesRev",
+    "value": "Satış gelirleri"
+  },
+  {
+    "key": "pl_otherOpIncome",
+    "value": "Diğer faaliyet gelirleri"
+  },
+  {
+    "key": "pl_costOfSales",
+    "value": "Satışların maliyeti"
+  },
+  {
+    "key": "pl_admin",
+    "value": "Yönetim giderleri"
+  },
+  {
+    "key": "pl_otherOpEx",
+    "value": "Diğer faaliyet giderleri"
+  },
+  {
+    "key": "pl_reportSubtitle",
+    "value": "Gelir ve gider hesapları ayrı ayrı gruplandırılır, brüt kâr ve net sonuç aşamalı olarak hesaplanır."
+  },
+  {
+    "key": "pl_badge",
+    "value": "Finansal sonuç"
+  },
+  {
+    "key": "pl_grossMargin",
+    "value": "Brüt marj"
+  },
+  {
+    "key": "pl_netOutcome",
+    "value": "Net sonuç"
+  },
+  {
+    "key": "cf_netFlow",
+    "value": "Net akış"
+  },
+  {
+    "key": "cf_reportTitle",
+    "value": "Nakit Akış Tablosu"
+  },
+  {
+    "key": "cf_reportSubtitle",
+    "value": "Nakit akışları faaliyet, yatırım ve finansman faaliyetlerine göre ayrı bloklara ayrılmıştır."
+  },
+  {
+    "key": "cf_badge",
+    "value": "Doğrudan yöntem"
+  },
+  {
+    "key": "cf_opIn",
+    "value": "Müşterilerden tahsilatlar"
+  },
+  {
+    "key": "cf_opOut",
+    "value": "Tedarikçi ve faaliyet ödemeleri"
+  },
+  {
+    "key": "cf_opNet",
+    "value": "Net faaliyet nakit akışı"
+  },
+  {
+    "key": "cf_invIn",
+    "value": "Yatırım gelirleri"
+  },
+  {
+    "key": "cf_invOut",
+    "value": "Yatırım çıkışları"
+  },
+  {
+    "key": "cf_invNet",
+    "value": "Net yatırım nakit akışı"
+  },
+  {
+    "key": "cf_finOut",
+    "value": "Finansman çıkışları"
+  },
+  {
+    "key": "cf_finNet",
+    "value": "Net finansman nakit akışı"
+  },
+  {
+    "key": "cf_investingActivity",
+    "value": "Yatırım"
+  },
+  {
+    "key": "cf_opCashFlow",
+    "value": "Faaliyet akışı"
+  },
+  {
+    "key": "cf_invCashFlow",
+    "value": "Yatırım akışı"
+  },
+  {
+    "key": "cf_finCashFlow",
+    "value": "Finansman akışı"
+  },
+  {
+    "key": "cf_netChange",
+    "value": "Net değişim"
+  },
+  {
+    "key": "cf_openingCash",
+    "value": "Dönem başı"
+  },
+  {
+    "key": "cf_closingCash",
+    "value": "Dönem sonu"
+  },
+  {
+    "key": "cf_periodChange",
+    "value": "Dönem net nakit değişimi"
+  },
+  {
+    "key": "cf_openingCashFlow",
+    "value": "Dönem başı nakit"
+  },
+  {
+    "key": "cf_closingCashFlow",
+    "value": "Dönem sonu nakit"
+  },
+  {
+    "key": "cf_netPeriodChange",
+    "value": "Dönem net değişimi"
+  },
+  {
+    "key": "eq_movementSummary",
+    "value": "Özkaynak hareket özeti"
+  },
+  {
+    "key": "eq_noJournal",
+    "value": "Özkaynak hesaplarını etkileyen ayrı bir yevmiye kaydı bulunamadı."
+  },
+  {
+    "key": "eq_movementNote",
+    "value": "Açılış özkaynağı {opening}, dönem içindeki artış {increase}, azalış ise {decrease} oluşturmaktadır."
+  },
+  {
+    "key": "eq_reportTitle",
+    "value": "Özkaynakta Değişiklikler Tablosu"
+  },
+  {
+    "key": "eq_reportSubtitle",
+    "value": "Açılış bakiyeleri, dönem içi artış/azalış ve kapanış bakiyeleri özkaynak hesapları için mizan hesabından türetilir."
+  },
+  {
+    "key": "eq_badge",
+    "value": "Özkaynak raporu"
+  },
+  {
+    "key": "eq_retainedProfit",
+    "value": "Dağıtılmamış kârlar"
+  },
+  {
+    "key": "eq_periodResult",
+    "value": "Dönem sonucu"
+  },
+  {
+    "key": "eq_totalCapital",
+    "value": "Toplam özkaynak"
+  },
+  {
+    "key": "auth_currentPass",
+    "value": "Mevcut şifre"
+  },
+  {
+    "key": "auth_newPass",
+    "value": "Yeni şifre"
+  },
+  {
+    "key": "auth_confirmPass",
+    "value": "Yeni şifreyi onaylayın"
+  },
+  {
+    "key": "auth_updateBtn",
+    "value": "Şifreyi güncelle"
+  },
+  {
+    "key": "acct_adminTitle",
+    "value": "Süper yönetici paneli"
+  },
+  {
+    "key": "acct_teamTitle",
+    "value": "Dahili kullanıcılar"
+  },
+  {
+    "key": "acct_passTitle",
+    "value": "Şifre değiştir"
+  },
+  {
+    "key": "acct_adminDesc",
+    "value": "Kullanıcı paketlerini, bitiş tarihlerini ve genel durumu buradan yönetin."
+  },
+  {
+    "key": "acct_teamDesc",
+    "value": "Personeliniz için dahili girişler oluşturun ve rol sınırlarını yönetin."
+  },
+  {
+    "key": "acct_passDesc",
+    "value": "Mevcut şifrenizi girin ve yeni şifre belirleyin."
+  },
+  {
+    "key": "acct_planDesc",
+    "value": "Mevcut planınızı görüntüleyin, kalan süreyi kontrol edin ve planınızı değiştirin."
+  },
+  {
+    "key": "team_createTitle",
+    "value": "Yeni çalışan kullanıcısı oluştur"
+  },
+  {
+    "key": "team_createDesc",
+    "value": "Her rolün ayrı bir limiti vardır ve izinler role göre otomatik uygulanır."
+  },
+  {
+    "key": "team_createBtn",
+    "value": "Kullanıcı oluştur"
+  },
+  {
+    "key": "team_permsLabel",
+    "value": "İzinler"
+  },
+  {
+    "key": "team_manageBtn",
+    "value": "Kullanıcıları yönet"
+  },
+  {
+    "key": "sub_currentPlanDesc",
+    "value": "Aktif paketiniz ve geçerlilik dönemi."
+  },
+  {
+    "key": "sub_priceModel",
+    "value": "Fiyatlandırma modeli"
+  },
+  {
+    "key": "sub_opLimit",
+    "value": "İşlem limiti"
+  },
+  {
+    "key": "sub_free",
+    "value": "Ücretsiz"
+  },
+  {
+    "key": "sub_demoFree",
+    "value": "Ücretsiz demo"
+  },
+  {
+    "key": "sub_fullAccess",
+    "value": "Tam erişim"
+  },
+  {
+    "key": "sub_activate",
+    "value": "Planı etkinleştir"
+  },
+  {
+    "key": "sub_paymentTitle",
+    "value": "Ödeme aşaması"
+  },
+  {
+    "key": "sub_paymentDesc",
+    "value": "Bu bölüm şu anda test aşamasındadır. Gerçek ödeme bilgileri daha sonra eklenecektir."
+  },
+  {
+    "key": "sub_selectedPlan",
+    "value": "Seçilen plan"
+  },
+  {
+    "key": "sub_duration",
+    "value": "Süre"
+  },
+  {
+    "key": "sub_days",
+    "value": "gün"
+  },
+  {
+    "key": "sub_backToPlans",
+    "value": "Planlara dön"
+  },
+  {
+    "key": "sub_completeTest",
+    "value": "Test ödemesini tamamla"
+  },
+  {
+    "key": "sub_opUnit",
+    "value": "işlem limiti"
+  },
+  {
+    "key": "sub_opUnitShort",
+    "value": "işlem"
+  },
+  {
+    "key": "sub_freeOps",
+    "value": "5 işlem limiti"
+  },
+  {
+    "key": "sub_freeSummary",
+    "value": "Başlangıç için ücretsiz plan"
+  },
+  {
+    "key": "sub_demoSummary",
+    "value": "Yeni kullanıcılar için 14 günlük deneme"
+  },
+  {
+    "key": "sub_standardSummary",
+    "value": "Küçük ekipler için temel plan"
+  },
+  {
+    "key": "sub_professionalSummary",
+    "value": "Daha aktif işlem akışı için"
+  },
+  {
+    "key": "sub_premiumSummary",
+    "value": "Geniş kullanım ve yüksek esneklik için"
+  },
+  {
+    "key": "sub_eliteSummary",
+    "value": "Profesyonel ve yoğun kullanıcılar için"
+  },
+  {
+    "key": "inv_form_salesperson",
+    "value": "Satış temsilcisi"
+  },
+  {
+    "key": "selectPlaceholder",
+    "value": "Seçin..."
+  },
+  {
+    "key": "mod_itemsCatalog",
+    "value": "Ürünler ve Hizmetler"
+  },
+  {
+    "key": "mod_itemsCatalogSingular",
+    "value": "Ürün veya hizmet"
+  },
+  {
+    "key": "mod_itemsCatalogSummary",
+    "value": "Ürün ve hizmetler."
+  },
+  {
+    "key": "mod_customers",
+    "value": "Müşteriler"
+  },
+  {
+    "key": "mod_customersSingular",
+    "value": "Müşteri"
+  },
+  {
+    "key": "mod_customersSummary",
+    "value": "Müşteri veritabanı ve alacaklar."
+  },
+  {
+    "key": "mod_quotesSummary",
+    "value": "Satış teklifleri."
+  },
+  {
+    "key": "mod_invoices",
+    "value": "Satış faturaları"
+  },
+  {
+    "key": "mod_invoicesSingular",
+    "value": "Satış faturası"
+  },
+  {
+    "key": "mod_invoicesSummary",
+    "value": "Satış faturaları."
+  },
+  {
+    "key": "mod_salesReceipts",
+    "value": "Satış makbuzları"
+  },
+  {
+    "key": "mod_salesReceiptsSingular",
+    "value": "Satış makbuzu"
+  },
+  {
+    "key": "mod_salesReceiptsSummary",
+    "value": "Doğrudan alınan satış ödemeleri."
+  },
+  {
+    "key": "mod_recurringInvoicesSummary",
+    "value": "Döngüsel fatura profilleri."
+  },
+  {
+    "key": "mod_paymentsReceived",
+    "value": "Alınan ödemeler"
+  },
+  {
+    "key": "mod_paymentsReceivedSingular",
+    "value": "Ödeme"
+  },
+  {
+    "key": "mod_paymentsReceivedSummary",
+    "value": "Faturalara göre alınan ödemeler."
+  },
+  {
+    "key": "mod_creditNotes",
+    "value": "Kredi notları"
+  },
+  {
+    "key": "mod_creditNotesSummary",
+    "value": "İadeler ve kredi belgeleri."
+  },
+  {
+    "key": "mod_vendors",
+    "value": "Tedarikçiler"
+  },
+  {
+    "key": "mod_vendorsSingular",
+    "value": "Tedarikçi"
+  },
+  {
+    "key": "mod_vendorsSummary",
+    "value": "Tedarikçi veritabanı ve borçlar."
+  },
+  {
+    "key": "mod_goods",
+    "value": "Ürün ve hizmet kataloğu"
+  },
+  {
+    "key": "mod_goodsSingular",
+    "value": "Ürün / hizmet"
+  },
+  {
+    "key": "mod_goodsSummary",
+    "value": "Ürün ve hizmet adlarının listesi."
+  },
+  {
+    "key": "mod_incomingGoodsServicesSingular",
+    "value": "İrsaliye"
+  },
+  {
+    "key": "mod_incomingGoodsServicesSummary",
+    "value": "Alınan mal ve hizmetlerin irsaliyeleri."
+  },
+  {
+    "key": "mod_billsSummary",
+    "value": "Tedarikçi yükümlülükleri."
+  },
+  {
+    "key": "mod_manualJournalsSummary",
+    "value": "Elle girilen düzeltmeler."
+  },
+  {
+    "key": "mod_chartOfAccounts",
+    "value": "Hesap planı"
+  },
+  {
+    "key": "mod_chartOfAccountsSummary",
+    "value": "Muhasebe hesapları."
+  },
+  {
+    "key": "mod_operationsJournal",
+    "value": "İşlem günlüğü"
+  },
+  {
+    "key": "mod_operationsJournalSingular",
+    "value": "İşlem günlüğü"
+  },
+  {
+    "key": "mod_operationsJournalSummary",
+    "value": "Elle ve otomatik girilen tüm kayıtlar."
+  },
+  {
+    "key": "mod_trialBalanceSummary",
+    "value": "Açılış, hareket ve kapanışa göre mizan."
+  },
+  {
+    "key": "mod_receivablesSingular",
+    "value": "Borçlu"
+  },
+  {
+    "key": "mod_receivablesSummary",
+    "value": "Müşterilerden alınacak ödemeler ve alacak bakiyeleri."
+  },
+  {
+    "key": "mod_payables",
+    "value": "Borçlar"
+  },
+  {
+    "key": "mod_payablesSingular",
+    "value": "Alacaklı"
+  },
+  {
+    "key": "mod_payablesSummary",
+    "value": "Tedarikçilere ödenecek tutarlar."
+  },
+  {
+    "key": "mod_financialPositionReportSummary",
+    "value": "Varlık, yükümlülük ve özkaynağın mevcut durumu."
+  },
+  {
+    "key": "mod_profitLossReportSummary",
+    "value": "Gelir, gider ve net sonuç göstergeleri."
+  },
+  {
+    "key": "mod_cashFlowReport",
+    "value": "Nakit akışı raporu"
+  },
+  {
+    "key": "mod_cashFlowReportSingular",
+    "value": "Nakit akışı raporu"
+  },
+  {
+    "key": "mod_cashFlowReportSummary",
+    "value": "Nakit giriş ve çıkışlarının özeti."
+  },
+  {
+    "key": "mod_equityChangesReport",
+    "value": "Özkaynak değişiklikleri raporu"
+  },
+  {
+    "key": "mod_equityChangesReportSingular",
+    "value": "Özkaynak raporu"
+  },
+  {
+    "key": "mod_equityChangesReportSummary",
+    "value": "Özkaynak, rezervler ve dağıtılmamış kârlardaki değişiklikler."
+  },
+  {
+    "key": "mod_openReport",
+    "value": "Raporu aç"
+  },
+  {
+    "key": "mod_moduleCount",
+    "value": "modül"
+  },
+  {
+    "key": "opt_warehouseGoods",
+    "value": "Depo malı"
+  },
+  {
+    "key": "opt_nonWarehouseGoods",
+    "value": "Depo dışı mal"
+  },
+  {
+    "key": "opt_no",
+    "value": "Hayır"
+  },
+  {
+    "key": "opt_sent",
+    "value": "Gönderildi"
+  },
+  {
+    "key": "opt_overdue",
+    "value": "Gecikmiş"
+  },
+  {
+    "key": "opt_partiallyPaid",
+    "value": "Kısmen ödendi"
+  },
+  {
+    "key": "opt_open",
+    "value": "Açık"
+  },
+  {
+    "key": "opt_applied",
+    "value": "Uygulandı"
+  },
+  {
+    "key": "opt_closed",
+    "value": "Kapalı"
+  },
+  {
+    "key": "opt_weekly",
+    "value": "Haftalık"
+  },
+  {
+    "key": "opt_monthly",
+    "value": "Aylık"
+  },
+  {
+    "key": "opt_quarterly",
+    "value": "Çeyreklik"
+  },
+  {
+    "key": "opt_fuel",
+    "value": "Yakıt"
+  },
+  {
+    "key": "opt_software",
+    "value": "Yazılım"
+  },
+  {
+    "key": "opt_equity",
+    "value": "Özkaynak"
+  },
+  {
+    "key": "opt_type",
+    "value": "Tür"
+  },
+  {
+    "key": "opt_liability",
+    "value": "Yükümlülük"
+  },
+  {
+    "key": "opt_description",
+    "value": "Açıklama"
+  },
+  {
+    "key": "opt_reference",
+    "value": "Açıklama"
+  },
+  {
+    "key": "opt_frequency",
+    "value": "Sıklık"
+  },
+  {
+    "key": "opt_salesAccount",
+    "value": "Satış hesabı"
+  },
+  {
+    "key": "opt_purchaseAccount",
+    "value": "Satın alma hesabı"
+  },
+  {
+    "key": "opt_salesDescription",
+    "value": "Satış açıklaması"
+  },
+  {
+    "key": "opt_purchaseDescription",
+    "value": "Satın alma açıklaması"
+  },
+  {
+    "key": "opt_enableSalesInfo",
+    "value": "Satış bilgisi etkin"
+  },
+  {
+    "key": "opt_enablePurchaseInfo",
+    "value": "Satın alma bilgisi etkin"
+  },
+  {
+    "key": "opt_preferredVendor",
+    "value": "Tercih edilen tedarikçi"
+  },
+  {
+    "key": "opt_discountPct",
+    "value": "İndirim (%)"
+  },
+  {
+    "key": "opt_adjustment",
+    "value": "Düzeltme"
+  },
+  {
+    "key": "opt_vendor",
+    "value": "Tedarikçi"
+  },
+  {
+    "key": "opt_product",
+    "value": "Ürün"
+  },
+  {
+    "key": "opt_bankIn",
+    "value": "Para girişi"
+  },
+  {
+    "key": "opt_bankOut",
+    "value": "Para çıkışı"
+  },
+  {
+    "key": "module_customers",
+    "value": "Müşteriler"
+  },
+  {
+    "key": "module_vendors",
+    "value": "Tedarikçiler"
+  },
+  {
+    "key": "module_invoices",
+    "value": "Satış faturaları"
+  },
+  {
+    "key": "module_bills",
+    "value": "Satın alma irsaliyeleri"
+  },
+  {
+    "key": "module_coa",
+    "value": "Hesap planı"
+  },
+  {
+    "key": "module_payables",
+    "value": "Borçlar"
+  },
+  {
+    "key": "mod_sing_customers",
+    "value": "Müşteri"
+  },
+  {
+    "key": "mod_sing_vendors",
+    "value": "Tedarikçi"
+  },
+  {
+    "key": "mod_sing_invoices",
+    "value": "Satış faturası"
+  },
+  {
+    "key": "mod_sing_bills",
+    "value": "Satın alma irsaliyesi"
+  },
+  {
+    "key": "mod_sum_customers",
+    "value": "Müşteri veritabanı ve alacaklar."
+  },
+  {
+    "key": "mod_sum_vendors",
+    "value": "Tedarikçi veritabanı ve borçlar."
+  },
+  {
+    "key": "mod_sum_invoices",
+    "value": "Satış faturaları."
+  },
+  {
+    "key": "mod_sum_bills",
+    "value": "Satın alma faturaları."
+  },
+  {
+    "key": "mod_sum_mj",
+    "value": "Elle girilen düzeltmeler."
+  },
+  {
+    "key": "mod_sum_coa",
+    "value": "Muhasebe hesapları."
+  },
+  {
+    "key": "ops_discountNone_val",
+    "value": "İndirim yok"
+  },
+  {
+    "key": "ops_discountBefore_val",
+    "value": "Vergiden önce indirim"
+  },
+  {
+    "key": "ops_taxExclusive_val",
+    "value": "Vergi hariç"
+  },
+  {
+    "key": "rpt_periodCurrentYear_val",
+    "value": "Cari yıl"
+  },
+  {
+    "key": "mov_sale",
+    "value": "Satış"
+  },
+  {
+    "key": "mov_purchase",
+    "value": "Satın alma"
+  },
+  {
+    "key": "home",
+    "value": "Übersicht"
+  },
+  {
+    "key": "btnReset",
+    "value": "App zurücksetzen"
+  },
+  {
+    "key": "delete",
+    "value": "Löschen"
+  },
+  {
+    "key": "back",
+    "value": "← Zurück"
+  },
+  {
+    "key": "backup_fillAll",
+    "value": "Bitte füllen Sie alle Felder für neue Benutzer aus."
+  },
+  {
+    "key": "openReport",
+    "value": "Bericht öffnen"
+  },
+  {
+    "key": "noMjHint",
+    "value": "Filtern Sie die Kriterien oder fügen Sie einen neuen Eintrag hinzu."
+  },
+  {
+    "key": "mj_btnDelete",
+    "value": "Löschen"
+  },
+  {
+    "key": "statusOverdue",
+    "value": "Überfällig"
+  },
+  {
+    "key": "home_salesTitle",
+    "value": "Verkaufsübersicht"
+  },
+  {
+    "key": "home_purchTitle",
+    "value": "Einkaufsübersicht"
+  },
+  {
+    "key": "hub_bankNewDesc",
+    "value": "Neue Banktransaktion hinzufügen."
+  },
+  {
+    "key": "hub_customersNew",
+    "value": "Neuen Kunden hinzufügen"
+  },
+  {
+    "key": "hub_invoicesNewDesc",
+    "value": "Neue Rechnung für einen Kunden erstellen."
+  },
+  {
+    "key": "hub_billsNewDesc",
+    "value": "Neuen Lieferschein mit Positionen und Steuer hinzufügen."
+  },
+  {
+    "key": "hub_goodsNew",
+    "value": "Neues Produkt oder Dienstleistung hinzufügen"
+  },
+  {
+    "key": "hub_goodsNewDesc",
+    "value": "Neues Produkt oder Dienstleistung zum Katalog hinzufügen."
+  },
+  {
+    "key": "hub_vendorsNew",
+    "value": "Neuen Lieferanten hinzufügen"
+  },
+  {
+    "key": "hub_mjNewDesc",
+    "value": "Neuen Eintrag mit Soll/Haben-Zeilen hinzufügen."
+  },
+  {
+    "key": "hub_coaNew",
+    "value": "Neues Konto hinzufügen"
+  },
+  {
+    "key": "hub_coaNewDesc",
+    "value": "Neues Buchungskonto zum Kontenplan hinzufügen."
+  },
+  {
+    "key": "hub_docsNew",
+    "value": "Neues Dokument hinzufügen"
+  },
+  {
+    "key": "hub_docsNewDesc",
+    "value": "Neues Dokument hinzufügen."
+  },
+  {
+    "key": "hub_reports",
+    "value": "Bericht öffnen"
+  },
+  {
+    "key": "hub_workflowDesc",
+    "value": "Hinzufügen, Suchen, Bearbeiten und Löschen in Kernmodulen."
+  },
+  {
+    "key": "journalBack",
+    "value": "← Zurück"
+  },
+  {
+    "key": "noMjHint",
+    "value": "Filtern Sie die Kriterien oder fügen Sie einen neuen Eintrag hinzu."
+  },
+  {
+    "key": "formTitle_docNew",
+    "value": "Neues Dokument hinzufügen"
+  },
+  {
+    "key": "formTitle_coaNew",
+    "value": "Neues Konto hinzufügen"
+  },
+  {
+    "key": "formField_relSection",
+    "value": "Zugehöriger Bereich"
+  },
+  {
+    "key": "settings_addUser",
+    "value": "Benutzer hinzufügen"
+  },
+  {
+    "key": "confirmDelete",
+    "value": "Sind Sie sicher, dass Sie löschen möchten?"
+  },
+  {
+    "key": "confirmReset",
+    "value": "Alle Daten in der App werden zurückgesetzt. Fortfahren?"
+  },
+  {
+    "key": "confirmLogout",
+    "value": "Sind Sie sicher, dass Sie sich abmelden möchten?"
+  },
+  {
+    "key": "confirmRestore",
+    "value": "Daten aus der Sicherungsdatei werden wiederhergestellt. Aktuelle Daten können überschrieben werden. Fortfahren?"
+  },
+  {
+    "key": "formTitle_newCustomer",
+    "value": "Neuen Kunden hinzufügen"
+  },
+  {
+    "key": "formTitle_newVendor",
+    "value": "Neuen Lieferant hinzufügen"
+  },
+  {
+    "key": "formTitle_newGoods",
+    "value": "Neues Produkt / Dienstleistung hinzufügen"
+  },
+  {
+    "key": "formTitle_newCoa",
+    "value": "Neues Konto hinzufügen"
+  },
+  {
+    "key": "debt_highest",
+    "value": "Höchste Schuld"
+  },
+  {
+    "key": "ops_chargesTitle",
+    "value": "Zusätzliche Gebühren auswählen"
+  },
+  {
+    "key": "ops_shippingTaxNote",
+    "value": "Wenn ein Steuersatz für den Kunden festgelegt ist, gilt er auch für Versandkosten. Andernfalls gilt die hier gewählte Regel."
+  },
+  {
+    "key": "ops_salesperson",
+    "value": "Verkäuferfeld hinzufügen"
+  },
+  {
+    "key": "ops_saveHint",
+    "value": "Sie können diese Einstellungen jederzeit im Bereich Einstellungen aktualisieren."
+  },
+  {
+    "key": "tb_empty",
+    "value": "Keine Daten für die Probebilanz."
+  },
+  {
+    "key": "rpt_summaryTitle",
+    "value": "Berichtsübersicht"
+  },
+  {
+    "key": "rpt_summaryDesc",
+    "value": "Aktuelle Finanzübersicht."
+  },
+  {
+    "key": "rpt_printNoteText",
+    "value": "Dieser Bericht wurde automatisch auf Basis bestehender Transaktionen, Buchungen und Dokumenteinträge im System erstellt. Es wird empfohlen, die Endzahlen vor dem Drucken zu überprüfen."
+  },
+  {
+    "key": "mj_unbalancedHint",
+    "value": "Soll- und Habensummen müssen gleich sein."
+  },
+  {
+    "key": "inv_unitPrice",
+    "value": "Stückpreis"
+  },
+  {
+    "key": "ic_formTitleNew",
+    "value": "Produkt oder Dienstleistung hinzufügen"
+  },
+  {
+    "key": "ic_formDesc",
+    "value": "Produktkarte gemäß Tetavio Books-Struktur ausfüllen."
+  },
+  {
+    "key": "ic_imgPlaceholder",
+    "value": "Bild hinzufügen"
+  },
+  {
+    "key": "tb_openingD",
+    "value": "Eröff. Soll"
+  },
+  {
+    "key": "tb_openingK",
+    "value": "Eröff. Haben"
+  },
+  {
+    "key": "tb_acAsset",
+    "value": "Vermögen"
+  },
+  {
+    "key": "bill_addRow",
+    "value": "+ Zeile hinzufügen"
+  },
+  {
+    "key": "mj_addLine",
+    "value": "+ Zeile hinzufügen"
+  },
+  {
+    "key": "ops_liveTitle",
+    "value": "Felder, die mit Betriebsparametern verknüpft sind"
+  },
+  {
+    "key": "ops_liveDesc",
+    "value": "Die Regeln für dieses Formular kommen live aus den im Einstellungsbereich gewählten Parametern."
+  },
+  {
+    "key": "ops_liveBadge",
+    "value": "Live-Verknüpfung"
+  },
+  {
+    "key": "fp_currentAssets",
+    "value": "Umlaufvermögen"
+  },
+  {
+    "key": "fp_totalCurrentAssets",
+    "value": "Gesamtes Umlaufvermögen"
+  },
+  {
+    "key": "fp_nonCurrentAssets",
+    "value": "Anlagevermögen"
+  },
+  {
+    "key": "fp_totalNonCurrentAssets",
+    "value": "Gesamtes Anlagevermögen"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Gesamtvermögen"
+  },
+  {
+    "key": "fp_retainedEarnings",
+    "value": "Gewinnrücklagen"
+  },
+  {
+    "key": "fp_totalAssets",
+    "value": "Gesamtvermögen"
+  },
+  {
+    "key": "pl_salesRev",
+    "value": "Umsatzerlöse"
+  },
+  {
+    "key": "pl_incomeTax",
+    "value": "Körperschaftsteuer"
+  },
+  {
+    "key": "cf_reportSubtitle",
+    "value": "Cashflows werden in separate Blöcke für Betriebs-, Investitions- und Finanzierungstätigkeiten aufgeteilt."
+  },
+  {
+    "key": "eq_movementSummary",
+    "value": "Eigenkapitalbewegungsübersicht"
+  },
+  {
+    "key": "eq_movementNote",
+    "value": "Eröffnungskapital {opening}, Zunahme im Zeitraum {increase}, Abnahme beträgt {decrease}."
+  },
+  {
+    "key": "eq_reportSubtitle",
+    "value": "Eröffnungssalden, Periodenveränderungen und Schlusssalden werden aus der Probebilanz für Eigenkapitalkonten abgeleitet."
+  },
+  {
+    "key": "eq_additionalCapital",
+    "value": "Kapitalrücklage"
+  },
+  {
+    "key": "eq_retainedProfit",
+    "value": "Gewinnrücklagen"
+  },
+  {
+    "key": "acct_teamDesc",
+    "value": "Erstellen Sie interne Zugänge für Ihre Mitarbeiter und verwalten Sie Rollenlimits."
+  },
+  {
+    "key": "acct_planDesc",
+    "value": "Sehen Sie Ihren aktuellen Plan, prüfen Sie die verbleibende Zeit und ändern Sie Ihren Plan."
+  },
+  {
+    "key": "sub_currentPlanDesc",
+    "value": "Ihr aktives Paket und Gültigkeitszeitraum."
+  },
+  {
+    "key": "sub_paymentDesc",
+    "value": "Dieser Bereich befindet sich derzeit in der Testphase. Echte Zahlungsdaten werden später hinzugefügt."
+  },
+  {
+    "key": "sub_backToPlans",
+    "value": "Zurück zu den Plänen"
+  },
+  {
+    "key": "sub_freeSummary",
+    "value": "Kostenloser Plan für den Einstieg"
+  },
+  {
+    "key": "sub_demoSummary",
+    "value": "14-Tage-Testversion für neue Benutzer"
+  },
+  {
+    "key": "sub_standardSummary",
+    "value": "Basisplan für kleine Teams"
+  },
+  {
+    "key": "sub_professionalSummary",
+    "value": "Für aktiveren Transaktionsfluss"
+  },
+  {
+    "key": "sub_premiumSummary",
+    "value": "Für breite Nutzung und hohe Flexibilität"
+  },
+  {
+    "key": "sub_eliteSummary",
+    "value": "Für professionelle und intensive Nutzer"
+  },
+  {
+    "key": "sub_ultimateSummary",
+    "value": "Servicepaket auf höchster Ebene"
+  },
+  {
+    "key": "mod_creditNotesSummary",
+    "value": "Rückgaben und Gutschriftsdokumente."
+  },
+  {
+    "key": "mod_incomingGoodsServicesSummary",
+    "value": "Lieferscheine für erhaltene Waren und Dienstleistungen."
+  },
+  {
+    "key": "mod_financialPositionReportSummary",
+    "value": "Aktueller Stand von Vermögenswerten, Verbindlichkeiten und Eigenkapital."
+  },
+  {
+    "key": "mod_equityChangesReportSummary",
+    "value": "Veränderungen des Eigenkapitals, der Rücklagen und des Gewinnvortrags."
+  },
+  {
+    "key": "mod_openReport",
+    "value": "Bericht öffnen"
+  },
+  {
+    "key": "opt_overdue",
+    "value": "Überfällig"
+  },
+  {
+    "key": "opt_bankTransfer",
+    "value": "Banküberweisung"
+  },
+  {
+    "key": "opt_weekly",
+    "value": "Wöchentlich"
+  },
+  {
+    "key": "opt_office",
+    "value": "Büromaterial"
+  }
+]
