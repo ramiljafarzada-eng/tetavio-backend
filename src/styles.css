@@ -3023,9 +3023,32 @@ button:disabled {
   gap: 0;
 }
 
+.debt-table-head {
+  display: grid;
+  grid-template-columns: 36px minmax(220px, 1.7fr) repeat(3, minmax(110px, 0.85fr));
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem var(--space-md);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.02));
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.debt-col-center {
+  text-align: center;
+}
+
+.debt-col-right {
+  text-align: right;
+}
+
 .debt-row {
   display: grid;
-  grid-template-columns: 36px 1fr 2fr auto;
+  grid-template-columns: 36px minmax(220px, 1.7fr) repeat(3, minmax(110px, 0.85fr));
   align-items: center;
   gap: 1rem;
   padding: 0.85rem var(--space-md);
@@ -3071,44 +3094,59 @@ button:disabled {
   text-overflow: ellipsis;
 }
 
+.debt-link-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.debt-link-btn:hover {
+  text-decoration: underline;
+}
+
 .debt-row-company {
   font-size: 0.75rem;
   color: var(--muted);
 }
 
-.debt-row-bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.debt-row-cell {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
 }
 
-.debt-row-bar {
-  flex: 1;
-  height: 8px;
-  background: var(--surface-strong);
-  border-radius: 999px;
-  overflow: hidden;
+.debt-row-cell-center {
+  text-align: center;
 }
-
-.debt-row-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.4s ease;
-}
-
-.bar-green { background: linear-gradient(90deg, #10b981, #34d399); }
-.bar-red   { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 .debt-row-share {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--muted);
-  width: 38px;
+  width: auto;
   text-align: right;
   flex-shrink: 0;
 }
 
 .debt-row-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
   text-align: right;
   flex-shrink: 0;
 }
@@ -3123,9 +3161,10 @@ button:disabled {
 
 /* Footer */
 .debt-total-footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(220px, 1.7fr) repeat(3, minmax(110px, 0.85fr));
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
   padding: 0.875rem var(--space-md);
   border-top: 2px solid var(--brand);
   background: var(--surface-strong);
@@ -3134,11 +3173,178 @@ button:disabled {
 }
 
 .debt-total-footer span { color: var(--muted); font-weight: 600; }
+.debt-total-label {
+  grid-column: 1 / span 2;
+  white-space: nowrap;
+}
+.debt-total-footer .debt-total-metric {
+  white-space: nowrap;
+}
+.debt-total-debit {
+  grid-column: 3;
+  text-align: center;
+}
+.debt-total-credit {
+  grid-column: 4;
+  text-align: center;
+}
+.debt-total-balance {
+  grid-column: 5;
+  text-align: right;
+}
+.debt-total-metric-center {
+  text-align: center;
+}
+.debt-total-metric-right {
+  text-align: right;
+}
 .debt-total-footer strong {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-weight: 800;
   font-size: 1rem;
   color: var(--text);
+}
+
+.debt-kpi-slate strong { color: #475569; }
+.debt-kpi-soft strong { color: #0f766e; }
+
+.debt-card-modal {
+  width: min(100%, 56rem);
+}
+
+.debt-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.debt-card-hero {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 118, 110, 0.08));
+}
+
+.debt-card-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.debt-card-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.debt-card-detail-block {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.debt-card-detail-block strong {
+  color: var(--text);
+}
+
+.debt-card-detail-block span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.account-card-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 0.9rem;
+  align-items: end;
+}
+
+.account-card-filter-grid label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.account-card-filter-grid span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.account-card-apply-wrap {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.account-card-panel {
+  margin-bottom: 1rem;
+}
+
+.table-subcopy {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 1100px) {
+  .debt-table-head,
+  .debt-row,
+  .debt-total-footer {
+    grid-template-columns: 36px minmax(200px, 1.4fr) repeat(3, minmax(92px, 0.8fr));
+    gap: 0.75rem;
+  }
+
+  .account-card-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .debt-table-head {
+    display: none;
+  }
+
+  .debt-card-grid,
+  .debt-card-details {
+    grid-template-columns: 1fr;
+  }
+
+  .account-card-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .debt-row {
+    grid-template-columns: 36px 1fr;
+    align-items: start;
+  }
+
+  .debt-total-footer {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .debt-row-cell,
+  .debt-row-amount {
+    grid-column: 2;
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .debt-total-metric-center,
+  .debt-total-metric-right,
+  .debt-total-debit,
+  .debt-total-credit,
+  .debt-total-balance {
+    text-align: left;
+    grid-column: auto;
+  }
 }
 
 /* ── Financial Position Report ── */
