@@ -236,6 +236,7 @@ const AUTH_STORAGE_KEY = "finotam-auth-users-v1";
 const AUTH_SESSION_KEY = "finotam-auth-session-v1";
 const AUTH_REMEMBER_KEY = "finotam-auth-remember-v1";
 const AUTH_RESET_KEY = "finotam-auth-reset-v1";
+const HUB_LANG_KEY = "finotam-hub-lang-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
   fullName: "Tetavio Super Admin",
@@ -648,10 +649,26 @@ export default function App() {
     if (route === "hub") return "hub";
     return "books";
   });
-  const [hubLang, setHubLang] = useState("en");
+  const [hubLang, setHubLang] = useState(() => {
+    try {
+      const savedLang = window.localStorage.getItem(HUB_LANG_KEY);
+      return savedLang || "en";
+    } catch {
+      return "en";
+    }
+  });
   const [hubLangOpen, setHubLangOpen] = useState(false);
   const [authUsers, setAuthUsers] = useState([normalizeAuthUser(SUPER_ADMIN)]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authHydrated, setAuthHydrated] = useState(false);
+  const [storageEmail, setStorageEmail] = useState(() => {
+    try {
+      const storedSession = JSON.parse(window.localStorage.getItem(AUTH_SESSION_KEY) || "null");
+      return storedSession?.email || null;
+    } catch {
+      return null;
+    }
+  });
   const [booksView, setBooksView] = useState("home");
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
@@ -679,6 +696,7 @@ export default function App() {
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
   const [paymentDraft, setPaymentDraft] = useState({ planId: "", billingCycle: "monthly" });
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
+  const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
   const [animatedPreviewStats, setAnimatedPreviewStats] = useState(() => buildDemoPreviewStats(Date.now()));
   const [goodsTabIdx, setGoodsTabIdx] = useState(0); // 0=all, 1=goods, 2=services
@@ -803,27 +821,42 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
+    suspendAutoSaveRef.current = true;
     // Sessiya emailini sinxron oxu ki, doğru istifadəçi açarından yüklənsin
-    let sessionEmail = null;
-    try {
-      const storedSession = JSON.parse(window.localStorage.getItem(AUTH_SESSION_KEY) || "null");
-      if (storedSession?.email) sessionEmail = storedSession.email;
-    } catch { /* ignore */ }
-    loadAppState(sessionEmail).then((data) => {
-      if (mounted) {
-        setState(data);
-        setHubLang(sessionEmail ? (data.hubLang || "en") : "en");
-        if (data.activeSection) setActiveSection(data.activeSection);
-        if (data.activeModule) setActiveModule(data.activeModule);
-        setIsReady(true);
-      }
-    });
-    return () => { mounted = false; };
+    const sessionEmail = storageEmail;
+    loadAppState(sessionEmail)
+      .then((data) => {
+        if (mounted) {
+          let persistedHubLang = "en";
+          try {
+            persistedHubLang = window.localStorage.getItem(HUB_LANG_KEY) || "en";
+          } catch { /* ignore */ }
+          setState(data);
+          setHubLang(sessionEmail ? (data.hubLang || persistedHubLang || "en") : persistedHubLang);
+          if (data.activeSection) setActiveSection(data.activeSection);
+          if (data.activeModule) setActiveModule(data.activeModule);
+          setIsReady(true);
+        }
+      })
+      .finally(() => {
+        suspendAutoSaveRef.current = false;
+      });
+    return () => {
+      mounted = false;
+      suspendAutoSaveRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (isReady) saveAppState({ ...state, hubLang, activeSection, activeModule }, currentUser?.email);
-  }, [isReady, state, hubLang, activeSection, activeModule, currentUser?.email]);
+    if (!isReady || suspendAutoSaveRef.current) return;
+    saveAppState({ ...state, hubLang, activeSection, activeModule }, storageEmail);
+  }, [isReady, state, hubLang, activeSection, activeModule, storageEmail]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HUB_LANG_KEY, hubLang || "en");
+    } catch { /* ignore */ }
+  }, [hubLang]);
 
   useEffect(() => {
     try {
@@ -837,6 +870,7 @@ export default function App() {
         const matchedUser = nextUsers.find((user) => user.email === storedSession.email);
         if (matchedUser) {
           setCurrentUser(matchedUser);
+          setStorageEmail(matchedUser.email);
           setActiveProduct("books");
         }
       }
@@ -855,6 +889,8 @@ export default function App() {
       }
     } catch {
       setAuthUsers([normalizeAuthUser(SUPER_ADMIN)]);
+    } finally {
+      setAuthHydrated(true);
     }
   }, []);
 
@@ -986,12 +1022,15 @@ export default function App() {
   }, [authUsers, currentUser, timeTick]);
 
   useEffect(() => {
+    if (!authHydrated) return;
     if (currentUser?.email) {
       window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ email: currentUser.email }));
+      setStorageEmail(currentUser.email);
     } else {
       window.localStorage.removeItem(AUTH_SESSION_KEY);
+      setStorageEmail(null);
     }
-  }, [currentUser]);
+  }, [authHydrated, currentUser]);
 
   useEffect(() => {
     window.localStorage.setItem(AUTH_RESET_KEY, JSON.stringify(resetRequests));
@@ -1004,16 +1043,53 @@ export default function App() {
     }
   }, [itemMovementDraft.itemId, state.items]);
 
-  const totals = useMemo(() => ({
-    invoice: state.invoices.reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    receipts: state.salesReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    paidIn: state.paymentsReceived.reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    expenses: state.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    bills: state.bills.reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    receivables: state.customers.reduce((sum, item) => sum + Number(item.outstandingReceivables || 0), 0),
-    payables: state.vendors.reduce((sum, item) => sum + Number(item.outstandingPayables || 0), 0),
-    bank: state.bankingAccounts.reduce((sum, item) => sum + Number(item.balance || 0), 0)
-  }), [state]);
+  const totals = useMemo(() => {
+    const cashAccountCodes = ["221", "223", "224", "225"];
+    const ledgerEntries = getUnifiedLedgerEntries();
+    const lookup = getTrialBalanceLookup();
+    const sourceInvoiceTotal = state.invoices.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const sourceReceiptTotal = state.salesReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const sourcePaymentTotal = state.paymentsReceived.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const sourceExpenseTotal = state.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const sourceBillTotal = state.bills.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const sourceReceivables = state.customers.reduce((sum, item) => sum + Number(item.outstandingReceivables || 0), 0);
+    const sourcePayables = state.vendors.reduce((sum, item) => sum + Number(item.outstandingPayables || 0), 0);
+    const sourceBank = state.bankingAccounts.reduce((sum, item) => sum + Number(item.balance || 0), 0);
+
+    const cashFlow = ledgerEntries.reduce((acc, entry) => {
+      const cashDebit = entry.lines.reduce((sum, line) => (
+        cashAccountCodes.includes(String(line.accountCode)) ? sum + Number(line.debit || 0) : sum
+      ), 0);
+      const cashCredit = entry.lines.reduce((sum, line) => (
+        cashAccountCodes.includes(String(line.accountCode)) ? sum + Number(line.credit || 0) : sum
+      ), 0);
+      acc.inflow += Math.max(0, cashDebit - cashCredit);
+      acc.outflow += Math.max(0, cashCredit - cashDebit);
+      return acc;
+    }, { inflow: 0, outflow: 0 });
+
+    const invoiceFromLedger = ledgerEntries.reduce((sum, entry) => (
+      sum + entry.lines.reduce((lineSum, line) => {
+        if (String(line.accountCode) !== "601") return lineSum;
+        return lineSum + Number(line.credit || 0) - Number(line.debit || 0);
+      }, 0)
+    ), 0);
+
+    const collected = Number(Math.max(cashFlow.inflow, sourcePaymentTotal + sourceReceiptTotal).toFixed(2));
+
+    return {
+      invoice: Number(Math.max(invoiceFromLedger, sourceInvoiceTotal + sourceReceiptTotal).toFixed(2)),
+      receipts: Number(sourceReceiptTotal.toFixed(2)),
+      paidIn: Number(sourcePaymentTotal.toFixed(2)),
+      collected,
+      cashOut: Number(Math.max(cashFlow.outflow, sourceExpenseTotal).toFixed(2)),
+      expenses: Number(Math.max(sumAccountGroup(lookup, ["711", "712", "721", "731"], "debit"), sourceExpenseTotal).toFixed(2)),
+      bills: Number(Math.max(sumAccountGroup(lookup, ["531"], "credit"), sourceBillTotal).toFixed(2)),
+      receivables: Number(Math.max(sumAccountGroup(lookup, ["211", "231"], "debit"), sourceReceivables).toFixed(2)),
+      payables: Number(Math.max(sumAccountGroup(lookup, ["511", "521", "522", "531", "541"], "credit"), sourcePayables).toFixed(2)),
+      bank: Number(Math.max(sumAccountGroup(lookup, cashAccountCodes, "debit"), sourceBank).toFixed(2))
+    };
+  }, [state]);
 
   const itemMovementMetrics = useMemo(() => ({
     purchased: state.itemMovements.filter((item) => item.movementType === "Alış").reduce((sum, item) => sum + Number(item.amount || 0), 0),
@@ -1183,19 +1259,23 @@ export default function App() {
     return NAV.filter((item) => allowed.has(item.id));
   }
 
+  function toLocalDateValue(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
   function getReportRange() {
     const current = new Date(`${today()}T00:00:00`);
     if (Number.isNaN(current.getTime())) {
       return { start: today(), end: today() };
     }
 
-    const end = current.toISOString().slice(0, 10);
+    const end = toLocalDateValue(current);
     const year = current.getFullYear();
     const month = current.getMonth();
 
     if (reportPeriod === "Bu ay") {
       return {
-        start: new Date(year, month, 1).toISOString().slice(0, 10),
+        start: toLocalDateValue(new Date(year, month, 1)),
         end
       };
     }
@@ -1203,7 +1283,7 @@ export default function App() {
     if (reportPeriod === "Bu rüb") {
       const quarterStartMonth = Math.floor(month / 3) * 3;
       return {
-        start: new Date(year, quarterStartMonth, 1).toISOString().slice(0, 10),
+        start: toLocalDateValue(new Date(year, quarterStartMonth, 1)),
         end
       };
     }
@@ -1227,8 +1307,8 @@ export default function App() {
       const previousMonthStart = new Date(year, month - 1, 1);
       const previousMonthEnd = new Date(year, month, 0);
       return {
-        start: previousMonthStart.toISOString().slice(0, 10),
-        end: previousMonthEnd.toISOString().slice(0, 10)
+        start: toLocalDateValue(previousMonthStart),
+        end: toLocalDateValue(previousMonthEnd)
       };
     }
 
@@ -1237,8 +1317,8 @@ export default function App() {
       const previousQuarterStart = new Date(year, quarterStartMonth - 3, 1);
       const previousQuarterEnd = new Date(year, quarterStartMonth, 0);
       return {
-        start: previousQuarterStart.toISOString().slice(0, 10),
-        end: previousQuarterEnd.toISOString().slice(0, 10)
+        start: toLocalDateValue(previousQuarterStart),
+        end: toLocalDateValue(previousQuarterEnd)
       };
     }
 
@@ -1246,6 +1326,41 @@ export default function App() {
     return {
       start: `${fiscalYear - 1}-01-01`,
       end: `${fiscalYear - 1}-12-31`
+    };
+  }
+
+  function getRangeBefore(range) {
+    const startDate = new Date(`${range?.start || today()}T00:00:00`);
+    if (Number.isNaN(startDate.getTime())) {
+      return { start: today(), end: today() };
+    }
+
+    const year = startDate.getFullYear();
+    const month = startDate.getMonth();
+
+    if (reportPeriod === "Bu ay") {
+      const previousMonthStart = new Date(year, month - 1, 1);
+      const previousMonthEnd = new Date(year, month, 0);
+      return {
+        start: toLocalDateValue(previousMonthStart),
+        end: toLocalDateValue(previousMonthEnd)
+      };
+    }
+
+    if (reportPeriod === "Bu rГјb") {
+      const quarterStartMonth = Math.floor(month / 3) * 3;
+      const previousQuarterStart = new Date(year, quarterStartMonth - 3, 1);
+      const previousQuarterEnd = new Date(year, quarterStartMonth, 0);
+      return {
+        start: toLocalDateValue(previousQuarterStart),
+        end: toLocalDateValue(previousQuarterEnd)
+      };
+    }
+
+    const targetYear = year - 1;
+    return {
+      start: `${targetYear}-01-01`,
+      end: `${targetYear}-12-31`
     };
   }
 
@@ -1740,12 +1855,621 @@ export default function App() {
     ].filter((line) => Number(line.debit || 0) > 0 || Number(line.credit || 0) > 0);
   }
 
-  function getTrialBalanceRows(range = null) {
+  function getAccountTypeMeta(accountType) {
+    const normalizedType = normalizeAccountTypeValue(accountType);
+    switch (normalizedType) {
+      case "Gəlir":
+        return { label: "Gəlir hesabı", shortLabel: "Gəlir", className: "income" };
+      case "Xərc":
+        return { label: "Xərc hesabı", shortLabel: "Xərc", className: "expense" };
+      case "Aktiv":
+        return { label: "Balans hesabı", shortLabel: "Aktiv", className: "asset" };
+      case "Öhdəlik":
+        return { label: "Balans hesabı", shortLabel: "Öhdəlik", className: "liability" };
+      case "Kapital":
+        return { label: "Balans hesabı", shortLabel: "Kapital", className: "equity" };
+      default:
+        return { label: "Hesab tipi seçilməyib", shortLabel: "Naməlum", className: "neutral" };
+    }
+  }
+
+  function normalizeAccountTypeValue(accountType) {
+    const value = String(accountType || "").trim().toLowerCase();
+    if (!value) return "";
+    if (["aktiv", "asset", "актив", "varlık", "aktiva"].includes(value)) return "Aktiv";
+    if (["öhdəlik", "ohdelik", "liability", "обязательство", "yükümlülük", "verbindlichkeit"].includes(value)) return "Öhdəlik";
+    if (["kapital", "equity", "капитал", "özkaynak", "eigenkapital"].includes(value)) return "Kapital";
+    if (["gəlir", "gelir", "income", "доход", "ertrag"].includes(value)) return "Gəlir";
+    if (["xərc", "xerc", "expense", "расход", "gider", "aufwand"].includes(value)) return "Xərc";
+    return String(accountType || "").trim();
+  }
+
+  function inferAccountTypeFromCode(accountCode, fallbackType = "") {
+    const normalizedFallback = normalizeAccountTypeValue(fallbackType);
+    if (normalizedFallback) return normalizedFallback;
+    const code = String(accountCode || "").trim();
+    if (!/^\d{3}$/.test(code)) return normalizedFallback || "Aktiv";
+    if (/^[12]/.test(code)) return "Aktiv";
+    if (/^3/.test(code)) return "Kapital";
+    if (/^[45]/.test(code)) return "Г–hdЙ™lik";
+    if (/^6/.test(code)) return "GЙ™lir";
+    if (/^[789]/.test(code)) return "XЙ™rc";
+    return "Aktiv";
+  }
+
+  function getProfitLossAccountGroups() {
+    const visibleAccounts = state.chartOfAccounts.filter((account) => isVisibleAccount(account));
+    const accountCodes = visibleAccounts.map((account) => String(account.accountCode || ""));
+    const unique = (codes) => [...new Set(codes)];
+    const byRegex = (pattern) => accountCodes.filter((code) => pattern.test(code));
+    const byType = (type) => visibleAccounts
+      .filter((account) => normalizeAccountTypeValue(account.accountType) === type)
+      .map((account) => String(account.accountCode || ""));
+
+    const salesRevenue = unique([
+      ...byRegex(/^60\d$/),
+      ...byType("Gəlir").filter((code) => /^60\d$/.test(code))
+    ]);
+    const typedIncomeAccounts = byType("Gəlir");
+    const typedExpenseAccounts = byType("Xərc");
+    const salesRevenueBase = unique([
+      ...byRegex(/^60\d$/),
+      ...typedIncomeAccounts.filter((code) => /^60\d$/.test(code))
+    ]);
+    const financeIncomeBase = unique([
+      ...byRegex(/^62\d$/),
+      ...typedIncomeAccounts.filter((code) => /^62\d$/.test(code))
+    ]);
+    const otherOperatingIncome = unique([
+      ...byRegex(/^(61|63)\d$/),
+      ...typedIncomeAccounts.filter((code) => /^(61|63)\d$/.test(code)),
+      ...typedIncomeAccounts.filter((code) => !salesRevenueBase.includes(code) && !financeIncomeBase.includes(code))
+    ]);
+    const financeIncome = financeIncomeBase;
+    const costOfSales = unique([
+      ...byRegex(/^70\d$/),
+      ...typedExpenseAccounts.filter((code) => /^70\d$/.test(code))
+    ]);
+    const sellingExpenses = unique([
+      ...byRegex(/^711$/),
+      ...typedExpenseAccounts.filter((code) => /^711$/.test(code))
+    ]);
+    const administrativeExpenses = unique([
+      ...byRegex(/^712$/),
+      ...typedExpenseAccounts.filter((code) => /^712$/.test(code))
+    ]);
+    const financeExpenses = unique([
+      ...byRegex(/^72\d$/),
+      ...typedExpenseAccounts.filter((code) => /^72\d$/.test(code))
+    ]);
+    const otherOperatingExpenses = unique([
+      ...byRegex(/^73\d$/),
+      ...typedExpenseAccounts.filter((code) => /^73\d$/.test(code)),
+      ...typedExpenseAccounts.filter((code) => !costOfSales.includes(code) && !sellingExpenses.includes(code) && !administrativeExpenses.includes(code) && !financeExpenses.includes(code) && !/^90\d$/.test(code))
+    ]);
+    const incomeTax = unique([
+      ...byRegex(/^90\d$/),
+      ...typedExpenseAccounts.filter((code) => /^90\d$/.test(code))
+    ]);
+
+    return {
+      salesRevenue: salesRevenueBase.length ? salesRevenueBase : ["601"],
+      otherOperatingIncome: otherOperatingIncome.length ? otherOperatingIncome : ["611", "631"],
+      financeIncome: financeIncome.length ? financeIncome : ["621"],
+      costOfSales: costOfSales.length ? costOfSales : ["701"],
+      sellingExpenses: sellingExpenses.length ? sellingExpenses : ["711"],
+      administrativeExpenses: administrativeExpenses.length ? administrativeExpenses : ["712"],
+      financeExpenses: financeExpenses.length ? financeExpenses : ["721"],
+      otherOperatingExpenses: otherOperatingExpenses.length ? otherOperatingExpenses : ["731"],
+      incomeTax: incomeTax.length ? incomeTax : ["901"]
+    };
+  }
+
+  function getManualJournalProfitLossFallback(range, groups, options = {}) {
+    const excludedAutoCloseTypes = new Set(options.excludeAutoCloseTypes || []);
+    const totals = {
+      salesRevenue: 0,
+      otherOperatingIncome: 0,
+      financeIncome: 0,
+      costOfSales: 0,
+      sellingExpenses: 0,
+      administrativeExpenses: 0,
+      financeExpenses: 0,
+      otherOperatingExpenses: 0,
+      incomeTax: 0
+    };
+
+    const addSignedAmount = (bucket, entryType, amount) => {
+      const numericAmount = Number(amount || 0);
+      if (numericAmount <= 0) return;
+      totals[bucket] += entryType === "Kredit" ? numericAmount : -numericAmount;
+    };
+
+    state.manualJournals
+      .filter((journal) => !excludedAutoCloseTypes.has(journal.autoCloseType || ""))
+      .filter((journal) => isDateInRange(journal.date || journal.createdAt || today(), range))
+      .forEach((journal) => {
+        const lines = Array.isArray(journal.journalLines) && journal.journalLines.length
+          ? journal.journalLines.filter((line) => line.accountCode && Number(line.amount || 0) > 0)
+          : [
+              journal.debitAccount ? { accountCode: journal.debitAccount, entryType: "Debet", amount: journal.debit } : null,
+              journal.creditAccount ? { accountCode: journal.creditAccount, entryType: "Kredit", amount: journal.credit } : null
+            ].filter(Boolean);
+
+        lines.forEach((line) => {
+          const code = String(line.accountCode || "");
+          const accountType = inferAccountTypeFromCode(code, state.chartOfAccounts.find((account) => account.accountCode === code)?.accountType || "");
+
+          if (groups.salesRevenue.includes(code)) return addSignedAmount("salesRevenue", line.entryType, line.amount);
+          if (groups.otherOperatingIncome.includes(code)) return addSignedAmount("otherOperatingIncome", line.entryType, line.amount);
+          if (groups.financeIncome.includes(code)) return addSignedAmount("financeIncome", line.entryType, line.amount);
+          if (groups.costOfSales.includes(code)) return addSignedAmount("costOfSales", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          if (groups.sellingExpenses.includes(code)) return addSignedAmount("sellingExpenses", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          if (groups.administrativeExpenses.includes(code)) return addSignedAmount("administrativeExpenses", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          if (groups.financeExpenses.includes(code)) return addSignedAmount("financeExpenses", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          if (groups.otherOperatingExpenses.includes(code)) return addSignedAmount("otherOperatingExpenses", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          if (groups.incomeTax.includes(code)) return addSignedAmount("incomeTax", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+
+          if (accountType === "Gəlir") {
+            addSignedAmount("otherOperatingIncome", line.entryType, line.amount);
+          } else if (accountType === "Xərc") {
+            addSignedAmount("otherOperatingExpenses", line.entryType === "Debet" ? "Kredit" : "Debet", line.amount);
+          }
+        });
+      });
+
+    return Object.fromEntries(Object.entries(totals).map(([key, value]) => [key, Number(Math.max(0, value).toFixed(2))]));
+  }
+
+  function getProfitLossTotalsFromLookup(lookup, groups) {
+    const visibleAccounts = [...lookup.values()]
+      .filter((account) => isVisibleAccount(account))
+      .map((account) => ({
+        code: String(account.accountCode || ""),
+        accountType: inferAccountTypeFromCode(account.accountCode, account.accountType)
+      }));
+
+    const totalIncome = Number(visibleAccounts
+      .filter((account) => account.accountType === "Gəlir")
+      .reduce((sum, account) => sum + getReportAccountValue(lookup.get(account.code), "credit"), 0)
+      .toFixed(2));
+
+    const totalExpense = Number(visibleAccounts
+      .filter((account) => account.accountType === "Xərc")
+      .reduce((sum, account) => sum + getReportAccountValue(lookup.get(account.code), "debit"), 0)
+      .toFixed(2));
+
+    const salesRevenue = sumAccountGroup(lookup, groups.salesRevenue, "credit");
+    const financeIncome = sumAccountGroup(lookup, groups.financeIncome, "credit");
+    const costOfSales = sumAccountGroup(lookup, groups.costOfSales, "debit");
+    const sellingExpenses = sumAccountGroup(lookup, groups.sellingExpenses, "debit");
+    const administrativeExpenses = sumAccountGroup(lookup, groups.administrativeExpenses, "debit");
+    const financeExpenses = sumAccountGroup(lookup, groups.financeExpenses, "debit");
+    const incomeTax = sumAccountGroup(lookup, groups.incomeTax, "debit");
+
+    const mappedIncome = Number((salesRevenue + financeIncome).toFixed(2));
+    const mappedExpense = Number((costOfSales + sellingExpenses + administrativeExpenses + financeExpenses + incomeTax).toFixed(2));
+
+    return {
+      salesRevenue,
+      financeIncome,
+      costOfSales,
+      sellingExpenses,
+      administrativeExpenses,
+      financeExpenses,
+      incomeTax,
+      otherOperatingIncome: Number(Math.max(0, totalIncome - mappedIncome).toFixed(2)),
+      otherOperatingExpenses: Number(Math.max(0, totalExpense - mappedExpense).toFixed(2))
+    };
+  }
+
+  function buildProfitLossClosingPlan(range = getReportRange(), lookup = getTrialBalanceLookup(range)) {
+    const lines = [...lookup.values()]
+      .filter((row) => isVisibleAccount(row))
+      .filter((row) => !["341", "801"].includes(String(row.accountCode || "")))
+      .flatMap((row) => {
+        const code = String(row.accountCode || "");
+        const normalizedAccountType = normalizeAccountTypeValue(row.accountType);
+        const isIncomeAccount = /^6/.test(code) || normalizedAccountType === normalizeAccountTypeValue("income");
+        const isExpenseAccount = /^[789]/.test(code) || normalizedAccountType === normalizeAccountTypeValue("expense");
+        const accountType = isIncomeAccount ? "GР™в„ўlir" : (isExpenseAccount ? "XР™в„ўrc" : inferAccountTypeFromCode(code, row.accountType));
+        const debitValue = Number(row.closingDebit || 0);
+        const creditValue = Number(row.closingCredit || 0);
+        if (accountType === "GЙ™lir") {
+          return [
+            creditValue > 0 ? {
+              id: `pl-close-${code}-debit`,
+              accountCode: code,
+              entryType: "Debet",
+              amount: Number(creditValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null,
+            debitValue > 0 ? {
+              id: `pl-close-${code}-credit`,
+              accountCode: code,
+              entryType: "Kredit",
+              amount: Number(debitValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null
+          ].filter(Boolean);
+        }
+        if (accountType === "XЙ™rc") {
+          return [
+            debitValue > 0 ? {
+              id: `pl-close-${code}-credit`,
+              accountCode: code,
+              entryType: "Kredit",
+              amount: Number(debitValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null,
+            creditValue > 0 ? {
+              id: `pl-close-${code}-debit`,
+              accountCode: code,
+              entryType: "Debet",
+              amount: Number(creditValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null
+          ].filter(Boolean);
+        }
+        return [];
+      });
+
+    const debitTotal = Number(lines.filter((line) => line.entryType === "Debet").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2));
+    const creditTotal = Number(lines.filter((line) => line.entryType === "Kredit").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2));
+    const difference = Number((debitTotal - creditTotal).toFixed(2));
+    const closingLines = [...lines];
+
+    if (Math.abs(difference) >= 0.01) {
+      closingLines.push({
+        id: "pl-close-801",
+        accountCode: "801",
+        entryType: difference > 0 ? "Kredit" : "Debet",
+        amount: Number(Math.abs(difference).toFixed(2)),
+        linkedQuantity: 0,
+        linkedUnit: "",
+        subledgerCategory: getDefaultJournalSubledgerCategory("801"),
+        linkedEntityType: "",
+        linkedEntityId: "",
+        linkedEntityName: ""
+      });
+    }
+
+    return {
+      range,
+      periodKey: `pl-close:${range.start}:${range.end}`,
+      journalDate: range.end || today(),
+      lines: closingLines,
+      debitTotal: Number(closingLines.filter((line) => line.entryType === "Debet").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2)),
+      creditTotal: Number(closingLines.filter((line) => line.entryType === "Kredit").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2)),
+      resultAmount: Number(Math.abs(difference).toFixed(2)),
+      resultType: difference > 0 ? "profit" : difference < 0 ? "loss" : "break_even"
+    };
+  }
+
+  function closeProfitLossToPeriodResult(range = getReportRange()) {
+    const plan = buildProfitLossClosingPlan(range);
+    const existingAutoCloseJournal = state.manualJournals.find((journal) => journal.autoCloseType === "profit_loss_closure" && journal.autoCloseKey === plan.periodKey);
+    if (existingAutoCloseJournal) {
+      window.alert("Bu hesabat dГ¶vrГј ГјГ§Гјn mЙ™nfЙ™Й™t vЙ™ zЙ™rЙ™r baДџlanД±ЕџД± artД±q yaradД±lД±b.");
+      return;
+    }
+    if (!plan.lines.length) {
+      window.alert("BaДџlanacaq gЙ™lir vЙ™ ya xЙ™rc qalД±ДџД± tapД±lmadД±.");
+      return;
+    }
+    if (!guardOperationAccess()) return;
+    const confirmed = window.confirm(`SeГ§ilmiЕџ dГ¶vr ГјГ§Гјn gЙ™lir vЙ™ xЙ™rc hesablarД± 801 hesabД±na baДџlanacaq. Davam edilsin?`);
+    if (!confirmed) return;
+
+    const reference = `P&L close ${plan.range.start} - ${plan.range.end}`;
+    const journalNumber = `PLC-${plan.range.end.replaceAll("-", "")}`;
+    const nextRecord = {
+      id: crypto.randomUUID(),
+      createdAt: today(),
+      date: plan.journalDate,
+      journalNumber,
+      reference,
+      notes: `Auto close for ${plan.range.start} - ${plan.range.end}`,
+      autoGenerated: true,
+      autoCloseType: "profit_loss_closure",
+      autoCloseKey: plan.periodKey,
+      journalLines: plan.lines,
+      debitAccount: plan.lines.find((line) => line.entryType === "Debet")?.accountCode || "",
+      creditAccount: plan.lines.find((line) => line.entryType === "Kredit")?.accountCode || "",
+      debit: plan.debitTotal,
+      credit: plan.creditTotal
+    };
+
+    setState((current) => {
+      const hasPeriodResultAccount = current.chartOfAccounts.some((account) => account.accountCode === "801");
+      const nextChartOfAccounts = hasPeriodResultAccount
+        ? current.chartOfAccounts
+        : [...current.chartOfAccounts, {
+            id: "801",
+            accountCode: "801",
+            accountName: getAccountNameByCode("801"),
+            accountType: "Kapital",
+            status: "Aktiv",
+            balance: 0
+          }].sort((left, right) => Number(left.accountCode) - Number(right.accountCode));
+
+      return {
+        ...current,
+        chartOfAccounts: nextChartOfAccounts,
+        manualJournals: [nextRecord, ...current.manualJournals]
+      };
+    });
+    markOperationUsage();
+    window.alert("MЙ™nfЙ™Й™t vЙ™ zЙ™rЙ™r baДџlanД±ЕџД± yaradД±ldД±.");
+  }
+
+  function getUnifiedLedgerEntries() {
+    const result = [];
+
+    state.manualJournals.forEach((journal) => {
+      const lines = [];
+      if (Array.isArray(journal.journalLines) && journal.journalLines.length > 0) {
+        journal.journalLines.forEach((line) => {
+          if (line.accountCode && Number(line.amount || 0) > 0) {
+            lines.push({
+              accountCode: line.accountCode,
+              accountName: getAccountNameByCode(line.accountCode),
+              debit: line.entryType === "Debet" ? Number(line.amount) : 0,
+              credit: line.entryType === "Kredit" ? Number(line.amount) : 0
+            });
+          }
+        });
+      } else {
+        if (journal.debitAccount && Number(journal.debit || 0) > 0) {
+          lines.push({ accountCode: journal.debitAccount, accountName: getAccountNameByCode(journal.debitAccount), debit: Number(journal.debit), credit: 0 });
+        }
+        if (journal.creditAccount && Number(journal.credit || 0) > 0) {
+          lines.push({ accountCode: journal.creditAccount, accountName: getAccountNameByCode(journal.creditAccount), debit: 0, credit: Number(journal.credit) });
+        }
+      }
+      if (lines.length === 0) return;
+      result.push({
+        id: journal.id,
+        date: journal.date || "",
+        reference: journal.reference || journal.journalNumber || "—",
+        refNumber: journal.journalNumber || "",
+        type: "manual",
+        typeLabel: "Əl ilə",
+        lines,
+        totalDebit: lines.reduce((sum, line) => sum + line.debit, 0),
+        totalCredit: lines.reduce((sum, line) => sum + line.credit, 0)
+      });
+    });
+
+    state.itemMovements.forEach((movement) => {
+      const rawLines = getMovementLedgerEntries(movement);
+      if (rawLines.length === 0) return;
+      const linkedItem = state.items.find((item) => item.id === movement.itemId);
+      const lines = rawLines.map((line) => ({
+        accountCode: line.accountCode,
+        accountName: line.accountName,
+        debit: Number(line.debit || 0),
+        credit: Number(line.credit || 0)
+      }));
+      result.push({
+        id: movement.id,
+        date: movement.movementDate || "",
+        reference: linkedItem?.name || movement.movementType || "Mal hərəkəti",
+        refNumber: movement.movementType === "Satış" ? "SATIŞ" : "ALIŞ",
+        type: movement.movementType === "Satış" ? "sale" : "purchase",
+        typeLabel: movement.movementType === "Satış" ? "Satış" : "Alış",
+        lines,
+        totalDebit: lines.reduce((sum, line) => sum + line.debit, 0),
+        totalCredit: lines.reduce((sum, line) => sum + line.credit, 0)
+      });
+    });
+
+    state.incomingGoodsServices.forEach((entry) => {
+      const rawLines = getIncomingGoodsLedgerEntries(entry);
+      if (rawLines.length === 0) return;
+      const lines = rawLines.map((line) => ({
+        accountCode: line.accountCode,
+        accountName: line.accountName,
+        debit: Number(line.debit || 0),
+        credit: Number(line.credit || 0)
+      }));
+      result.push({
+        id: entry.id,
+        date: entry.billDate || entry.createdAt || "",
+        reference: entry.vendorName || entry.billNumber || "Mal qaiməsi",
+        refNumber: entry.billNumber || "",
+        type: "incoming",
+        typeLabel: "Mal qaiməsi",
+        lines,
+        totalDebit: lines.reduce((sum, line) => sum + line.debit, 0),
+        totalCredit: lines.reduce((sum, line) => sum + line.credit, 0)
+      });
+    });
+
+    state.invoices.forEach((invoice) => {
+      const amount = Number(invoice.amount || 0);
+      if (amount <= 0) return;
+      const lines = [
+        { accountCode: "211", accountName: getAccountNameByCode("211"), debit: amount, credit: 0 },
+        { accountCode: "601", accountName: getAccountNameByCode("601"), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `inv-${invoice.id}`,
+        date: invoice.dueDate || invoice.createdAt || "",
+        reference: invoice.customerName || invoice.invoiceNumber || "Satış qaiməsi",
+        refNumber: invoice.invoiceNumber || "",
+        type: "invoice",
+        typeLabel: "Satış qaiməsi",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.salesReceipts.forEach((receipt) => {
+      const amount = Number(receipt.amount || 0);
+      if (amount <= 0) return;
+      const cashAcc = receipt.paymentMode === "Nağd" ? "221" : "223";
+      const lines = [
+        { accountCode: cashAcc, accountName: getAccountNameByCode(cashAcc), debit: amount, credit: 0 },
+        { accountCode: "601", accountName: getAccountNameByCode("601"), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `sr-${receipt.id}`,
+        date: receipt.date || receipt.createdAt || "",
+        reference: receipt.customerName || receipt.receiptNumber || "Satış qəbzi",
+        refNumber: receipt.receiptNumber || "",
+        type: "sales_receipt",
+        typeLabel: "Satış qəbzi",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.paymentsReceived.forEach((payment) => {
+      const amount = Number(payment.amount || 0);
+      if (amount <= 0) return;
+      const cashAcc = payment.paymentMode === "Nağd" ? "221" : "223";
+      const lines = [
+        { accountCode: cashAcc, accountName: getAccountNameByCode(cashAcc), debit: amount, credit: 0 },
+        { accountCode: "211", accountName: getAccountNameByCode("211"), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `pr-${payment.id}`,
+        date: payment.date || payment.createdAt || "",
+        reference: payment.customerName || payment.paymentNumber || "Alınan ödəniş",
+        refNumber: payment.paymentNumber || "",
+        type: "payment_received",
+        typeLabel: "Alınan ödəniş",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.creditNotes.forEach((note) => {
+      const amount = Number(note.amount || 0);
+      if (amount <= 0) return;
+      const lines = [
+        { accountCode: "601", accountName: getAccountNameByCode("601"), debit: amount, credit: 0 },
+        { accountCode: "211", accountName: getAccountNameByCode("211"), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `cn-${note.id}`,
+        date: note.date || note.createdAt || "",
+        reference: note.customerName || note.creditNumber || "Kredit notu",
+        refNumber: note.creditNumber || "",
+        type: "credit_note",
+        typeLabel: "Kredit notu",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.expenses.forEach((expense) => {
+      const amount = Number(expense.amount || 0);
+      if (amount <= 0) return;
+      const cashAcc = expense.paymentMode === "Nağd" ? "221" : "223";
+      const expCode = expense.category === "İcarə" ? "711" : expense.category === "Əmək haqqı" ? "533" : "731";
+      const lines = [
+        { accountCode: expCode, accountName: getAccountNameByCode(expCode), debit: amount, credit: 0 },
+        { accountCode: cashAcc, accountName: getAccountNameByCode(cashAcc), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `exp-${expense.id}`,
+        date: expense.date || expense.createdAt || "",
+        reference: expense.category || expense.expenseNumber || "Xərc",
+        refNumber: expense.expenseNumber || "",
+        type: "expense",
+        typeLabel: "Xərc",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.bills.forEach((bill) => {
+      const amount = Number(bill.amount || 0);
+      if (amount <= 0) return;
+      const lines = [
+        { accountCode: "205", accountName: getAccountNameByCode("205"), debit: amount, credit: 0 },
+        { accountCode: "531", accountName: getAccountNameByCode("531"), debit: 0, credit: amount }
+      ];
+      result.push({
+        id: `bill-${bill.id}`,
+        date: bill.dueDate || bill.createdAt || "",
+        reference: bill.vendorName || bill.billNumber || "Hesab-faktura",
+        refNumber: bill.billNumber || "",
+        type: "bill",
+        typeLabel: "Hesab-faktura",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    state.bankTransactions.forEach((tx) => {
+      const amount = Number(tx.amount || 0);
+      if (amount <= 0) return;
+      const bankAcc = state.bankingAccounts.find((account) => account.id === tx.bankAccountId);
+      const bankCode = bankAcc?.coaCode || "223";
+      const counterCode = tx.accountCode || (tx.transactionType === "Mədaxil" ? "611" : "731");
+      const isIncoming = tx.transactionType === "Mədaxil";
+      const lines = isIncoming
+        ? [
+            { accountCode: bankCode, accountName: getAccountNameByCode(bankCode), debit: amount, credit: 0 },
+            { accountCode: counterCode, accountName: getAccountNameByCode(counterCode), debit: 0, credit: amount }
+          ]
+        : [
+            { accountCode: counterCode, accountName: getAccountNameByCode(counterCode), debit: amount, credit: 0 },
+            { accountCode: bankCode, accountName: getAccountNameByCode(bankCode), debit: 0, credit: amount }
+          ];
+      result.push({
+        id: `btx-${tx.id}`,
+        date: tx.date || "",
+        reference: tx.description || tx.reference || (isIncoming ? "Bank mədaxil" : "Bank məxaric"),
+        refNumber: tx.reference || "",
+        type: isIncoming ? "bank_in" : "bank_out",
+        typeLabel: isIncoming ? "Bank mədaxil" : "Bank məxaric",
+        lines,
+        totalDebit: amount,
+        totalCredit: amount
+      });
+    });
+
+    return result.sort((left, right) => (right.date || "").localeCompare(left.date || ""));
+  }
+
+  function getTrialBalanceRows(range = null, options = {}) {
+    const excludedAutoCloseTypes = new Set(options.excludeAutoCloseTypes || []);
     const accountMap = new Map(
       state.chartOfAccounts.map((account) => [account.accountCode, {
         ...account,
-        openingDebit: account.accountType === "Aktiv" || account.accountType === "Xərc" ? Number(account.balance || 0) : 0,
-        openingCredit: account.accountType === "Öhdəlik" || account.accountType === "Gəlir" || account.accountType === "Kapital" ? Number(account.balance || 0) : 0,
+        accountType: normalizeAccountTypeValue(account.accountType),
+        openingDebit: normalizeAccountTypeValue(account.accountType) === "Aktiv" || normalizeAccountTypeValue(account.accountType) === "Xərc" ? Number(account.balance || 0) : 0,
+        openingCredit: normalizeAccountTypeValue(account.accountType) === "Öhdəlik" || normalizeAccountTypeValue(account.accountType) === "Gəlir" || normalizeAccountTypeValue(account.accountType) === "Kapital" ? Number(account.balance || 0) : 0,
         movementDebit: 0,
         movementCredit: 0
       }])
@@ -1753,7 +2477,9 @@ export default function App() {
 
     const allEntries = [
       // 1. Əl ilə daxil edilən jurnallar
-      ...state.manualJournals.flatMap((journal) => {
+      ...state.manualJournals
+        .filter((journal) => !excludedAutoCloseTypes.has(journal.autoCloseType || ""))
+        .flatMap((journal) => {
         if (Array.isArray(journal.journalLines) && journal.journalLines.length) {
           return journal.journalLines
             .filter((line) => line.accountCode && Number(line.amount || 0) > 0)
@@ -1879,7 +2605,7 @@ export default function App() {
           id: entry.accountCode,
           accountCode: entry.accountCode,
           accountName: getAccountNameByCode(entry.accountCode),
-          accountType: "Aktiv",
+          accountType: inferAccountTypeFromCode(entry.accountCode),
           openingDebit: 0,
           openingCredit: 0,
           movementDebit: 0,
@@ -3459,7 +4185,7 @@ function renderItemsCatalog() {
             <span>{rows.length} {at.unit_record}</span>
           </div>
         </div>
-        <div className={`mj-action-card primary ${journalView === "form" ? "active" : ""}`} onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
+        <div className={`mj-action-card ${journalView === "form" ? "active" : ""}`} onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
           <div className="mj-action-icon">✍️</div>
           <div>
             <h3>{at.mj_newEntry}</h3>
@@ -3500,7 +4226,7 @@ function renderItemsCatalog() {
           </section>
 
           <div className="mj-overview-grid">
-            <div className="mj-action-card" onClick={() => setJournalView("journal")}>
+            <div className={`mj-action-card ${journalView === "journal" ? "active" : ""}`} onClick={() => setJournalView("journal")}>
               <div className="mj-action-icon">📚</div>
               <div>
                 <h3>{at.mj_opsList}</h3>
@@ -3508,7 +4234,7 @@ function renderItemsCatalog() {
                 <span>{rows.length} {at.unit_record}</span>
               </div>
             </div>
-            <div className="mj-action-card primary" onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
+            <div className={`mj-action-card ${journalView === "form" ? "active" : ""}`} onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
               <div className="mj-action-icon">✍️</div>
               <div>
                 <h3>{at.mj_newEntry}</h3>
@@ -3703,6 +4429,7 @@ function renderItemsCatalog() {
                 <div className="journal-lines-list modern">
                   {draft.journalLines.map((line, index) => {
                     const selectedAccount = filteredAccounts.find((account) => account.accountCode === line.accountCode);
+                    const accountTypeMeta = getAccountTypeMeta(selectedAccount?.accountType);
                     const subledgerCategory = line.subledgerCategory || "goods";
                     const subledgerOptions = getJournalSubledgerOptions(subledgerCategory);
                     const selectedInventoryItem = state.items.find((item) => item.id === line.linkedEntityId);
@@ -3812,7 +4539,9 @@ function renderItemsCatalog() {
                         </div>
                         <div className="mj-line-side">
                           <span className={`mj-line-entry-tag ${line.entryType === "Debet" ? "debit" : "credit"}`}>{line.entryType === "Debet" ? "D" : "K"}</span>
+                          <span className={`mj-account-type-chip ${accountTypeMeta.className}`}>{accountTypeMeta.shortLabel}</span>
                           <small>{line.linkedEntityName || selectedAccount?.accountName || "—"}</small>
+                          <small className="mj-account-type-note">{accountTypeMeta.label}</small>
                           <button className="table-btn danger-btn" type="button" onClick={() => removeJournalLine(line.id)} disabled={draft.journalLines.length <= 2}>{at.delete}</button>
                         </div>
                       </div>
@@ -4706,7 +5435,7 @@ function renderItemsCatalog() {
   }
 
   function renderHome() {
-    const netCashFlow = totals.paidIn + totals.receipts - totals.expenses - totals.bills;
+    const netCashFlow = totals.collected - totals.cashOut;
     const netPositive = netCashFlow >= 0;
 
     function goTo(section, module) {
@@ -4739,7 +5468,7 @@ function renderItemsCatalog() {
             <div className="dash-kpi-icon">💳</div>
             <div className="dash-kpi-body">
               <span>{at.home_kpi2}</span>
-              <strong>{currency(totals.paidIn + totals.receipts, state.settings.currency)}</strong>
+              <strong>{currency(totals.collected, state.settings.currency)}</strong>
             </div>
           </div>
           <div className="dash-kpi-card dash-kpi-teal">
@@ -5032,17 +5761,27 @@ function renderItemsCatalog() {
       window.localStorage.removeItem(AUTH_REMEMBER_KEY);
     }
     const loginUser = normalizeAuthUser(matchedUser);
+    suspendAutoSaveRef.current = true;
+    setStorageEmail(loginUser.email);
     setCurrentUser(loginUser);
     setBooksNotice(`Xoş gəldiniz, ${matchedUser.fullName}.`);
     setActiveProduct("books");
     setBooksView("home");
     // Bu istifadəçinin öz məlumatlarını yüklə
-    loadAppState(loginUser.email).then((data) => {
-      setState(data);
-      if (data.hubLang) setHubLang(data.hubLang);
-      setActiveSection(data.activeSection || "home");
-      setActiveModule(data.activeModule || null);
-    });
+    loadAppState(loginUser.email)
+      .then((data) => {
+        let persistedHubLang = "en";
+        try {
+          persistedHubLang = window.localStorage.getItem(HUB_LANG_KEY) || "en";
+        } catch { /* ignore */ }
+        setState(data);
+        setHubLang(data.hubLang || persistedHubLang);
+        setActiveSection(data.activeSection || "home");
+        setActiveModule(data.activeModule || null);
+      })
+      .finally(() => {
+        suspendAutoSaveRef.current = false;
+      });
     setAuthDraft((current) => current.rememberMe
       ? { fullName: "", email: current.email, password: current.password, rememberMe: true, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" }
       : { fullName: "", email: "", password: "", rememberMe: false, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" });
@@ -5086,6 +5825,8 @@ function renderItemsCatalog() {
       }
     });
     setAuthUsers((current) => [...current, nextUser]);
+    suspendAutoSaveRef.current = true;
+    setStorageEmail(nextUser.email);
     setCurrentUser(nextUser);
     setBooksNotice(signupPlan === "demo" ? "14 günlük Demo hesab yaradıldı və giriş edildi." : "Free hesab yaradıldı və giriş edildi.");
     setActiveProduct("books");
@@ -5103,6 +5844,7 @@ function renderItemsCatalog() {
         entityType: authDraft.entityType
       }
     });
+    suspendAutoSaveRef.current = false;
     setDrafts({});
     setEditing({});
     setItemMovementDraft(createMovementDraft([]));
@@ -5146,7 +5888,7 @@ function renderItemsCatalog() {
   function logoutUser() {
     if (!window.confirm("Sistemdən çıxmaq istədiyinizə əminsiniz?")) return;
     setCurrentUser(null);
-    setHubLang("en");
+    setStorageEmail(null);
     setProfileMenuOpen(false);
     // Cari istifadəçinin məlumatlarını təmizlə ki, növbəti istifadəçiyə görünməsin
     setState(normalizeAppState(createResetData()));
@@ -6146,7 +6888,7 @@ function renderItemsCatalog() {
     return (
       <section className="view active">
         <div className="panel-grid three-up">{state.reports.map((report) => <section className="panel report-box" key={report.id}><h3>{report.name}</h3><strong>{currency(report.amount, state.settings.currency)}</strong><p>{report.description}</p></section>)}</div>
-        <div className="panel-grid one-up dashboard-grid"><section className="panel"><div className="panel-head"><div><h3>{at.rpt_summaryTitle}</h3><p className="panel-copy">{at.rpt_summaryDesc}</p></div><span>{at.rpt_summaryBadge}</span></div><Table headers={[at.rpt_indicator, at.rpt_value]} emptyMessage={at.rpt_empty} rows={[[at.rpt_receivables, currency(totals.receivables, state.settings.currency)], [at.rpt_payables, currency(totals.payables, state.settings.currency)], [at.rpt_expenses, currency(totals.expenses, state.settings.currency)], [at.rpt_collected, currency(totals.paidIn + totals.receipts, state.settings.currency)]].map(([label, value]) => <tr key={label}><td>{label}</td><td>{value}</td></tr>)} /></section></div>
+        <div className="panel-grid one-up dashboard-grid"><section className="panel"><div className="panel-head"><div><h3>{at.rpt_summaryTitle}</h3><p className="panel-copy">{at.rpt_summaryDesc}</p></div><span>{at.rpt_summaryBadge}</span></div><Table headers={[at.rpt_indicator, at.rpt_value]} emptyMessage={at.rpt_empty} rows={[[at.rpt_receivables, currency(totals.receivables, state.settings.currency)], [at.rpt_payables, currency(totals.payables, state.settings.currency)], [at.rpt_expenses, currency(totals.expenses, state.settings.currency)], [at.rpt_collected, currency(totals.collected, state.settings.currency)]].map(([label, value]) => <tr key={label}><td>{label}</td><td>{value}</td></tr>)} /></section></div>
       </section>
     );
   }
@@ -6157,8 +6899,8 @@ function renderItemsCatalog() {
       .reduce((sum, account) => sum + Number(account.balance || 0), 0);
   }
 
-  function getTrialBalanceLookup(range = null) {
-    return new Map(getTrialBalanceRows(range).map((row) => [row.accountCode, row]));
+  function getTrialBalanceLookup(range = null, options = {}) {
+    return new Map(getTrialBalanceRows(range, options).map((row) => [row.accountCode, row]));
   }
 
   function getReportAccountValue(row, preferredSide = "debit") {
@@ -6168,8 +6910,102 @@ function renderItemsCatalog() {
     return preferredSide === "credit" ? (creditValue || debitValue) : (debitValue || creditValue);
   }
 
+  function getSignedClosingBalance(row, naturalSide = "debit") {
+    if (!row) return 0;
+    const debitValue = Number(row.closingDebit || 0);
+    const creditValue = Number(row.closingCredit || 0);
+    return Number((naturalSide === "credit" ? creditValue - debitValue : debitValue - creditValue).toFixed(2));
+  }
+
   function sumAccountGroup(lookup, codes, preferredSide = "debit") {
     return Number(codes.reduce((sum, code) => sum + getReportAccountValue(lookup.get(code), preferredSide), 0).toFixed(2));
+  }
+
+  function getFinancialPositionLineConfigs() {
+    return {
+      liquidFunds: { preferredSide: "debit", exactCodes: ["221", "223", "224", "225"] },
+      shortReceivables: { preferredSide: "debit", exactCodes: ["211", "231"] },
+      shortAdvances: { preferredSide: "debit", exactCodes: ["233"] },
+      recoverableVat: { preferredSide: "debit", exactCodes: ["241", "243"] },
+      inventory: { preferredSide: "debit", exactCodes: ["201", "204", "205"], codePrefixes: ["20"] },
+      nonCurrentAssets: { preferredSide: "debit", codePrefixes: ["10", "11", "13", "14"] },
+      shortLiabilities: { preferredSide: "credit", exactCodes: ["511", "521", "522", "531", "541"] },
+      longLiabilities: { preferredSide: "credit", exactCodes: ["411", "421"] },
+      shareCapital: { preferredSide: "credit", exactCodes: ["301", "311"] },
+      retainedEarnings: { preferredSide: "credit", exactCodes: ["341"] },
+      periodResult: { preferredSide: "credit", exactCodes: ["801"] }
+    };
+  }
+
+  function getFinancialPositionLineRows(lookup, lineKey) {
+    const config = getFinancialPositionLineConfigs()[lineKey];
+    if (!config) return [];
+
+    const exactCodes = new Set((config.exactCodes || []).map((code) => String(code)));
+    const codePrefixes = (config.codePrefixes || []).map((prefix) => String(prefix));
+    const accountById = new Map(state.chartOfAccounts.map((account) => [String(account.id || ""), account]));
+    const accountByCode = new Map(state.chartOfAccounts.map((account) => [String(account.accountCode || ""), account]));
+
+    const getLineageCodes = (account) => {
+      const lineage = new Set([String(account?.accountCode || "")]);
+      const visited = new Set();
+      let cursor = account;
+      while (cursor && !visited.has(String(cursor.id || cursor.accountCode || ""))) {
+        visited.add(String(cursor.id || cursor.accountCode || ""));
+        const parentCode = cursor.parentAccountCode || cursor.parentCode || "";
+        const parentId = cursor.parentAccountId || cursor.parentId || "";
+        if (parentCode) {
+          lineage.add(String(parentCode));
+          cursor = accountByCode.get(String(parentCode)) || null;
+          continue;
+        }
+        if (parentId) {
+          const parentAccount = accountById.get(String(parentId)) || null;
+          if (parentAccount?.accountCode) lineage.add(String(parentAccount.accountCode));
+          cursor = parentAccount;
+          continue;
+        }
+        break;
+      }
+      return [...lineage];
+    };
+
+    return [...lookup.values()].filter((row) => {
+      if (!isVisibleAccount(row)) return false;
+      const code = String(row.accountCode || "");
+      const sourceAccount = accountByCode.get(code) || row;
+      const lineageCodes = getLineageCodes(sourceAccount);
+      if (exactCodes.has(code)) return true;
+      if (codePrefixes.some((prefix) => code.startsWith(prefix))) return true;
+      if (lineageCodes.some((lineageCode) => exactCodes.has(lineageCode))) return true;
+      if (lineageCodes.some((lineageCode) => codePrefixes.some((prefix) => String(lineageCode).startsWith(prefix)))) return true;
+      return false;
+    });
+  }
+
+  function getFinancialPositionLineValue(lookup, lineKey) {
+    const config = getFinancialPositionLineConfigs()[lineKey];
+    if (!config) return 0;
+    return Number(getFinancialPositionLineRows(lookup, lineKey)
+      .reduce((sum, row) => sum + getReportAccountValue(row, config.preferredSide || "debit"), 0)
+      .toFixed(2));
+  }
+
+  function getUnmappedFinancialPositionAccounts(lookup) {
+    const configs = getFinancialPositionLineConfigs();
+    const reportLineKeys = Object.keys(configs);
+    return [...lookup.values()]
+      .filter((row) => isVisibleAccount(row))
+      .filter((row) => ["Aktiv", "Г–hdЙ™lik", "Kapital"].includes(normalizeAccountTypeValue(row.accountType)))
+      .filter((row) => Number(row.closingDebit || 0) > 0 || Number(row.closingCredit || 0) > 0)
+      .filter((row) => !reportLineKeys.some((lineKey) => getFinancialPositionLineRows(new Map([[row.accountCode, row]]), lineKey).length > 0))
+      .map((row) => ({
+        accountCode: String(row.accountCode || ""),
+        accountName: row.accountName || getAccountNameByCode(row.accountCode),
+        accountType: normalizeAccountTypeValue(row.accountType),
+        value: getReportAccountValue(row, normalizeAccountTypeValue(row.accountType) === "Aktiv" ? "debit" : "credit")
+      }))
+      .sort((left, right) => left.accountCode.localeCompare(right.accountCode));
   }
 
   function getReportPeriodLabel() {
@@ -6409,25 +7245,71 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const fpLabel = (key) => ({ liquidFunds: at.fp_liquidFunds, shortReceivables: at.fp_shortReceivables, shortAdvances: at.fp_shortAdvances, recoverableVat: at.fp_recoverableVat, inventory: at.fp_inventory, totalCurrentAssets: at.fp_totalCurrentAssets, nonCurrentAssets: at.fp_nonCurrentAssets, totalAssets: at.fp_totalAssets, shortLiabilities: at.fp_shortLiabilities, longLiabilities: at.fp_longLiabilities, totalLiabilities: at.fp_totalLiabilities, shareCapital: at.fp_shareCapital, retainedEarnings: at.fp_retainedEarnings, periodResult: at.fp_periodResult, totalEquity: at.fp_totalEquity, totalLiabEquity: at.fp_totalLiabEquity }[key] || key);
     const range = getReportRange();
     const previousRange = getPreviousReportRange();
+    const prePreviousRange = getRangeBefore(previousRange);
     const lookup = getTrialBalanceLookup(range);
     const previousLookup = getTrialBalanceLookup(previousRange);
-    const cashAccounts = sumAccountGroup(lookup, ["221", "223", "224", "225"], "debit");
-    const receivables = Math.max(sumAccountGroup(lookup, ["211", "231"], "debit"), Number(totals.receivables || 0));
-    const shortAdvance = sumAccountGroup(lookup, ["233"], "debit");
-    const recoverableVat = sumAccountGroup(lookup, ["241", "243"], "debit");
-    const inventory = sumAccountGroup(lookup, ["201"], "debit");
-    const nonCurrentAssets = sumAccountGroup(lookup, ["101", "111", "113", "131", "141"], "debit");
+    const prePreviousLookup = getTrialBalanceLookup(prePreviousRange);
+    const plAccounts = getProfitLossAccountGroups();
+    const manualPlFallback = getManualJournalProfitLossFallback(range, plAccounts);
+    const previousManualPlFallback = getManualJournalProfitLossFallback(previousRange, plAccounts);
+    const prePreviousManualPlFallback = getManualJournalProfitLossFallback(prePreviousRange, plAccounts);
+    const lookupPlTotals = getProfitLossTotalsFromLookup(lookup, plAccounts);
+    const previousLookupPlTotals = getProfitLossTotalsFromLookup(previousLookup, plAccounts);
+    const prePreviousLookupPlTotals = getProfitLossTotalsFromLookup(prePreviousLookup, plAccounts);
+    const reportInvoices = state.invoices.filter((item) => isDateInRange(item.dueDate, range));
+    const reportReceipts = state.salesReceipts.filter((item) => isDateInRange(item.date, range));
+    const reportExpenses = state.expenses.filter((item) => isDateInRange(item.date || item.expenseDate || today(), range));
+    const reportBills = state.bills.filter((item) => isDateInRange(item.dueDate, range));
+    const previousInvoices = state.invoices.filter((item) => isDateInRange(item.dueDate, previousRange));
+    const previousReceipts = state.salesReceipts.filter((item) => isDateInRange(item.date, previousRange));
+    const previousExpenses = state.expenses.filter((item) => isDateInRange(item.date || item.expenseDate || today(), previousRange));
+    const previousBills = state.bills.filter((item) => isDateInRange(item.dueDate, previousRange));
+    const prePreviousInvoices = state.invoices.filter((item) => isDateInRange(item.dueDate, prePreviousRange));
+    const prePreviousReceipts = state.salesReceipts.filter((item) => isDateInRange(item.date, prePreviousRange));
+    const prePreviousExpenses = state.expenses.filter((item) => isDateInRange(item.date || item.expenseDate || today(), prePreviousRange));
+    const prePreviousBills = state.bills.filter((item) => isDateInRange(item.dueDate, prePreviousRange));
+    const cashAccounts = getFinancialPositionLineValue(lookup, "liquidFunds");
+    const receivables = Math.max(getFinancialPositionLineValue(lookup, "shortReceivables"), Number(totals.receivables || 0));
+    const shortAdvance = getFinancialPositionLineValue(lookup, "shortAdvances");
+    const recoverableVat = getFinancialPositionLineValue(lookup, "recoverableVat");
+    const inventory = getFinancialPositionLineValue(lookup, "inventory");
+    const inventoryAccounts = getFinancialPositionLineRows(lookup, "inventory");
+    const nonCurrentAssets = getFinancialPositionLineValue(lookup, "nonCurrentAssets");
     const liquidFunds = Number(Math.max(cashAccounts, Number(totals.bank || 0)).toFixed(2));
     const currentAssets = Number((liquidFunds + receivables + shortAdvance + recoverableVat + inventory).toFixed(2));
     const totalAssets = Number((currentAssets + nonCurrentAssets).toFixed(2));
 
-    const currentLiabilities = sumAccountGroup(lookup, ["511", "521", "522", "531", "541"], "credit");
-    const longTermLiabilities = sumAccountGroup(lookup, ["411", "421"], "credit");
+    const currentLiabilities = getFinancialPositionLineValue(lookup, "shortLiabilities");
+    const longTermLiabilities = getFinancialPositionLineValue(lookup, "longLiabilities");
     const totalLiabilities = Number((Math.max(currentLiabilities, Number(totals.payables || 0)) + longTermLiabilities).toFixed(2));
 
-    const shareCapital = sumAccountGroup(lookup, ["301", "311"], "credit");
-    const retainedEarnings = sumAccountGroup(lookup, ["341"], "credit");
-    const periodProfit = sumAccountGroup(lookup, ["801"], "credit");
+    const currentProfitLossRevenue = Math.max(lookupPlTotals.salesRevenue, manualPlFallback.salesRevenue, Number((reportInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + reportReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)))
+      + Math.max(lookupPlTotals.otherOperatingIncome, manualPlFallback.otherOperatingIncome)
+      + Math.max(lookupPlTotals.financeIncome, manualPlFallback.financeIncome);
+    const currentProfitLossExpense = Math.max(lookupPlTotals.costOfSales, manualPlFallback.costOfSales)
+      + Math.max(lookupPlTotals.sellingExpenses, manualPlFallback.sellingExpenses, Number(reportExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(lookupPlTotals.administrativeExpenses, manualPlFallback.administrativeExpenses, Number(reportBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(lookupPlTotals.financeExpenses, manualPlFallback.financeExpenses)
+      + Math.max(lookupPlTotals.otherOperatingExpenses, manualPlFallback.otherOperatingExpenses)
+      + Math.max(lookupPlTotals.incomeTax, manualPlFallback.incomeTax);
+    const currentNetResult = Number((currentProfitLossRevenue - currentProfitLossExpense).toFixed(2));
+
+    const shareCapital = getFinancialPositionLineValue(lookup, "shareCapital");
+    const previousProfitLossRevenue = Math.max(previousLookupPlTotals.salesRevenue, previousManualPlFallback.salesRevenue, Number((previousInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + previousReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)))
+      + Math.max(previousLookupPlTotals.otherOperatingIncome, previousManualPlFallback.otherOperatingIncome)
+      + Math.max(previousLookupPlTotals.financeIncome, previousManualPlFallback.financeIncome);
+    const previousProfitLossExpense = Math.max(previousLookupPlTotals.costOfSales, previousManualPlFallback.costOfSales)
+      + Math.max(previousLookupPlTotals.sellingExpenses, previousManualPlFallback.sellingExpenses, Number(previousExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(previousLookupPlTotals.administrativeExpenses, previousManualPlFallback.administrativeExpenses, Number(previousBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(previousLookupPlTotals.financeExpenses, previousManualPlFallback.financeExpenses)
+      + Math.max(previousLookupPlTotals.otherOperatingExpenses, previousManualPlFallback.otherOperatingExpenses)
+      + Math.max(previousLookupPlTotals.incomeTax, previousManualPlFallback.incomeTax);
+    const previousNetResult = Number((previousProfitLossRevenue - previousProfitLossExpense).toFixed(2));
+
+    const explicitRetainedEarnings = getSignedClosingBalance(lookup.get("341"), "credit");
+    const explicitPeriodResult = getSignedClosingBalance(lookup.get("801"), "credit");
+    const retainedEarnings = Number((explicitRetainedEarnings + previousNetResult).toFixed(2));
+    const periodProfit = Number((explicitPeriodResult + (currentNetResult - previousNetResult)).toFixed(2));
     const totalEquity = Number((shareCapital + retainedEarnings + periodProfit).toFixed(2));
 
     const assetRows = [
@@ -6454,21 +7336,33 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
       ...assetRows.map(([label, amount]) => [`${at.fp_prefix}${label}`, amount]),
       ...liabilityRows.map(([label, amount]) => [`${at.fp_liabEquity} / ${label}`, amount])
     ];
-    const previousCashAccounts = sumAccountGroup(previousLookup, ["221", "223", "224", "225"], "debit");
-    const previousReceivables = sumAccountGroup(previousLookup, ["211", "231"], "debit");
-    const previousShortAdvance = sumAccountGroup(previousLookup, ["233"], "debit");
-    const previousRecoverableVat = sumAccountGroup(previousLookup, ["241", "243"], "debit");
-    const previousInventory = sumAccountGroup(previousLookup, ["201"], "debit");
-    const previousNonCurrentAssets = sumAccountGroup(previousLookup, ["101", "111", "113", "131", "141"], "debit");
+    const previousCashAccounts = getFinancialPositionLineValue(previousLookup, "liquidFunds");
+    const previousReceivables = getFinancialPositionLineValue(previousLookup, "shortReceivables");
+    const previousShortAdvance = getFinancialPositionLineValue(previousLookup, "shortAdvances");
+    const previousRecoverableVat = getFinancialPositionLineValue(previousLookup, "recoverableVat");
+    const previousInventory = getFinancialPositionLineValue(previousLookup, "inventory");
+    const previousNonCurrentAssets = getFinancialPositionLineValue(previousLookup, "nonCurrentAssets");
     const previousLiquidFunds = Number(previousCashAccounts.toFixed(2));
     const previousCurrentAssets = Number((previousLiquidFunds + previousReceivables + previousShortAdvance + previousRecoverableVat + previousInventory).toFixed(2));
     const previousTotalAssets = Number((previousCurrentAssets + previousNonCurrentAssets).toFixed(2));
-    const previousCurrentLiabilities = sumAccountGroup(previousLookup, ["511", "521", "522", "531", "541"], "credit");
-    const previousLongTermLiabilities = sumAccountGroup(previousLookup, ["411", "421"], "credit");
+    const previousCurrentLiabilities = getFinancialPositionLineValue(previousLookup, "shortLiabilities");
+    const previousLongTermLiabilities = getFinancialPositionLineValue(previousLookup, "longLiabilities");
     const previousTotalLiabilities = Number((previousCurrentLiabilities + previousLongTermLiabilities).toFixed(2));
-    const previousShareCapital = sumAccountGroup(previousLookup, ["301", "311"], "credit");
-    const previousRetainedEarnings = sumAccountGroup(previousLookup, ["341"], "credit");
-    const previousPeriodProfit = sumAccountGroup(previousLookup, ["801"], "credit");
+    const previousShareCapital = getFinancialPositionLineValue(previousLookup, "shareCapital");
+    const prePreviousProfitLossRevenue = Math.max(prePreviousLookupPlTotals.salesRevenue, prePreviousManualPlFallback.salesRevenue, Number((prePreviousInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + prePreviousReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)))
+      + Math.max(prePreviousLookupPlTotals.otherOperatingIncome, prePreviousManualPlFallback.otherOperatingIncome)
+      + Math.max(prePreviousLookupPlTotals.financeIncome, prePreviousManualPlFallback.financeIncome);
+    const prePreviousProfitLossExpense = Math.max(prePreviousLookupPlTotals.costOfSales, prePreviousManualPlFallback.costOfSales)
+      + Math.max(prePreviousLookupPlTotals.sellingExpenses, prePreviousManualPlFallback.sellingExpenses, Number(prePreviousExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(prePreviousLookupPlTotals.administrativeExpenses, prePreviousManualPlFallback.administrativeExpenses, Number(prePreviousBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)))
+      + Math.max(prePreviousLookupPlTotals.financeExpenses, prePreviousManualPlFallback.financeExpenses)
+      + Math.max(prePreviousLookupPlTotals.otherOperatingExpenses, prePreviousManualPlFallback.otherOperatingExpenses)
+      + Math.max(prePreviousLookupPlTotals.incomeTax, prePreviousManualPlFallback.incomeTax);
+    const prePreviousNetResult = Number((prePreviousProfitLossRevenue - prePreviousProfitLossExpense).toFixed(2));
+    const previousExplicitRetainedEarnings = getSignedClosingBalance(previousLookup.get("341"), "credit");
+    const previousExplicitPeriodResult = getSignedClosingBalance(previousLookup.get("801"), "credit");
+    const previousRetainedEarnings = Number((previousExplicitRetainedEarnings + prePreviousNetResult).toFixed(2));
+    const previousPeriodProfit = Number((previousExplicitPeriodResult + (previousNetResult - prePreviousNetResult)).toFixed(2));
     const previousTotalEquity = Number((previousShareCapital + previousRetainedEarnings + previousPeriodProfit).toFixed(2));
     const previousAssetRows = [
       [fpLabel("liquidFunds"), previousLiquidFunds],
@@ -6491,6 +7385,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
       [fpLabel("totalLiabEquity"), Number((previousTotalLiabilities + previousTotalEquity).toFixed(2))]
     ];
 
+    const unmappedBalanceSheetAccounts = getUnmappedFinancialPositionAccounts(lookup);
     const cur = state.settings.currency;
     const isBalanced = Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
 
@@ -6541,6 +7436,24 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
           <span>{isBalanced ? at.fp_balanced : `${at.fp_unbalanced}: ${currency(Math.abs(totalAssets - (totalLiabilities + totalEquity)), cur)}`}</span>
         </div>
 
+        {unmappedBalanceSheetAccounts.length ? (
+          <div className="fp-diagnostics-card">
+            <div className="fp-diagnostics-head">
+              <strong>Unmapped balance sheet accounts</strong>
+              <span>{unmappedBalanceSheetAccounts.length}</span>
+            </div>
+            <p>These balance sheet accounts have balances but are not mapped to any report line.</p>
+            <div className="fp-diagnostics-list">
+              {unmappedBalanceSheetAccounts.map((account) => (
+                <div className="fp-diagnostics-item" key={account.accountCode}>
+                  <span>{account.accountCode} - {account.accountName}</span>
+                  <strong>{currency(account.value, cur)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="fp-layout">
           {/* ── ASSETS ── */}
           <div className="fp-col">
@@ -6557,6 +7470,11 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               {currentAssetItems.map(({ label, value, icon }) => (
                 <FpRow key={label} icon={icon} label={label} value={value} total={totalAssets} indent />
               ))}
+              {inventoryAccounts.length ? (
+                <div className="fp-line-meta">
+                  Inventory GL accounts: {inventoryAccounts.map((account) => account.accountCode).join(", ")}
+                </div>
+              ) : null}
               <div className="fp-subtotal">
                 <span>{at.fp_totalCurrentAssets}</span>
                 <strong>{currency(currentAssets, cur)}</strong>
@@ -6631,27 +7549,63 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const plLabel = (key) => ({ salesRev: at.pl_salesRev, otherOpIncome: at.pl_otherOpIncome, finIncome: at.pl_finIncome, totalRev: at.pl_totalRev, costOfSales: at.pl_costOfSales, grossProfit: at.pl_grossProfit, selling: at.pl_selling, admin: at.pl_admin, finEx: at.pl_finEx, otherOpEx: at.pl_otherOpEx, totalOpEx: at.pl_totalOpEx, incomeTax: at.pl_incomeTax, netResult: at.pl_netResult }[key] || key);
     const range = getReportRange();
     const previousRange = getPreviousReportRange();
-    const lookup = getTrialBalanceLookup(range);
-    const previousLookup = getTrialBalanceLookup(previousRange);
+    const plLookupOptions = { excludeAutoCloseTypes: ["profit_loss_closure"] };
+    const lookup = getTrialBalanceLookup(range, plLookupOptions);
+    const previousLookup = getTrialBalanceLookup(previousRange, plLookupOptions);
+    const plAccounts = getProfitLossAccountGroups();
+    const manualFallback = getManualJournalProfitLossFallback(range, plAccounts, plLookupOptions);
+    const previousManualFallback = getManualJournalProfitLossFallback(previousRange, plAccounts, plLookupOptions);
+    const lookupPlTotals = getProfitLossTotalsFromLookup(lookup, plAccounts);
+    const previousLookupPlTotals = getProfitLossTotalsFromLookup(previousLookup, plAccounts);
+    const profitLossClosingPlan = buildProfitLossClosingPlan(range, lookup);
+    const hasProfitLossAutoClose = state.manualJournals.some((journal) => journal.autoCloseType === "profit_loss_closure" && journal.autoCloseKey === profitLossClosingPlan.periodKey);
+    const reportManualJournals = state.manualJournals
+      .filter((item) => item.autoCloseType !== "profit_loss_closure")
+      .filter((item) => isDateInRange(item.date || item.createdAt || today(), range));
+    const manualJournalStats = reportManualJournals.reduce((acc, journal) => {
+      const lines = Array.isArray(journal.journalLines) && journal.journalLines.length
+        ? journal.journalLines.filter((line) => line.accountCode && Number(line.amount || 0) > 0)
+        : [
+            journal.debitAccount ? { accountCode: journal.debitAccount, entryType: "Debet", amount: journal.debit } : null,
+            journal.creditAccount ? { accountCode: journal.creditAccount, entryType: "Kredit", amount: journal.credit } : null
+          ].filter(Boolean);
+      if (!lines.length) return acc;
+      acc.total += 1;
+      let impactsProfitLoss = false;
+      lines.forEach((line) => {
+        const accountType = inferAccountTypeFromCode(line.accountCode, state.chartOfAccounts.find((account) => account.accountCode === line.accountCode)?.accountType || "");
+        if (accountType === "Gəlir") {
+          acc.income += 1;
+          impactsProfitLoss = true;
+        } else if (accountType === "Xərc") {
+          acc.expense += 1;
+          impactsProfitLoss = true;
+        } else {
+          acc.balance += 1;
+        }
+      });
+      if (!impactsProfitLoss) acc.balanceOnly += 1;
+      return acc;
+    }, { total: 0, income: 0, expense: 0, balance: 0, balanceOnly: 0 });
     const reportInvoices = state.invoices.filter((item) => isDateInRange(item.dueDate, range));
     const reportReceipts = state.salesReceipts.filter((item) => isDateInRange(item.date, range));
     const reportExpenses = state.expenses.filter((item) => isDateInRange(item.date || item.expenseDate || today(), range));
     const reportBills = state.bills.filter((item) => isDateInRange(item.dueDate, range));
-    const salesRevenue = Math.max(sumAccountGroup(lookup, ["601"], "credit"), Number((reportInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + reportReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)));
-    const otherOperatingIncome = sumAccountGroup(lookup, ["611", "631"], "credit");
-    const financeIncome = sumAccountGroup(lookup, ["621"], "credit");
+    const salesRevenue = Math.max(lookupPlTotals.salesRevenue, manualFallback.salesRevenue, Number((reportInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + reportReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)));
+    const otherOperatingIncome = Math.max(lookupPlTotals.otherOperatingIncome, manualFallback.otherOperatingIncome);
+    const financeIncome = Math.max(lookupPlTotals.financeIncome, manualFallback.financeIncome);
     const totalRevenue = Number((salesRevenue + otherOperatingIncome + financeIncome).toFixed(2));
 
-    const costOfSales = sumAccountGroup(lookup, ["701"], "debit");
+    const costOfSales = Math.max(lookupPlTotals.costOfSales, manualFallback.costOfSales);
     const grossProfit = Number((totalRevenue - costOfSales).toFixed(2));
 
-    const sellingExpenses = Math.max(sumAccountGroup(lookup, ["711"], "debit"), Number(reportExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
-    const administrativeExpenses = Math.max(sumAccountGroup(lookup, ["712"], "debit"), Number(reportBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
-    const financeExpenses = sumAccountGroup(lookup, ["721"], "debit");
-    const otherOperatingExpenses = sumAccountGroup(lookup, ["731"], "debit");
+    const sellingExpenses = Math.max(lookupPlTotals.sellingExpenses, manualFallback.sellingExpenses, Number(reportExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
+    const administrativeExpenses = Math.max(lookupPlTotals.administrativeExpenses, manualFallback.administrativeExpenses, Number(reportBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
+    const financeExpenses = Math.max(lookupPlTotals.financeExpenses, manualFallback.financeExpenses);
+    const otherOperatingExpenses = Math.max(lookupPlTotals.otherOperatingExpenses, manualFallback.otherOperatingExpenses);
     const operatingExpenses = Number((sellingExpenses + administrativeExpenses + financeExpenses + otherOperatingExpenses).toFixed(2));
     const profitBeforeTax = Number((grossProfit - operatingExpenses).toFixed(2));
-    const incomeTax = sumAccountGroup(lookup, ["901"], "debit");
+    const incomeTax = Math.max(lookupPlTotals.incomeTax, manualFallback.incomeTax);
     const netResult = Number((profitBeforeTax - incomeTax).toFixed(2));
     const rows = [
       [plLabel("salesRev"), salesRevenue],
@@ -6671,17 +7625,17 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const previousReceipts = state.salesReceipts.filter((item) => isDateInRange(item.date, previousRange));
     const previousExpenses = state.expenses.filter((item) => isDateInRange(item.date || item.expenseDate || today(), previousRange));
     const previousBills = state.bills.filter((item) => isDateInRange(item.dueDate, previousRange));
-    const previousSalesRevenue = Math.max(sumAccountGroup(previousLookup, ["601"], "credit"), Number((previousInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + previousReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)));
-    const previousOtherOperatingIncome = sumAccountGroup(previousLookup, ["611", "631"], "credit");
-    const previousFinanceIncome = sumAccountGroup(previousLookup, ["621"], "credit");
+    const previousSalesRevenue = Math.max(previousLookupPlTotals.salesRevenue, previousManualFallback.salesRevenue, Number((previousInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + previousReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)));
+    const previousOtherOperatingIncome = Math.max(previousLookupPlTotals.otherOperatingIncome, previousManualFallback.otherOperatingIncome);
+    const previousFinanceIncome = Math.max(previousLookupPlTotals.financeIncome, previousManualFallback.financeIncome);
     const previousTotalRevenue = Number((previousSalesRevenue + previousOtherOperatingIncome + previousFinanceIncome).toFixed(2));
-    const previousCostOfSales = sumAccountGroup(previousLookup, ["701"], "debit");
+    const previousCostOfSales = Math.max(previousLookupPlTotals.costOfSales, previousManualFallback.costOfSales);
     const previousGrossProfit = Number((previousTotalRevenue - previousCostOfSales).toFixed(2));
-    const previousSellingExpenses = Math.max(sumAccountGroup(previousLookup, ["711"], "debit"), Number(previousExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
-    const previousAdministrativeExpenses = Math.max(sumAccountGroup(previousLookup, ["712"], "debit"), Number(previousBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
-    const previousFinanceExpenses = sumAccountGroup(previousLookup, ["721"], "debit");
-    const previousOtherOperatingExpenses = sumAccountGroup(previousLookup, ["731"], "debit");
-    const previousIncomeTax = sumAccountGroup(previousLookup, ["901"], "debit");
+    const previousSellingExpenses = Math.max(previousLookupPlTotals.sellingExpenses, previousManualFallback.sellingExpenses, Number(previousExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
+    const previousAdministrativeExpenses = Math.max(previousLookupPlTotals.administrativeExpenses, previousManualFallback.administrativeExpenses, Number(previousBills.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)));
+    const previousFinanceExpenses = Math.max(previousLookupPlTotals.financeExpenses, previousManualFallback.financeExpenses);
+    const previousOtherOperatingExpenses = Math.max(previousLookupPlTotals.otherOperatingExpenses, previousManualFallback.otherOperatingExpenses);
+    const previousIncomeTax = Math.max(previousLookupPlTotals.incomeTax, previousManualFallback.incomeTax);
     const previousRows = [
       [plLabel("salesRev"), previousSalesRevenue],
       [plLabel("otherOpIncome"), previousOtherOperatingIncome],
@@ -6755,6 +7709,38 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
             </div>
           </div>
         </div>
+
+        <section className="pl-note-card">
+          <div className="pl-close-toolbar">
+            <div className="pl-close-copy">
+              <strong>{at.pl_closeBtn || "Mənfəət / zərəri bağla"}</strong>
+              <p>{at.pl_closeHint || "Cari hesabat dövründəki gəlir və xərc hesablarını 801 hesabına avtomatik bağlayır."}</p>
+            </div>
+            <button
+              className="primary-btn compact-btn"
+              type="button"
+              onClick={() => closeProfitLossToPeriodResult(range)}
+              disabled={hasProfitLossAutoClose || !profitLossClosingPlan.lines.length}
+              title={hasProfitLossAutoClose ? (at.pl_closeExists || "Bu dövr üçün bağlanış artıq yaradılıb.") : ""}
+            >
+              {hasProfitLossAutoClose ? (at.pl_closeDone || "Bağlanıb") : (at.pl_closeBtn || "Mənfəət / zərəri bağla")}
+            </button>
+          </div>
+          <div className="pl-note-head">
+            <strong>Əl ilə daxil edilən əməliyyatların təsiri</strong>
+            <span>{reportManualJournals.length} jurnal</span>
+          </div>
+          <p>
+            Bu hesabat yalnız gəlir və xərc hesablarına yazılan manual əməliyyatları sayır.
+            Yalnız balans hesabları ilə yazılmış jurnallar mənfəət və zərərə düşmür.
+          </p>
+          <div className="pl-note-stats">
+            <span className="pl-note-chip income">Gəlir xətti: {manualJournalStats.income}</span>
+            <span className="pl-note-chip expense">Xərc xətti: {manualJournalStats.expense}</span>
+            <span className="pl-note-chip balance">Balans xətti: {manualJournalStats.balance}</span>
+            <span className="pl-note-chip neutral">Yalnız balans jurnalı: {manualJournalStats.balanceOnly}</span>
+          </div>
+        </section>
 
         {/* ── Flow Sections ── */}
         <div className="pl-flow">
