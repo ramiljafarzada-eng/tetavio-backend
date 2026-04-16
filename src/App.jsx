@@ -1784,30 +1784,30 @@ export default function App() {
 
   function getAccountNameByCode(code) {
     return state.chartOfAccounts.find((account) => account.accountCode === code)?.accountName || ({
-      101: "Qeyri-maddi aktivlər",
-      111: "Torpaq, tikili və avadanlıqlar",
-      131: "Uzunmüddətli maliyyə qoyuluşları",
-      201: "Ehtiyatlar",
-      205: "Alınmış mallar",
-      211: "Qısamüddətli debitor borcları",
-      221: "Kassa",
-      223: "Bank hesablaşma hesabları",
-      241: "Əvəzləşdirilən ƏDV",
-      301: "Nizamnamə kapitalı",
-      341: "Bölüşdürülməmiş mənfəət",
-      411: "Uzunmüddətli bank kreditləri",
-      511: "Qısamüddətli bank kreditləri",
-      521: "Vergi və məcburi ödənişlər üzrə öhdəliklər",
-      531: "Malsatan və podratçılara qısamüddətli kreditor borcları",
-      601: "Satış gəlirləri",
-      611: "Sair əməliyyat gəlirləri",
-      701: "Satılan malların maya dəyəri",
-      711: "Kommersiya xərcləri",
-      712: "İnzibati xərclər",
-      721: "Maliyyə xərcləri",
-      731: "Sair əməliyyat xərcləri",
-      801: "Mənfəət və ya zərər",
-      901: "Mənfəət vergisi"
+      101: "Intangible assets",
+      111: "Property, plant and equipment",
+      131: "Long-term financial investments",
+      201: "Inventories",
+      205: "Goods purchased",
+      211: "Short-term receivables",
+      221: "Cash on hand",
+      223: "Bank settlement accounts",
+      241: "Recoverable VAT",
+      301: "Share capital",
+      341: "Retained earnings",
+      411: "Long-term bank loans",
+      511: "Short-term bank loans",
+      521: "Tax and statutory liabilities",
+      531: "Short-term accounts payable to suppliers",
+      601: "Sales revenue",
+      611: "Other operating income",
+      701: "Cost of goods sold",
+      711: "Selling expenses",
+      712: "Administrative expenses",
+      721: "Financial expenses",
+      731: "Other operating expenses",
+      801: "Profit or loss",
+      901: "Income tax"
     }[code] || code);
   }
 
@@ -2884,13 +2884,14 @@ export default function App() {
   }
 
   function getAccountCardEntityOptions(accountCode) {
+    if (!accountCode) return [];
     const category = getAccountCardEntityCategory(accountCode);
-    if (!category) return [];
     const ledgerOptions = getAccountCardLedgerLines()
-      .filter((line) => line.accountCode === accountCode && line.entityCategory === category && line.entityName)
+      .filter((line) => line.accountCode === accountCode && line.entityName)
       .map((line) => ({ value: line.entityName, label: line.entityName }));
-    const masterOptions = getJournalSubledgerOptions(category)
-      .map((option) => ({ value: option.label, label: option.label }));
+    const masterOptions = category
+      ? getJournalSubledgerOptions(category).map((option) => ({ value: option.label, label: option.label }))
+      : [];
     const unique = new Map();
     [...masterOptions, ...ledgerOptions].forEach((option) => {
       if (!unique.has(option.value)) unique.set(option.value, option);
@@ -4256,20 +4257,23 @@ function renderItemsCatalog() {
         );
       }) || null;
     };
-    const openCreditorCard = (item) => {
-      if (isReceivables) return;
-      const vendor = findLinkedVendor(item);
-      if (vendor) {
-        setSection("purchases");
-        startEdit("vendors", vendor);
-        return;
-      }
-      setDebtCard({
-        type,
-        vendor,
-        item,
-        title: vendor?.vendorName || vendor?.companyName || item.name || "Kreditor kartı"
-      });
+    const openDebtAccountCard = (item) => {
+      const fallbackAccount = isReceivables ? "211" : "531";
+      const accountCode = String(item.glAccountText || "")
+        .split(",")
+        .map((value) => value.trim())
+        .find((value) => /^\d+$/.test(value)) || fallbackAccount;
+      const nextFilters = {
+        dateFrom: accountCardFilters.dateFrom,
+        dateTo: accountCardFilters.dateTo,
+        accountCode,
+        entityName: item.name || ""
+      };
+      setSection("reports");
+      setActiveModule("accountCard");
+      setAccountCardFilters(nextFilters);
+      setAppliedAccountCardFilters(nextFilters);
+      setDebtCard(null);
     };
 
     // ── Əməliyyatlardan canlı hesablama ────────────────────────────────────
@@ -4307,6 +4311,34 @@ function renderItemsCatalog() {
         existing.creditTurnover += Number(p.amount || 0);
         existing.sourceNotes.add("Alınan ödənişlər");
         debtMap.set(name, existing);
+      });
+      // Manual jurnaldakı debitor yazıları
+      state.manualJournals.forEach((journal) => {
+        const lines = Array.isArray(journal.journalLines) && journal.journalLines.length
+          ? journal.journalLines.filter((line) => line.accountCode && Number(line.amount || 0) > 0)
+          : [
+              journal.debitAccount ? { accountCode: journal.debitAccount, entryType: "Debet", amount: journal.debit, linkedEntityName: "" } : null,
+              journal.creditAccount ? { accountCode: journal.creditAccount, entryType: "Kredit", amount: journal.credit, linkedEntityName: "" } : null
+            ].filter(Boolean);
+        lines.forEach((line) => {
+          const accountCode = String(line.accountCode || "");
+          const accountType = inferAccountTypeFromCode(accountCode, state.chartOfAccounts.find((account) => account.accountCode === accountCode)?.accountType || "");
+          const isDebtorLine = line.subledgerCategory === "debtors" || (accountType === "Aktiv" && ["211", "231"].includes(accountCode));
+          if (!isDebtorLine) return;
+          const linkedName = line.linkedEntityName || "Manual debitor";
+          const existing = getDebtRecord(linkedName);
+          const lineAmount = Number(line.amount || 0);
+          if (line.entryType === "Debet") {
+            existing.txAmount += lineAmount;
+            existing.debitTurnover += lineAmount;
+          } else {
+            existing.txAmount -= lineAmount;
+            existing.creditTurnover += lineAmount;
+          }
+          existing.sourceNotes.add("Manual jurnal");
+          existing.glAccounts.add(accountCode);
+          debtMap.set(linkedName, existing);
+        });
       });
       // Müştəri kartındakı manual sahə
       state.customers.forEach((c) => {
@@ -4448,6 +4480,57 @@ function renderItemsCatalog() {
     const totalCreditTurnover = mergedItems.reduce((sum, item) => sum + Number(item.creditTurnover || 0), 0);
     const totalPaidAmount = mergedItems.reduce((sum, item) => sum + Number(item.paidAmount || 0), 0);
 
+    const exportDebtPdf = () => {
+      const headers = ["#", isReceivables ? "Müştəri / Debitor" : "Təchizatçı / Kreditor", "Debet", "Kredit", "Qalıq"];
+      const rows = sorted.map((item, idx) => [
+        idx + 1,
+        item.name + (item.company ? ` (${item.company})` : ""),
+        currency(item.debitTurnover || 0, cur),
+        currency(item.creditTurnover || 0, cur),
+        currency(item.balanceAmount || 0, cur)
+      ]);
+      rows.push([
+        "",
+        "<strong>Cəmi</strong>",
+        `<strong>${currency(totalDebitTurnover, cur)}</strong>`,
+        `<strong>${currency(totalCreditTurnover, cur)}</strong>`,
+        `<strong>${currency(totalDebt, cur)}</strong>`
+      ]);
+
+      const printWindow = window.open("", "_blank", "width=980,height=720");
+      if (!printWindow) {
+        setBackupStatus({ tone: "warning", message: "Çap pəncərəsi açıla bilmədi." });
+        return;
+      }
+      printWindow.document.write(buildTableReportDocument(title, headers, rows));
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+
+    const exportDebtExcel = async () => {
+      const headers = ["#", isReceivables ? "Müştəri / Debitor" : "Təchizatçı / Kreditor", "Debet", "Kredit", "Qalıq"];
+      const rows = sorted.map((item, idx) => [
+        idx + 1,
+        item.name + (item.company ? ` (${item.company})` : ""),
+        Number(item.debitTurnover || 0).toFixed(2),
+        Number(item.creditTurnover || 0).toFixed(2),
+        Number(item.balanceAmount || 0).toFixed(2)
+      ]);
+      rows.push([
+        "",
+        "Cəmi",
+        totalDebitTurnover.toFixed(2),
+        totalCreditTurnover.toFixed(2),
+        totalDebt.toFixed(2)
+      ]);
+
+      const html = buildTableReportDocument(title, headers, rows);
+      await exportHtmlAsExcel(title, html);
+    };
+
     return (
       <section className="view active">
         {/* KPI strip */}
@@ -4503,13 +4586,21 @@ function renderItemsCatalog() {
               <h3>{title}</h3>
               <p className="panel-copy">{isReceivables ? at.debt_descReceivable : at.debt_descPayable}</p>
             </div>
-            <input
-              className="search-input"
-              placeholder={isReceivables ? at.debt_searchCustomer : at.debt_searchVendor}
-              value={query}
-              onChange={(e) => setDebtSearch((d) => ({ ...d, [type]: e.target.value }))}
-              style={{ width: "220px" }}
-            />
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <button className="ghost-btn compact-btn" type="button" onClick={exportDebtPdf}>
+                Çap et
+              </button>
+              <button className="primary-btn compact-btn" type="button" onClick={exportDebtExcel}>
+                Export
+              </button>
+              <input
+                className="search-input"
+                placeholder={isReceivables ? at.debt_searchCustomer : at.debt_searchVendor}
+                value={query}
+                onChange={(e) => setDebtSearch((d) => ({ ...d, [type]: e.target.value }))}
+                style={{ width: "220px" }}
+              />
+            </div>
           </div>
 
           {sorted.length === 0 ? (
@@ -4533,12 +4624,12 @@ function renderItemsCatalog() {
                   <div key={item.name} className="debt-row">
                     <div className="debt-row-rank">{index + 1}</div>
                     <div className="debt-row-info">
-                      {isReceivables ? (
-                        <strong className="debt-row-name">{item.name || "—"}</strong>
-                      ) : (
-                        <button type="button" className="debt-link-btn" onClick={() => openCreditorCard(item)}>
+                      {item.name ? (
+                        <button type="button" className="debt-link-btn" onClick={() => openDebtAccountCard(item)}>
                           {item.name || "—"}
                         </button>
+                      ) : (
+                        <strong className="debt-row-name">{item.name || "—"}</strong>
                       )}
                       {item.company ? <span className="debt-row-company">{item.company}</span> : null}
                       {item.sourceNoteText ? <small className="debt-row-company">{item.sourceNoteText}</small> : null}
@@ -7870,10 +7961,8 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     );
   }
 
-  async function exportReportExcel(title, rows) {
+  async function exportHtmlAsExcel(title, html) {
     const safeTitle = title.toLowerCase().replace(/\s+/g, "-");
-    const html = buildReportDocument(title, rows, (amount) => Number(amount || 0).toFixed(2));
-
     const invoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
     if (invoke) {
       try {
@@ -7896,6 +7985,96 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     setBackupStatus({ tone: "success", message: "Excel export hazırlandı." });
+  }
+
+  async function exportReportExcel(title, rows) {
+    const html = buildReportDocument(title, rows, (amount) => Number(amount || 0).toFixed(2));
+    await exportHtmlAsExcel(title, html);
+  }
+
+  function buildTableReportDocument(title, headers, rows) {
+    const periodLabel = getReportPeriodLabel();
+    const generatedAt = fmtDate(today());
+    const headerHtml = headers.map(h => `<th>${h}</th>`).join("");
+    const tableRows = rows.map((row, index) => `
+      <tr class="${index === rows.length - 1 ? "total-row" : ""}">
+        ${row.map(cell => `<td>${cell}</td>`).join("")}
+      </tr>
+    `).join("");
+
+    return `<!DOCTYPE html>
+<html lang="${hubLang}">
+<head>
+<meta charset="utf-8" />
+<title>${title}</title>
+<style>
+@page { size: A4 landscape; margin: 18mm 14mm; }
+body{font-family:"Segoe UI",Tahoma,sans-serif;margin:0;color:#1d2a44;background:#ffffff}
+.sheet{padding:12px 4px 0}
+.topline{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;border-bottom:2px solid #d9e2f0;padding-bottom:14px}
+.brand h1{margin:0;font-size:24px;letter-spacing:.02em}
+.brand p{margin:6px 0 0;color:#5d6b84;font-size:13px}
+.meta{min-width:245px;border:1px solid #d9e2f0;border-radius:14px;padding:12px 14px;background:#f8fbff}
+.meta-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}
+.meta-row span{color:#5d6b84}
+.title-block{text-align:center;padding:24px 0 18px}
+.title-block h2{margin:0;font-size:22px}
+.title-block p{margin:8px 0 0;color:#5d6b84;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#eef4ff;border:1px solid #cfd8e6;padding:10px 12px;text-align:left}
+tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
+.total-row td{font-weight:800;background:#f4f8ff}
+.footnote{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:22px}
+.footnote-box{border:1px solid #d9e2f0;border-radius:14px;padding:14px 16px;min-height:88px}
+.footnote-box strong{display:block;font-size:12px;text-transform:uppercase;color:#5d6b84;letter-spacing:.04em}
+.footnote-box p{margin:10px 0 0;line-height:1.6;color:#42526b;font-size:13px}
+.signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
+.sign-box{padding-top:18px;border-top:1px solid #cfd8e6}
+.sign-box strong{display:block;font-size:13px}
+.sign-box span{display:block;margin-top:28px;color:#5d6b84;font-size:12px}
+.footer{text-align:center;margin-top:24px;color:#7a879c;font-size:11px}
+@media print {
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="topline">
+      <div class="brand">
+        <h1>${state.settings.companyName}</h1>
+        <p>VÖEN: ${state.settings.taxId || "0000000000"}</p>
+      </div>
+      <div class="meta">
+        <div class="meta-row"><span>${at.rpt_reportDate}</span><strong>${generatedAt}</strong></div>
+        <div class="meta-row"><span>${at.rpt_period}</span><strong>${periodLabel}</strong></div>
+        <div class="meta-row"><span>${at.rpt_currency}</span><strong>${state.settings.currency}</strong></div>
+      </div>
+    </div>
+    <div class="title-block">
+      <h2>${title}</h2>
+      <p>${at.rpt_printSubtitle}</p>
+    </div>
+    <table>
+      <thead>
+        <tr>${headerHtml}</tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div class="footnote">
+      <div class="footnote-box">
+        <strong>${at.rpt_printNote}</strong>
+        <p>${at.rpt_printNoteText}</p>
+      </div>
+      <div class="footnote-box">
+        <strong>${at.rpt_printSource}</strong>
+        <p>Tetavio ERP daxili hesabat modulu, tarix: ${generatedAt}</p>
+      </div>
+    </div>
+    <div class="footer">${at.rpt_printFooter}</div>
+  </div>
+</body>
+</html>`;
   }
 
   function exportReportPdf(title, rows) {
@@ -8928,19 +9107,10 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
         code: row.accountCode,
         label: `${row.accountCode} - ${row.accountName || getAccountNameByCode(row.accountCode)}`
       }));
-    const selectedCategory = getAccountCardEntityCategory(accountCardFilters.accountCode);
     const entityOptions = getAccountCardEntityOptions(accountCardFilters.accountCode);
-    const entityLabel = selectedCategory === "debtors"
-      ? "Debitor"
-      : selectedCategory === "creditors"
-        ? "Kreditor"
-        : selectedCategory === "goods"
-          ? "Mal"
-          : "Alt bölmə";
-    const appliedCategory = getAccountCardEntityCategory(appliedAccountCardFilters.accountCode);
+    const entityLabel = "Qurulmalar";
     const ledgerLines = getAccountCardLedgerLines()
       .filter((line) => !appliedAccountCardFilters.accountCode || line.accountCode === appliedAccountCardFilters.accountCode)
-      .filter((line) => !appliedCategory || line.entityCategory === appliedCategory)
       .filter((line) => !appliedAccountCardFilters.entityName || (line.entityName || "") === appliedAccountCardFilters.entityName);
     const openingBalance = ledgerLines
       .filter((line) => appliedAccountCardFilters.dateFrom && line.date && line.date < appliedAccountCardFilters.dateFrom)
@@ -9014,9 +9184,9 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               <select
                 value={accountCardFilters.entityName}
                 onChange={(event) => setAccountCardFilters((current) => ({ ...current, entityName: event.target.value }))}
-                disabled={!selectedCategory}
+                disabled={!accountCardFilters.accountCode}
               >
-                <option value="">{selectedCategory ? `${entityLabel} seçin` : "Tələb olunmur"}</option>
+                <option value="">{accountCardFilters.accountCode ? `${entityLabel} seçin` : "Əvvəl hesab seçin"}</option>
                 {entityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
@@ -9040,14 +9210,94 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 <p className="panel-copy">
                   {appliedAccountCardFilters.entityName
                     ? `${entityLabel}: ${appliedAccountCardFilters.entityName}`
-                    : appliedCategory
-                      ? `${entityLabel} üzrə ümumi dövriyyə`
-                      : "Hesab üzrə ümumi dövriyyə"}
+                    : "Hesab üzrə ümumi dövriyyə"}
                 </p>
               </div>
-              <span>{appliedAccountCardFilters.dateFrom || "—"} / {appliedAccountCardFilters.dateTo || "—"}</span>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {appliedAccountCardFilters.accountCode && (
+                  <>
+                    <button className="ghost-btn compact-btn" type="button" onClick={() => {
+                      const headers = ["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"];
+                      const rows = [
+                        [
+                          appliedAccountCardFilters.dateFrom ? fmtDate(appliedAccountCardFilters.dateFrom) : "—",
+                          "Açılış qalığı",
+                          "Başlanğıc",
+                          appliedAccountCardFilters.entityName || "—",
+                          "",
+                          "",
+                          currency(openingBalance, cur)
+                        ],
+                        ...renderedRows.map(row => [
+                          fmtDate(row.date),
+                          row.journalNumber || "—",
+                          row.source || "—",
+                          row.entityName || "—",
+                          currency(row.debit || 0, cur),
+                          currency(row.credit || 0, cur),
+                          currency(row.runningBalance, cur)
+                        ]),
+                        [
+                          "",
+                          "<strong>Cəmi / Son qalıq</strong>",
+                          "",
+                          "",
+                          `<strong>${currency(totals.debit, cur)}</strong>`,
+                          `<strong>${currency(totals.credit, cur)}</strong>`,
+                          `<strong>${currency(renderedRows.length ? renderedRows[renderedRows.length - 1].runningBalance : openingBalance, cur)}</strong>`
+                        ]
+                      ];
+                      const printWindow = window.open("", "_blank", "width=980,height=720");
+                      if (printWindow) {
+                        printWindow.document.write(buildTableReportDocument(`Hesab kartı: ${selectedAccountTitle}`, headers, rows));
+                        printWindow.document.close();
+                        printWindow.focus();
+                        setTimeout(() => printWindow.print(), 250);
+                      }
+                    }}>
+                      Çap et
+                    </button>
+                    <button className="primary-btn compact-btn" type="button" onClick={async () => {
+                      const headers = ["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"];
+                      const rows = [
+                        [
+                          appliedAccountCardFilters.dateFrom ? fmtDate(appliedAccountCardFilters.dateFrom) : "—",
+                          "Açılış qalığı",
+                          "Başlanğıc",
+                          appliedAccountCardFilters.entityName || "—",
+                          "",
+                          "",
+                          Number(openingBalance).toFixed(2)
+                        ],
+                        ...renderedRows.map(row => [
+                          fmtDate(row.date),
+                          row.journalNumber || "—",
+                          row.source || "—",
+                          row.entityName || "—",
+                          Number(row.debit || 0).toFixed(2),
+                          Number(row.credit || 0).toFixed(2),
+                          Number(row.runningBalance).toFixed(2)
+                        ]),
+                        [
+                          "",
+                          "Cəmi / Son qalıq",
+                          "",
+                          "",
+                          totals.debit.toFixed(2),
+                          totals.credit.toFixed(2),
+                          (renderedRows.length ? renderedRows[renderedRows.length - 1].runningBalance : openingBalance).toFixed(2)
+                        ]
+                      ];
+                      const html = buildTableReportDocument(`Hesab kartı: ${selectedAccountTitle}`, headers, rows);
+                      await exportHtmlAsExcel(`hesab-karti-${appliedAccountCardFilters.accountCode}`, html);
+                    }}>
+                      Export
+                    </button>
+                  </>
+                )}
+                <span>{appliedAccountCardFilters.dateFrom || "—"} / {appliedAccountCardFilters.dateTo || "—"}</span>
+              </div>
             </div>
-
             {appliedAccountCardFilters.accountCode ? (
               <Fragment>
                 <div className="summary-grid compact">
@@ -9069,7 +9319,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                   </article>
                 </div>
                 <Table
-                  headers={["Tarix", "Sənəd", "Mənbə", appliedCategory ? entityLabel : "Əlaqəli ad", "Debet", "Kredit", "Qalıq"]}
+                  headers={["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"]}
                   emptyMessage="Seçilmiş kriteriyalara uyğun hesab kartı yazısı yoxdur."
                   rows={[
                     <tr key="opening-balance">

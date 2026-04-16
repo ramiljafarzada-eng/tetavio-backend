@@ -84,29 +84,29 @@ export function createSeedData() {
       { id: crypto.randomUUID(), billNumber: "BILL-2026-019", vendorName: "CloudLedger", status: "Qismən ödənilib", dueDate: "2026-04-14", amount: 540 }
     ],
     bankingAccounts: [
-      { id: crypto.randomUUID(), accountName: "Əsas əməliyyat hesabı", institution: "Kapital Bank", accountType: "Cari", balance: 18450, lastSync: "2026-04-08" },
-      { id: crypto.randomUUID(), accountName: "Xərc kartı", institution: "PASHA Bank", accountType: "Kart", balance: 2860, lastSync: "2026-04-08" }
+      { id: crypto.randomUUID(), accountName: "Main Operating Account", institution: "Kapital Bank", accountType: "Current", balance: 18450, lastSync: "2026-04-08" },
+      { id: crypto.randomUUID(), accountName: "Expense Card", institution: "PASHA Bank", accountType: "Card", balance: 2860, lastSync: "2026-04-08" }
     ],
     bankTransactions: [
-      { id: crypto.randomUUID(), date: "2026-04-08", description: "Atlas Cargo-dan daxilolma", category: "Alınan ödəniş", transactionType: "Mədaxil", amount: 3200 },
-      { id: crypto.randomUUID(), date: "2026-04-07", description: "Yanacaq məntəqəsi ödənişi", category: "Xərc", transactionType: "Məxaric", amount: 220 },
-      { id: crypto.randomUUID(), date: "2026-04-06", description: "Ofis icarəsi ödənişi", category: "Hesab ödənişi", transactionType: "Məxaric", amount: 1200 }
+      { id: crypto.randomUUID(), date: "2026-04-08", description: "Inflow from Atlas Cargo", category: "Payment Received", transactionType: "Credit", amount: 3200 },
+      { id: crypto.randomUUID(), date: "2026-04-07", description: "Fuel station payment", category: "Expense", transactionType: "Debit", amount: 220 },
+      { id: crypto.randomUUID(), date: "2026-04-06", description: "Office rent payment", category: "Bill Payment", transactionType: "Debit", amount: 1200 }
     ],
     manualJournals: [
-      { id: crypto.randomUUID(), journalNumber: "MJ-2026-001", reference: "Ay sonu hesablanması", date: "2026-04-01", debit: 900, credit: 900 },
-      { id: crypto.randomUUID(), journalNumber: "MJ-2026-002", reference: "Öncədən ödənilmiş xərc düzəlişi", date: "2026-04-04", debit: 250, credit: 250 }
+      { id: crypto.randomUUID(), journalNumber: "MJ-2026-001", reference: "Month-end accrual", date: "2026-04-01", debit: 900, credit: 900 },
+      { id: crypto.randomUUID(), journalNumber: "MJ-2026-002", reference: "Prepaid expense adjustment", date: "2026-04-04", debit: 250, credit: 250 }
     ],
     chartOfAccounts: [
-      { id: crypto.randomUUID(), accountCode: "111", accountName: "Kassa", accountType: "Aktiv", status: "Aktiv", balance: 1500 },
-      { id: crypto.randomUUID(), accountCode: "201", accountName: "Mal ehtiyatları", accountType: "Aktiv", status: "Aktiv", balance: 4200 },
-      { id: crypto.randomUUID(), accountCode: "231", accountName: "Debitor borcları", accountType: "Aktiv", status: "Aktiv", balance: 7410 },
-      { id: crypto.randomUUID(), accountCode: "241", accountName: "ƏDV alınmış", accountType: "Aktiv", status: "Aktiv", balance: 890 },
-      { id: crypto.randomUUID(), accountCode: "311", accountName: "Bank hesabları", accountType: "Aktiv", status: "Aktiv", balance: 18450 },
-      { id: crypto.randomUUID(), accountCode: "521", accountName: "ƏDV öhdəliyi", accountType: "Öhdəlik", status: "Aktiv", balance: 620 },
-      { id: crypto.randomUUID(), accountCode: "531", accountName: "Kreditor borcları", accountType: "Öhdəlik", status: "Aktiv", balance: 1490 },
-      { id: crypto.randomUUID(), accountCode: "601", accountName: "Xidmət gəlirləri", accountType: "Gəlir", status: "Aktiv", balance: 8360 },
-      { id: crypto.randomUUID(), accountCode: "701", accountName: "Satışın maya dəyəri", accountType: "Xərc", status: "Aktiv", balance: 3180 },
-      { id: crypto.randomUUID(), accountCode: "712", accountName: "Xidmət xərcləri", accountType: "Xərc", status: "Aktiv", balance: 1240 }
+      { id: crypto.randomUUID(), accountCode: "111", accountName: "Cash on hand", accountType: "Aktiv", status: "Aktiv", balance: 1500 },
+      { id: crypto.randomUUID(), accountCode: "201", accountName: "Inventories", accountType: "Aktiv", status: "Aktiv", balance: 4200 },
+      { id: crypto.randomUUID(), accountCode: "231", accountName: "Accounts receivable from customers", accountType: "Aktiv", status: "Aktiv", balance: 7410 },
+      { id: crypto.randomUUID(), accountCode: "241", accountName: "Recoverable VAT", accountType: "Aktiv", status: "Aktiv", balance: 890 },
+      { id: crypto.randomUUID(), accountCode: "311", accountName: "Bank accounts", accountType: "Aktiv", status: "Aktiv", balance: 18450 },
+      { id: crypto.randomUUID(), accountCode: "521", accountName: "VAT liability", accountType: "Öhdəlik", status: "Aktiv", balance: 620 },
+      { id: crypto.randomUUID(), accountCode: "531", accountName: "Accounts payable to suppliers", accountType: "Öhdəlik", status: "Aktiv", balance: 1490 },
+      { id: crypto.randomUUID(), accountCode: "601", accountName: "Service revenue", accountType: "Gəlir", status: "Aktiv", balance: 8360 },
+      { id: crypto.randomUUID(), accountCode: "701", accountName: "Cost of goods sold", accountType: "Xərc", status: "Aktiv", balance: 3180 },
+      { id: crypto.randomUUID(), accountCode: "712", accountName: "Administrative expenses", accountType: "Xərc", status: "Aktiv", balance: 1240 }
     ],
     reports: [
       { id: crypto.randomUUID(), name: "Mənfəət və zərər", amount: 4975, description: "Cari dövr üzrə gəlir və xərclərin fərqi." },
