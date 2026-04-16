@@ -2691,7 +2691,6 @@ function renderItemsCatalog() {
     const isReceivables = type === "receivables";
     const title = isReceivables ? "Debitor borclar" : "Kreditor borclar";
     const icon = isReceivables ? "🟢" : "🔴";
-    const nameKey = isReceivables ? "displayName" : "vendorName";
     const query = debtSearch[type] || "";
     const cur = state.settings.currency;
 
@@ -2768,6 +2767,7 @@ function renderItemsCatalog() {
     );
     const sorted = [...filtered].sort((a, b) => b.totalAmount - a.totalAmount);
     const totalDebt = mergedItems.reduce((s, item) => s + item.totalAmount, 0);
+    const debtEntityCount = mergedItems.length;
     const maxDebt = sorted.length > 0 ? sorted[0].totalAmount : 0;
     const avgDebt = mergedItems.length > 0 ? totalDebt / mergedItems.length : 0;
 
@@ -2786,7 +2786,7 @@ function renderItemsCatalog() {
             <span className="debt-kpi-icon">👤</span>
             <div>
               <span>{isReceivables ? at.debt_withDebtCustomer : at.debt_withDebtVendor}</span>
-              <strong>{allWithDebt.length} {isReceivables ? at.unit_customer : at.hub_vendorsCount}</strong>
+              <strong>{debtEntityCount} {isReceivables ? at.unit_customer : at.hub_vendorsCount}</strong>
             </div>
           </div>
           <div className="debt-kpi-card debt-kpi-amber">
@@ -2865,9 +2865,185 @@ function renderItemsCatalog() {
     );
   }
 
+  function renderTrialBalance() {
+    const rows = getTrialBalanceRows();
+    const filterMap = {
+      [at.tb_tabAll]: null,
+      [at.tb_acAsset]: "Aktiv",
+      [at.tb_acLiab]: "Öhdəlik",
+      [at.tb_acEq]: "Kapital",
+      [at.tb_acInc]: "Gəlir",
+      [at.tb_acExp]: "Xərc"
+    };
+    const selectedType = filterMap[trialBalanceFilter] ?? null;
+    const filteredRows = selectedType ? rows.filter((row) => row.accountType === selectedType) : rows;
+    const totals = filteredRows.reduce((sum, row) => ({
+      openingDebit: sum.openingDebit + Number(row.openingDebit || 0),
+      openingCredit: sum.openingCredit + Number(row.openingCredit || 0),
+      movementDebit: sum.movementDebit + Number(row.movementDebit || 0),
+      movementCredit: sum.movementCredit + Number(row.movementCredit || 0),
+      closingDebit: sum.closingDebit + Number(row.closingDebit || 0),
+      closingCredit: sum.closingCredit + Number(row.closingCredit || 0)
+    }), { openingDebit: 0, openingCredit: 0, movementDebit: 0, movementCredit: 0, closingDebit: 0, closingCredit: 0 });
+    const isBalanced = Math.abs(totals.closingDebit - totals.closingCredit) < 0.005;
+    const filterTabs = [at.tb_tabAll, at.tb_acAsset, at.tb_acLiab, at.tb_acEq, at.tb_acInc, at.tb_acExp];
+    const groupClassNames = {
+      Aktiv: "tb-type-aktiv",
+      "Öhdəlik": "tb-type-ohdelik",
+      Kapital: "tb-type-kapital",
+      Gəlir: "tb-type-gelir",
+      Xərc: "tb-type-xerc"
+    };
+    const groupLabels = {
+      Aktiv: at.tb_acAsset,
+      "Öhdəlik": at.tb_acLiab,
+      Kapital: at.tb_acEq,
+      Gəlir: at.tb_acInc,
+      Xərc: at.tb_acExp
+    };
+    const groupedRows = filteredRows.reduce((groups, row) => {
+      const key = row.accountType || at.tb_tabAll;
+      groups[key] = groups[key] || [];
+      groups[key].push(row);
+      return groups;
+    }, {});
+    const orderedGroupKeys = Object.keys(groupedRows).sort((left, right) => {
+      const order = ["Aktiv", "Öhdəlik", "Kapital", "Gəlir", "Xərc"];
+      return order.indexOf(left) - order.indexOf(right);
+    });
+    const formatAmount = (value) => Number(value || 0) === 0 ? "—" : currency(Number(value || 0), state.settings.currency);
+
+    return (
+      <section className="view active">
+        <div className="tb-kpi-grid">
+          <div className={`tb-kpi-card ${isBalanced ? "balanced" : "unbalanced"}`}>
+            <span className="tb-kpi-icon">⚖️</span>
+            <div>
+              <span>{at.tb_balanceStatus}</span>
+              <strong>{isBalanced ? at.tb_isBalanced : at.tb_isUnbalanced}</strong>
+            </div>
+          </div>
+          <div className="tb-kpi-card">
+            <span className="tb-kpi-icon">#</span>
+            <div>
+              <span>{at.tb_accountCount}</span>
+              <strong>{filteredRows.length}</strong>
+            </div>
+          </div>
+          <div className="tb-kpi-card">
+            <span className="tb-kpi-icon">D</span>
+            <div>
+              <span>{at.tb_closingDebitTotal}</span>
+              <strong>{currency(totals.closingDebit, state.settings.currency)}</strong>
+            </div>
+          </div>
+          <div className="tb-kpi-card">
+            <span className="tb-kpi-icon">K</span>
+            <div>
+              <span>{at.tb_closingCreditTotal}</span>
+              <strong>{currency(totals.closingCredit, state.settings.currency)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="tb-filter-bar">
+          {filterTabs.map((label) => {
+            const type = filterMap[label];
+            const count = type ? rows.filter((row) => row.accountType === type).length : rows.length;
+            return (
+              <button
+                key={label}
+                type="button"
+                className={`tb-filter-tab ${trialBalanceFilter === label ? "active" : ""}`}
+                onClick={() => setTrialBalanceFilter(label)}
+              >
+                <span>{label}</span>
+                <span className="tb-filter-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="panel tb-table-wrap">
+          {filteredRows.length === 0 ? (
+            <div className="nomen-empty">
+              <span className="nomen-empty-icon">⚖️</span>
+              <strong>{at.tb_empty}</strong>
+            </div>
+          ) : (
+            <table className="tb-table">
+              <thead>
+                <tr>
+                  <th>{at.col["Kod"]}</th>
+                  <th>{at.col["Hesab"]}</th>
+                  <th className="tb-num">{at.tb_openingD}</th>
+                  <th className="tb-num">{at.tb_openingK}</th>
+                  <th className="tb-num">{at.tb_movementD}</th>
+                  <th className="tb-num">{at.tb_movementK}</th>
+                  <th className="tb-num">{at.tb_closingDebit}</th>
+                  <th className="tb-num">{at.tb_closingCredit}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedGroupKeys.flatMap((groupKey) => {
+                  const groupRows = groupedRows[groupKey];
+                  const subtotal = groupRows.reduce((sum, row) => ({
+                    openingDebit: sum.openingDebit + Number(row.openingDebit || 0),
+                    openingCredit: sum.openingCredit + Number(row.openingCredit || 0),
+                    movementDebit: sum.movementDebit + Number(row.movementDebit || 0),
+                    movementCredit: sum.movementCredit + Number(row.movementCredit || 0),
+                    closingDebit: sum.closingDebit + Number(row.closingDebit || 0),
+                    closingCredit: sum.closingCredit + Number(row.closingCredit || 0)
+                  }), { openingDebit: 0, openingCredit: 0, movementDebit: 0, movementCredit: 0, closingDebit: 0, closingCredit: 0 });
+
+                  return [
+                    <tr key={`${groupKey}-header`} className={`tb-group-header ${groupClassNames[groupKey] || ""}`}>
+                      <td colSpan="8">{groupLabels[groupKey] || groupKey}</td>
+                    </tr>,
+                    ...groupRows.map((row) => (
+                      <tr key={row.id || row.accountCode} className="tb-data-row">
+                        <td className="tb-code">{row.accountCode}</td>
+                        <td className="tb-name">{row.accountName}</td>
+                        <td className={`tb-num ${row.openingDebit ? "has-value" : ""}`}>{formatAmount(row.openingDebit)}</td>
+                        <td className={`tb-num ${row.openingCredit ? "has-value" : ""}`}>{formatAmount(row.openingCredit)}</td>
+                        <td className={`tb-num ${row.movementDebit ? "has-value" : ""}`}>{formatAmount(row.movementDebit)}</td>
+                        <td className={`tb-num ${row.movementCredit ? "has-value" : ""}`}>{formatAmount(row.movementCredit)}</td>
+                        <td className={`tb-num tb-closing ${row.closingDebit ? "has-value" : ""}`}>{formatAmount(row.closingDebit)}</td>
+                        <td className={`tb-num tb-closing ${row.closingCredit ? "has-value" : ""}`}>{formatAmount(row.closingCredit)}</td>
+                      </tr>
+                    )),
+                    <tr key={`${groupKey}-subtotal`} className="tb-subtotal-row">
+                      <td colSpan="2">{groupLabels[groupKey] || groupKey} {at.tb_subtotal}</td>
+                      <td className="tb-num">{currency(subtotal.openingDebit, state.settings.currency)}</td>
+                      <td className="tb-num">{currency(subtotal.openingCredit, state.settings.currency)}</td>
+                      <td className="tb-num">{currency(subtotal.movementDebit, state.settings.currency)}</td>
+                      <td className="tb-num">{currency(subtotal.movementCredit, state.settings.currency)}</td>
+                      <td className="tb-num">{currency(subtotal.closingDebit, state.settings.currency)}</td>
+                      <td className="tb-num">{currency(subtotal.closingCredit, state.settings.currency)}</td>
+                    </tr>
+                  ];
+                })}
+                <tr className="tb-grand-total">
+                  <td colSpan="2">{at.tb_grandTotal}</td>
+                  <td className="tb-num">{currency(totals.openingDebit, state.settings.currency)}</td>
+                  <td className="tb-num">{currency(totals.openingCredit, state.settings.currency)}</td>
+                  <td className="tb-num">{currency(totals.movementDebit, state.settings.currency)}</td>
+                  <td className="tb-num">{currency(totals.movementCredit, state.settings.currency)}</td>
+                  <td className="tb-num">{currency(totals.closingDebit, state.settings.currency)}</td>
+                  <td className="tb-num">{currency(totals.closingCredit, state.settings.currency)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   function renderModule(moduleId) {
     const at = I18N[hubLang] || I18N.az;
     if (moduleId === "operationsJournal") return renderOperationsJournal(at);
+    if (moduleId === "trialBalance") return renderTrialBalance();
     if (moduleId === "itemsCatalog") return renderItemsCatalog();
     if (moduleId === "goods") return renderGoods();
     if (moduleId === "customers") return renderCustomers();
