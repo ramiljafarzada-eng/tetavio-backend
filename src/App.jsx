@@ -491,6 +491,25 @@ function parseDraft(id, draft) {
   return record;
 }
 
+function getJournalLineRelationConfig(accountCode) {
+  if (accountCode === "201") {
+    return { type: "goods", fieldLabel: "Mal adı" };
+  }
+  if (accountCode === "531") {
+    return { type: "vendor", fieldLabel: "Malsatan" };
+  }
+  return null;
+}
+
+function getDefaultJournalSubledgerCategory(accountCode) {
+  if (accountCode === "201") return "goods";
+  if (accountCode === "211" || accountCode === "231") return "debtors";
+  if (accountCode === "411" || accountCode === "421" || accountCode === "511" || accountCode === "521" || accountCode === "522" || accountCode === "531" || accountCode === "541") return "creditors";
+  if (accountCode === "601" || accountCode === "611" || accountCode === "621" || accountCode === "631") return "incomes";
+  if (accountCode === "701" || accountCode === "711" || accountCode === "712" || accountCode === "721" || accountCode === "731" || accountCode === "901") return "expenses";
+  return "goods";
+}
+
 function createMovementDraft(items) {
   return {
     itemId: items[0]?.id || "",
@@ -560,17 +579,29 @@ function ModuleOverviewCard({ moduleId, state, onOpen, MODULES, at }) {
 }
 
 export default function App() {
+  function getLocationRoute() {
+    const hashPath = (window.location.hash || "").replace(/^#\/?/, "").trim();
+    if (hashPath) return hashPath;
+    const pathName = String(window.location.pathname || "").replace(/^\/+|\/+$/g, "");
+    if (!pathName || pathName === "index.html") return "";
+    return pathName;
+  }
+
+  function getInitialRouteParts() {
+    return getLocationRoute().split("/").filter(Boolean);
+  }
+
   const [state, setState] = useState(() => normalizeAppState(createSeedData()));
   const [isReady, setIsReady] = useState(false);
   const [timeTick, setTimeTick] = useState(() => Date.now());
   const [activeSection, setActiveSection] = useState(() => {
-    const parts = (window.location.hash || "").replace(/^#\/?/, "").split("/");
+    const parts = getInitialRouteParts();
     const sec = parts[0];
     if (!sec || sec === "hub" || sec === "landing") return "home";
     return sec;
   });
   const [activeModule, setActiveModule] = useState(() => {
-    const parts = (window.location.hash || "").replace(/^#\/?/, "").split("/");
+    const parts = getInitialRouteParts();
     return parts[1] || null;
   });
   const [itemFormOpen, setItemFormOpen] = useState(false);
@@ -596,7 +627,7 @@ export default function App() {
   const [customerView, setCustomerView] = useState("overview"); // "overview" | "journal" | "form"
   const [documentView, setDocumentView] = useState("overview"); // "overview" | "journal" | "form"
   const [expandedSections, setExpandedSections] = useState(() => {
-    const parts = (window.location.hash || "").replace(/^#\/?/, "").split("/");
+    const parts = getInitialRouteParts();
     const sec = parts[0];
     const initial = sec && sec !== "hub" && sec !== "landing" ? sec : "home";
     return new Set([initial]);
@@ -612,9 +643,9 @@ export default function App() {
   const [debtSearch, setDebtSearch] = useState({ receivables: "", payables: "" });
   const restoreInputRef = useRef(null);
   const [activeProduct, setActiveProduct] = useState(() => {
-    const hash = (window.location.hash || "").replace(/^#\/?/, "");
-    if (!hash || hash === "hub") return "hub";
-    if (hash === "landing") return "booksLanding";
+    const route = getLocationRoute();
+    if (!route || route === "landing" || route.startsWith("landing/")) return "booksLanding";
+    if (route === "hub") return "hub";
     return "books";
   });
   const [hubLang, setHubLang] = useState("en");
@@ -647,9 +678,128 @@ export default function App() {
   const [adminPlanDrafts, setAdminPlanDrafts] = useState({});
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
   const [paymentDraft, setPaymentDraft] = useState({ planId: "", billingCycle: "monthly" });
+  const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
   const [animatedPreviewStats, setAnimatedPreviewStats] = useState(() => buildDemoPreviewStats(Date.now()));
   const [goodsTabIdx, setGoodsTabIdx] = useState(0); // 0=all, 1=goods, 2=services
+
+  function getModuleSubview(moduleId) {
+    switch (moduleId) {
+      case "incomingGoodsServices": return billView;
+      case "manualJournals": return journalView;
+      case "chartOfAccounts": return chartView;
+      case "vendors": return vendorView;
+      case "goods": return goodsView;
+      case "invoices": return invoiceView;
+      case "customers": return customerView;
+      default: return null;
+    }
+  }
+
+  function applyModuleSubview(moduleId, subview = "overview") {
+    switch (moduleId) {
+      case "incomingGoodsServices":
+        setBillView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "manualJournals":
+        setJournalView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "chartOfAccounts":
+        setChartView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "vendors":
+        setVendorView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "goods":
+        setGoodsView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "invoices":
+        setInvoiceView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      case "customers":
+        setCustomerView(["overview", "journal", "form"].includes(subview) ? subview : "overview");
+        break;
+      default:
+        break;
+    }
+  }
+
+  function buildHashFromState() {
+    if (activeProduct === "hub") return "/hub";
+    if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/landing/${booksView}` : "/";
+    if (activeSection === "settings") return settingsTab ? `/settings/${settingsTab}` : "/settings";
+    if (activeSection === "banking") return bankView && bankView !== "overview" ? `/banking/${bankView}` : "/banking";
+    if (activeSection === "documents") return documentView && documentView !== "overview" ? `/documents/${documentView}` : "/documents";
+    if (activeModule) {
+      const subview = getModuleSubview(activeModule);
+      return subview && subview !== "overview" ? `/${activeSection}/${activeModule}/${subview}` : `/${activeSection}/${activeModule}`;
+    }
+    return `/${activeSection}`;
+  }
+
+  function applyHashRoute(routeValue) {
+    const path = String(routeValue || "").replace(/^#\/?/, "").replace(/^\/+|\/+$/g, "");
+    const [part1, part2, part3] = path.split("/");
+
+    if (!part1) {
+      if (currentUser) {
+        setActiveProduct("books");
+        setSection("home");
+      } else {
+        setActiveProduct("booksLanding");
+        setBooksView("home");
+        setBooksNotice("");
+      }
+      return;
+    }
+
+    if (part1 === "hub") {
+      setActiveProduct("hub");
+      return;
+    }
+
+    if (part1 === "landing") {
+      setActiveProduct("booksLanding");
+      setBooksView(["home", "signin", "signup", "forgot", "reset", "demo"].includes(part2) ? part2 : "home");
+      setBooksNotice("");
+      return;
+    }
+
+    setActiveProduct("books");
+    if (part1 === "home") {
+      setSection("home");
+      return;
+    }
+
+    const allowedNav = getAccessibleNavItems(currentUser);
+    const validSection = allowedNav.some((item) => item.id === part1);
+    if (!validSection) {
+      setSection("home");
+      return;
+    }
+
+    setSection(part1);
+
+    if (part1 === "settings") {
+      setSettingsTab(["profile", "language", "params", "system"].includes(part2) ? part2 : null);
+      return;
+    }
+
+    if (part1 === "banking") {
+      setBankView(["overview", "journal", "form", "tx-form"].includes(part2) ? part2 : "overview");
+      return;
+    }
+
+    if (part1 === "documents") {
+      setDocumentView(["overview", "journal", "form"].includes(part2) ? part2 : "overview");
+      return;
+    }
+
+    if (part2 && MODULES[part2]) {
+      setActiveModule(part2);
+      applyModuleSubview(part2, part3 || "overview");
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -662,7 +812,7 @@ export default function App() {
     loadAppState(sessionEmail).then((data) => {
       if (mounted) {
         setState(data);
-        if (data.hubLang) setHubLang(data.hubLang);
+        setHubLang(sessionEmail ? (data.hubLang || "en") : "en");
         if (data.activeSection) setActiveSection(data.activeSection);
         if (data.activeModule) setActiveModule(data.activeModule);
         setIsReady(true);
@@ -757,42 +907,21 @@ export default function App() {
 
   // ── Hash routing: state → URL ──
   useEffect(() => {
-    let hash;
-    if (activeProduct === "hub") {
-      hash = "#hub";
-    } else if (activeProduct === "booksLanding") {
-      hash = "#landing";
-    } else {
-      hash = activeModule ? `#${activeSection}/${activeModule}` : `#${activeSection}`;
+    const routePath = buildHashFromState();
+    if (window.location.pathname !== routePath) {
+      window.history.pushState(null, "", routePath);
     }
-    if (window.location.hash !== hash) {
-      window.history.pushState(null, "", hash);
-    }
-  }, [activeSection, activeModule, activeProduct, currentUser]);
+  }, [activeSection, activeModule, activeProduct, currentUser, booksView, settingsTab, bankView, documentView, billView, journalView, chartView, vendorView, goodsView, invoiceView, customerView]);
 
   // ── Hash routing: URL → state (mount + back/forward) ──
   useEffect(() => {
-    function applyHash(hash) {
-      const path = (hash || "").replace(/^#\/?/, "");
-      if (path === "hub") { setActiveProduct("hub"); return; }
-      if (path === "landing") { setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice(""); return; }
-      setActiveProduct("books");
-      if (!path || path === "home") { setSection("home"); return; }
-      const [section, module] = path.split("/");
-      const allowedNav = getAccessibleNavItems(currentUser);
-      const validSection = allowedNav.some((item) => item.id === section);
-      if (!validSection) { setSection("home"); return; }
-      if (module && MODULES[module]) {
-        setSection(section);
-        setActiveModule(module);
-      } else {
-        setSection(section);
-      }
-    }
-    applyHash(window.location.hash);
-    window.addEventListener("popstate", () => applyHash(window.location.hash));
-    return () => window.removeEventListener("popstate", () => applyHash(window.location.hash));
-  }, []);
+    const handleRouteChange = () => applyHashRoute(getLocationRoute());
+    handleRouteChange();
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -1237,20 +1366,26 @@ export default function App() {
         id: line.id || `journal-line-${index + 1}`,
         accountCode: line.accountCode || "",
         entryType: line.entryType || "Debet",
-        amount: String(line.amount || 0)
+        amount: String(line.amount || 0),
+        linkedQuantity: String(line.linkedQuantity || 0),
+        linkedUnit: line.linkedUnit || "",
+        subledgerCategory: line.subledgerCategory || getDefaultJournalSubledgerCategory(line.accountCode || ""),
+        linkedEntityType: line.linkedEntityType || "",
+        linkedEntityId: line.linkedEntityId || "",
+        linkedEntityName: line.linkedEntityName || ""
       }));
     }
 
     if (record?.debitAccount || record?.creditAccount) {
       return [
-        { id: "journal-line-1", accountCode: record.debitAccount || "", entryType: "Debet", amount: String(record.debit || 0) },
-        { id: "journal-line-2", accountCode: record.creditAccount || "", entryType: "Kredit", amount: String(record.credit || 0) }
+        { id: "journal-line-1", accountCode: record.debitAccount || "", entryType: "Debet", amount: String(record.debit || 0), linkedQuantity: "0", linkedUnit: "", subledgerCategory: getDefaultJournalSubledgerCategory(record.debitAccount || ""), linkedEntityType: "", linkedEntityId: "", linkedEntityName: "" },
+        { id: "journal-line-2", accountCode: record.creditAccount || "", entryType: "Kredit", amount: String(record.credit || 0), linkedQuantity: "0", linkedUnit: "", subledgerCategory: getDefaultJournalSubledgerCategory(record.creditAccount || ""), linkedEntityType: "", linkedEntityId: "", linkedEntityName: "" }
       ];
     }
 
     return [
-      { id: "journal-line-1", accountCode: "", entryType: "Debet", amount: "0" },
-      { id: "journal-line-2", accountCode: "", entryType: "Kredit", amount: "0" }
+      { id: "journal-line-1", accountCode: "", entryType: "Debet", amount: "0", linkedQuantity: "0", linkedUnit: "", subledgerCategory: "goods", linkedEntityType: "", linkedEntityId: "", linkedEntityName: "" },
+      { id: "journal-line-2", accountCode: "", entryType: "Kredit", amount: "0", linkedQuantity: "0", linkedUnit: "", subledgerCategory: "goods", linkedEntityType: "", linkedEntityName: "", linkedEntityId: "" }
     ];
   }
 
@@ -1885,7 +2020,20 @@ export default function App() {
         ...current,
         manualJournals: {
           ...draft,
-          journalLines: draft.journalLines.map((line) => line.id === lineId ? { ...line, [fieldName]: value } : line)
+          journalLines: draft.journalLines.map((line) => {
+            if (line.id !== lineId) return line;
+            if (fieldName === "accountCode") {
+              return {
+                ...line,
+                accountCode: value,
+                subledgerCategory: getDefaultJournalSubledgerCategory(value),
+                linkedEntityType: "",
+                linkedEntityId: "",
+                linkedEntityName: ""
+              };
+            }
+            return { ...line, [fieldName]: value };
+          })
         }
       };
     });
@@ -1898,9 +2046,221 @@ export default function App() {
         ...current,
         manualJournals: {
           ...draft,
-          journalLines: [...draft.journalLines, { id: crypto.randomUUID(), accountCode: "", entryType: "Debet", amount: "0" }]
+          journalLines: [...draft.journalLines, { id: crypto.randomUUID(), accountCode: "", entryType: "Debet", amount: "0", linkedQuantity: "0", linkedUnit: "", subledgerCategory: "goods", linkedEntityType: "", linkedEntityId: "", linkedEntityName: "" }]
         }
       };
+    });
+  }
+
+  function updateJournalLineLinkedEntity(lineId, relationType, entityId, entityName, entityUnit = "") {
+    setDrafts((current) => {
+      const draft = current.manualJournals || createModuleDraft("manualJournals");
+      return {
+        ...current,
+        manualJournals: {
+          ...draft,
+          journalLines: draft.journalLines.map((line) => line.id === lineId
+            ? { ...line, linkedEntityType: relationType || "", linkedEntityId: entityId || "", linkedEntityName: entityName || "", linkedUnit: entityUnit || line.linkedUnit || "" }
+            : line)
+        }
+      };
+    });
+  }
+
+  function updateJournalLineSubledgerCategory(lineId, category) {
+    setDrafts((current) => {
+      const draft = current.manualJournals || createModuleDraft("manualJournals");
+      return {
+        ...current,
+        manualJournals: {
+          ...draft,
+          journalLines: draft.journalLines.map((line) => line.id === lineId ? { ...line, subledgerCategory: category } : line)
+        }
+      };
+    });
+  }
+
+  function getJournalSubledgerOptions(category) {
+    if (category === "goods" || category === "services") {
+      const goodsOptions = state.goods
+        .filter((item) => category === "goods" ? (item.type || "Mal") !== "Xidmət" : item.type === "Xidmət")
+        .map((item) => ({ id: item.id, label: item.name || item.code || "—", type: category, unit: item.unit || "" }));
+      const itemOptions = state.items
+        .filter((item) => category === "goods" ? item.type !== "Xidmət" : item.type === "Xidmət")
+        .map((item) => ({ id: item.id, label: item.name || item.sku || "—", type: category, unit: item.usageUnit || "" }));
+      return [...goodsOptions, ...itemOptions.filter((item) => !goodsOptions.some((existing) => existing.label === item.label))];
+    }
+    if (category === "expenses") {
+      return state.chartOfAccounts
+        .filter((account) => account.accountType === "Xərc" && isVisibleAccount(account))
+        .map((account) => ({ id: account.id, label: `${account.accountCode} - ${account.accountName}`, type: category }));
+    }
+    if (category === "incomes") {
+      return state.chartOfAccounts
+        .filter((account) => account.accountType === "Gəlir" && isVisibleAccount(account))
+        .map((account) => ({ id: account.id, label: `${account.accountCode} - ${account.accountName}`, type: category }));
+    }
+    if (category === "debtors") {
+      return state.customers.map((item) => ({
+        id: item.id,
+        label: item.displayName || item.companyName || "—",
+        type: category
+      }));
+    }
+    if (category === "creditors") {
+      return state.vendors.map((item) => ({
+        id: item.id,
+        label: item.vendorName || item.companyName || "—",
+        type: category
+      }));
+    }
+    return [];
+  }
+
+  function getNextAccountCodeByType(accountType) {
+    const base = accountType === "Gəlir" ? 601 : 701;
+    const maxCode = state.chartOfAccounts
+      .filter((account) => account.accountType === accountType)
+      .map((account) => Number(account.accountCode || 0))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .reduce((max, value) => Math.max(max, value), base - 1);
+    return String(maxCode + 1);
+  }
+
+  function createJournalSubledgerEntity(lineId, category) {
+    const draftValue = String(journalInlineCreate[lineId]?.[category] || "").trim();
+    if (!draftValue) return;
+
+    if (category === "goods" || category === "services") {
+      const nextRecord = {
+        id: crypto.randomUUID(),
+        name: draftValue,
+        type: category === "goods" ? "Mal" : "Xidmət",
+        unit: category === "goods" ? "ədəd" : "xidmət",
+        code: `${category === "goods" ? "MAL" : "SRV"}-${String(state.goods.length + 1).padStart(3, "0")}`
+      };
+      setState((current) => ({ ...current, goods: [nextRecord, ...current.goods] }));
+      updateJournalLineLinkedEntity(lineId, category, nextRecord.id, nextRecord.name, nextRecord.unit || "");
+    } else if (category === "incomes" || category === "expenses") {
+      const accountType = category === "incomes" ? "Gəlir" : "Xərc";
+      const nextRecord = {
+        id: crypto.randomUUID(),
+        accountCode: getNextAccountCodeByType(accountType),
+        accountName: draftValue,
+        accountType,
+        status: "Aktiv",
+        balance: 0
+      };
+      setState((current) => ({
+        ...current,
+        chartOfAccounts: [...current.chartOfAccounts, nextRecord].sort((a, b) => Number(a.accountCode) - Number(b.accountCode))
+      }));
+      updateJournalLineLinkedEntity(lineId, category, nextRecord.id, `${nextRecord.accountCode} - ${nextRecord.accountName}`, "");
+    } else if (category === "debtors") {
+      const nextRecord = {
+        id: crypto.randomUUID(),
+        displayName: draftValue,
+        companyName: "",
+        email: "",
+        outstandingReceivables: 0
+      };
+      setState((current) => ({ ...current, customers: [nextRecord, ...current.customers] }));
+      updateJournalLineLinkedEntity(lineId, category, nextRecord.id, nextRecord.displayName, "");
+    } else if (category === "creditors") {
+      const nextRecord = {
+        id: crypto.randomUUID(),
+        vendorName: draftValue,
+        companyName: "",
+        email: "",
+        outstandingPayables: 0
+      };
+      setState((current) => ({ ...current, vendors: [nextRecord, ...current.vendors] }));
+      updateJournalLineLinkedEntity(lineId, category, nextRecord.id, nextRecord.vendorName, "");
+    }
+
+    setJournalInlineCreate((current) => ({
+      ...current,
+      [lineId]: {
+        ...(current[lineId] || {}),
+        [category]: ""
+      }
+    }));
+  }
+
+  function buildManualJournalInventoryAdjustments(record, sourceState) {
+    const journalLines = Array.isArray(record?.journalLines) ? record.journalLines : [];
+    return journalLines
+      .filter((line) => line.accountCode === "201" && line.linkedEntityId && Number(line.linkedQuantity || 0) > 0)
+      .map((line) => {
+        const item = sourceState.items.find((entry) => entry.id === line.linkedEntityId);
+        if (!item || item.trackInventory !== "Bəli" || item.type === "Xidmət") return null;
+        const quantity = Number(line.linkedQuantity || 0);
+        const direction = line.entryType === "Debet" ? 1 : -1;
+        const unitPrice = quantity > 0 ? Number((Number(line.amount || 0) / quantity).toFixed(4)) : 0;
+        return {
+          itemId: item.id,
+          quantity,
+          direction,
+          line,
+          item,
+          movement: {
+            id: `mj-move-${record.id}-${line.id}`,
+            sourceType: "manualJournal",
+            sourceId: record.id,
+            sourceLineId: line.id,
+            itemId: item.id,
+            itemName: item.name,
+            movementType: direction > 0 ? "Alış" : "Satış",
+            quantity,
+            unitPrice,
+            taxLabel: "",
+            taxRate: 0,
+            taxAmount: 0,
+            baseAmount: Number(line.amount || 0),
+            itemType: item.type,
+            costAmount: direction < 0 && item.type !== "Xidmət" ? Number((quantity * Number(item.purchaseRate || 0)).toFixed(2)) : 0,
+            partner: record.reference || line.linkedEntityName || "",
+            movementDate: record.date || today(),
+            note: `Manual journal ${record.journalNumber || ""} ${record.reference || ""}`.trim(),
+            amount: Number(line.amount || 0)
+          }
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function applyManualJournalInventory(stateSnapshot, record, mode = "apply") {
+    const adjustments = buildManualJournalInventoryAdjustments(record, stateSnapshot);
+    if (!adjustments.length) return stateSnapshot;
+
+    const sign = mode === "revert" ? -1 : 1;
+    const movementIds = new Set(adjustments.map((entry) => entry.movement.id));
+    const nextItems = stateSnapshot.items.map((item) => {
+      const adjustment = adjustments.find((entry) => entry.itemId === item.id);
+      if (!adjustment) return item;
+      return {
+        ...item,
+        stockOnHand: Number(item.stockOnHand || 0) + (adjustment.quantity * adjustment.direction * sign)
+      };
+    });
+
+    let nextMovements = stateSnapshot.itemMovements.filter((movement) => !movementIds.has(movement.id));
+    if (mode === "apply") {
+      nextMovements = [...adjustments.map((entry) => entry.movement), ...nextMovements];
+    }
+
+    return {
+      ...stateSnapshot,
+      items: nextItems,
+      itemMovements: nextMovements
+    };
+  }
+
+  function canApplyManualJournalInventory(record, sourceState) {
+    const adjustments = buildManualJournalInventoryAdjustments(record, sourceState);
+    return adjustments.every((entry) => {
+      const nextStock = Number(entry.item.stockOnHand || 0) + (entry.quantity * entry.direction);
+      return nextStock >= 0 || sourceState.settings.negativeStock === "Bəli";
     });
   }
 
@@ -1960,11 +2320,17 @@ export default function App() {
     const payload = moduleId === "manualJournals"
       ? {
         ...parseDraft(moduleId, activeDraft),
-        journalLines: getManualJournalAnalysis(activeDraft).filledLines.map((line) => ({
-          id: line.id,
-          accountCode: line.accountCode,
-          entryType: line.entryType,
-          amount: Number(line.amount || 0)
+          journalLines: getManualJournalAnalysis(activeDraft).filledLines.map((line) => ({
+            id: line.id,
+            accountCode: line.accountCode,
+            entryType: line.entryType,
+            amount: Number(line.amount || 0),
+            linkedQuantity: Number(line.linkedQuantity || 0),
+            linkedUnit: line.linkedUnit || "",
+            subledgerCategory: line.subledgerCategory || "",
+            linkedEntityType: line.linkedEntityType || "",
+            linkedEntityId: line.linkedEntityId || "",
+          linkedEntityName: line.linkedEntityName || ""
         })),
         debitAccount: getManualJournalAnalysis(activeDraft).filledLines.find((line) => line.entryType === "Debet")?.accountCode || "",
         creditAccount: getManualJournalAnalysis(activeDraft).filledLines.find((line) => line.entryType === "Kredit")?.accountCode || "",
@@ -1990,21 +2356,39 @@ export default function App() {
           };
         })()
         : { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
+    let blockedByInventory = false;
     setState((current) => {
+      let inventoryBaseState = current;
+      if (moduleId === "manualJournals" && editingId) {
+        const existingRecord = current.manualJournals.find((item) => item.id === editingId);
+        if (existingRecord) inventoryBaseState = applyManualJournalInventory(current, existingRecord, "revert");
+      }
       const nextRecord = editingId
-        ? null
+        ? { ...(current[config.collection].find((item) => item.id === editingId) || {}), ...payload, id: editingId }
         : { id: crypto.randomUUID(), createdAt: today(), ...payload };
+      if (moduleId === "manualJournals" && !canApplyManualJournalInventory(nextRecord, inventoryBaseState)) {
+        blockedByInventory = true;
+        return current;
+      }
       let nextCollection = editingId
-        ? current[config.collection].map((item) => item.id === editingId ? { ...item, ...payload } : item)
-        : [nextRecord, ...current[config.collection]];
+        ? inventoryBaseState[config.collection].map((item) => item.id === editingId ? { ...item, ...payload } : item)
+        : [nextRecord, ...inventoryBaseState[config.collection]];
 
       // Hesablar planı həmişə hesab koduna görə rəqəmsal artan sırada saxlanılır
       if (moduleId === "chartOfAccounts") {
         nextCollection = [...nextCollection].sort((a, b) => Number(a.accountCode) - Number(b.accountCode));
       }
 
-      return { ...current, [config.collection]: nextCollection };
+      let nextState = { ...inventoryBaseState, [config.collection]: nextCollection };
+      if (moduleId === "manualJournals") {
+        nextState = applyManualJournalInventory(nextState, nextRecord, "apply");
+      }
+      return nextState;
     });
+    if (blockedByInventory) {
+      window.alert("Inventory tracking aktiv olan mal üçün miqdar daxil edin və stok qalığını yoxlayın.");
+      return;
+    }
 
     if (!editingId) markOperationUsage();
     if (moduleId === "itemsCatalog") setItemFormOpen(false);
@@ -2014,7 +2398,11 @@ export default function App() {
   function removeModuleRecord(moduleId, recordId) {
     const config = MODULES[moduleId];
     setState((current) => {
-      const nextState = { ...current, [config.collection]: current[config.collection].filter((item) => item.id !== recordId) };
+      let nextState = { ...current, [config.collection]: current[config.collection].filter((item) => item.id !== recordId) };
+      if (moduleId === "manualJournals") {
+        const existingRecord = current.manualJournals.find((item) => item.id === recordId);
+        if (existingRecord) nextState = applyManualJournalInventory(nextState, existingRecord, "revert");
+      }
       if (moduleId === "itemsCatalog") {
         nextState.itemMovements = current.itemMovements.filter((item) => item.itemId !== recordId);
       }
@@ -3040,10 +3428,420 @@ function renderItemsCatalog() {
     );
   }
 
+  function renderManualJournals(at) {
+    const config = MODULES.manualJournals;
+    const query = searches[config.collection] || "";
+    const draft = drafts.manualJournals || createModuleDraft("manualJournals");
+    const rows = state.manualJournals
+      .filter((item) => matchesSearch(item, query))
+      .slice()
+      .sort((a, b) => `${b.date || ""}${b.createdAt || ""}`.localeCompare(`${a.date || ""}${a.createdAt || ""}`));
+    const allRows = state.manualJournals.slice();
+    const journalAnalysis = getManualJournalAnalysis(draft);
+    const journalIsBalanced = journalAnalysis.isBalanced;
+    const filteredAccounts = ((draft.accountTypeFilter && draft.accountTypeFilter !== "Hamısı"
+      ? state.chartOfAccounts.filter((account) => account.accountType === draft.accountTypeFilter)
+      : state.chartOfAccounts))
+      .filter((account) => isVisibleAccount(account))
+      .slice()
+      .sort((left, right) => left.accountCode.localeCompare(right.accountCode));
+    const totalDebit = allRows.reduce((sum, item) => sum + Number(item.debit || 0), 0);
+    const totalCredit = allRows.reduce((sum, item) => sum + Number(item.credit || 0), 0);
+    const balancedCount = allRows.filter((item) => Number(item.debit || 0) > 0 && Number(item.debit || 0) === Number(item.credit || 0)).length;
+    const recentRows = rows.slice(0, 4);
+    const renderManualJournalNav = () => (
+      <div className="mj-overview-grid mj-overview-grid-persistent">
+        <div className={`mj-action-card ${journalView === "journal" ? "active" : ""}`} onClick={() => setJournalView("journal")}>
+          <div className="mj-action-icon">📚</div>
+          <div>
+            <h3>{at.mj_opsList}</h3>
+            <p>{at.mj_opsListDesc}</p>
+            <span>{rows.length} {at.unit_record}</span>
+          </div>
+        </div>
+        <div className={`mj-action-card primary ${journalView === "form" ? "active" : ""}`} onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
+          <div className="mj-action-icon">✍️</div>
+          <div>
+            <h3>{at.mj_newEntry}</h3>
+            <p>{at.mj_newEntryDesc}</p>
+            <span>{at.mj_createFirst}</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    if (journalView === "overview") {
+      return (
+        <section className="view active">
+          <section className="mj-hero">
+            <div className="mj-hero-copy">
+              <span className="mj-hero-badge">Manual Journal Studio</span>
+              <h2>{at.mod_manualJournals}</h2>
+              <p>{at.mod_manualJournalsSummary}</p>
+            </div>
+            <div className="mj-hero-stats">
+              <article className="mj-stat-card">
+                <span>{at.mj_totalRecords}</span>
+                <strong>{allRows.length}</strong>
+              </article>
+              <article className="mj-stat-card">
+                <span>{at.mj_totalDebit}</span>
+                <strong>{currency(totalDebit, state.settings.currency)}</strong>
+              </article>
+              <article className="mj-stat-card">
+                <span>{at.mj_totalCredit}</span>
+                <strong>{currency(totalCredit, state.settings.currency)}</strong>
+              </article>
+              <article className="mj-stat-card accent">
+                <span>{at.mj_balanced}</span>
+                <strong>{balancedCount}</strong>
+              </article>
+            </div>
+          </section>
+
+          <div className="mj-overview-grid">
+            <div className="mj-action-card" onClick={() => setJournalView("journal")}>
+              <div className="mj-action-icon">📚</div>
+              <div>
+                <h3>{at.mj_opsList}</h3>
+                <p>{at.mj_opsListDesc}</p>
+                <span>{rows.length} {at.unit_record}</span>
+              </div>
+            </div>
+            <div className="mj-action-card primary" onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>
+              <div className="mj-action-icon">✍️</div>
+              <div>
+                <h3>{at.mj_newEntry}</h3>
+                <p>{at.mj_newEntryDesc}</p>
+                <span>{at.mj_createFirst}</span>
+              </div>
+            </div>
+          </div>
+
+          <section className="panel">
+            <div className="panel-head">
+              <div>
+                <h3>{at.mj_recentOps}</h3>
+                <p className="panel-copy">{at.mj_opsListDesc}</p>
+              </div>
+              <button className="ghost-btn compact-btn" type="button" onClick={() => setJournalView("journal")}>{at.mj_viewAll}</button>
+            </div>
+            {recentRows.length === 0 ? (
+              <div className="nomen-empty">
+                <span className="nomen-empty-icon">📓</span>
+                <strong>{at.mj_noEntries}</strong>
+              </div>
+            ) : (
+              <div className="mj-recent-list">
+                {recentRows.map((record) => {
+                  const lineCount = Array.isArray(record.journalLines) ? record.journalLines.length : 2;
+                  return (
+                    <article className="mj-recent-card" key={record.id}>
+                      <div className="mj-recent-top">
+                        <div>
+                          <strong>{record.journalNumber || "—"}</strong>
+                          <span>{record.reference || "—"}</span>
+                        </div>
+                        <span className={`mj-balance-pill ${Number(record.debit || 0) === Number(record.credit || 0) ? "ok" : "warn"}`}>
+                          {Number(record.debit || 0) === Number(record.credit || 0) ? at.mj_balanced : at.mj_unbalanced}
+                        </span>
+                      </div>
+                      <div className="mj-recent-meta">
+                        <span>{fmtDate(record.date)}</span>
+                        <span>{lineCount} sətir</span>
+                        <span>{currency(record.debit || 0, state.settings.currency)}</span>
+                      </div>
+                      <div className="row-actions">
+                        <button className="table-btn" type="button" onClick={() => startEdit("manualJournals", record)}>{at.edit}</button>
+                        <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("manualJournals", record.id)}>{at.delete}</button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </section>
+      );
+    }
+
+    if (journalView === "journal") {
+      return (
+        <section className="view active">
+          {renderManualJournalNav()}
+          <div className="bill-journal-header">
+            <button className="bill-back-btn" type="button" onClick={() => setJournalView("overview")}>{at.back}</button>
+            <div className="bill-journal-title-row">
+              <h2>{at.mj_journalList}</h2>
+              <button className="primary-btn" type="button" onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>{at.mj_newEntry}</button>
+            </div>
+          </div>
+
+          <div className="panel mj-journal-shell">
+            <div className="panel-head compact-head">
+              <div>
+                <h3>{at.mj_opsList}</h3>
+                <p className="panel-copy">{at.mj_opsListDesc}</p>
+              </div>
+              <input className="search-input" placeholder={at.mj_search} value={query} onChange={(event) => setSearches((current) => ({ ...current, [config.collection]: event.target.value }))} />
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="nomen-empty">
+                <span className="nomen-empty-icon">📭</span>
+                <strong>{query ? at.mj_noResult : at.mj_noEntries}</strong>
+                {!query ? <button className="primary-btn" type="button" onClick={() => { cancelEdit("manualJournals"); setJournalView("form"); }}>{at.mj_createFirst}</button> : null}
+              </div>
+            ) : (
+              <div className="mj-journal-table">
+                <div className="mj-journal-table-head">
+                  <span>Jurnal</span>
+                  <span>Təyinat</span>
+                  <span>Tarix</span>
+                  <span>Debet</span>
+                  <span>Kredit</span>
+                  <span>Status</span>
+                  <span>Əməliyyat</span>
+                </div>
+                {rows.map((record) => {
+                  const lines = Array.isArray(record.journalLines) && record.journalLines.length
+                    ? record.journalLines
+                    : [
+                        record.debitAccount ? { accountCode: record.debitAccount, entryType: "Debet", amount: record.debit } : null,
+                        record.creditAccount ? { accountCode: record.creditAccount, entryType: "Kredit", amount: record.credit } : null
+                      ].filter(Boolean);
+                  return (
+                    <article className="mj-journal-row" key={record.id}>
+                      <div className="mj-journal-row-main">
+                        <span className="mj-journal-code">{record.journalNumber || "—"}</span>
+                        <strong className="mj-journal-ref">{record.reference || "—"}</strong>
+                        <span className="mj-journal-date">{fmtDate(record.date)}</span>
+                        <strong className="mj-journal-money">{currency(record.debit || 0, state.settings.currency)}</strong>
+                        <strong className="mj-journal-money">{currency(record.credit || 0, state.settings.currency)}</strong>
+                        <div className="mj-journal-status-cell">
+                          <span className={`mj-balance-pill ${Number(record.debit || 0) === Number(record.credit || 0) ? "ok" : "warn"}`}>
+                            {Number(record.debit || 0) === Number(record.credit || 0) ? at.mj_balanced : at.mj_unbalanced}
+                          </span>
+                        </div>
+                        <div className="row-actions mj-row-actions">
+                          <button className="table-btn" type="button" onClick={() => startEdit("manualJournals", record)}>{at.mj_btnEdit}</button>
+                          <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("manualJournals", record.id)}>{at.mj_btnDelete}</button>
+                        </div>
+                      </div>
+                      <div className="mj-ledger-preview mj-ledger-preview-row">
+                        {lines.slice(0, 4).map((line, index) => {
+                          const account = state.chartOfAccounts.find((item) => item.accountCode === line.accountCode);
+                          return (
+                            <div className="mj-ledger-chip" key={`${record.id}-${line.accountCode}-${index}`}>
+                              <span>{line.entryType === "Debet" ? "D" : "K"}</span>
+                              <strong>{line.accountCode}</strong>
+                              <em>{line.linkedEntityName || account?.accountName || getAccountNameByCode(line.accountCode)}</em>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="view active">
+        <div className="bill-form-page">
+          {renderManualJournalNav()}
+          <div className="bill-journal-header">
+            <button className="bill-back-btn" type="button" onClick={() => cancelEdit("manualJournals")}>{at.back}</button>
+            <div className="bill-journal-title-row">
+              <h2>{editing.manualJournals ? at.mj_formEdit : at.mj_formNew}</h2>
+            </div>
+          </div>
+
+          <div className="mj-form-shell">
+            <section className="mj-form-header-card">
+              <div>
+                <span className="mj-form-eyebrow">{editing.manualJournals ? at.mj_formEyebrowEdit : at.mj_formEyebrowNew}</span>
+                <h3>{editing.manualJournals ? at.mj_formEdit : at.mj_formNew}</h3>
+                <p>{at.mj_newEntryDesc}</p>
+              </div>
+              <div className="mj-balance-kpis">
+                <article className="mj-balance-kpi">
+                  <span>{at.mj_debitTotal}</span>
+                  <strong>{currency(journalAnalysis.debitTotal, state.settings.currency)}</strong>
+                </article>
+                <article className="mj-balance-kpi">
+                  <span>{at.mj_creditTotal}</span>
+                  <strong>{currency(journalAnalysis.creditTotal, state.settings.currency)}</strong>
+                </article>
+                <article className={`mj-balance-kpi ${journalIsBalanced ? "balanced" : "unbalanced"}`}>
+                  <span>{at.mj_difference}</span>
+                  <strong>{currency(Math.abs(Number(journalAnalysis.difference || 0)), state.settings.currency)}</strong>
+                </article>
+              </div>
+            </section>
+
+            <form className="mj-form-grid" onSubmit={(event) => submitModule("manualJournals", event)}>
+              <div className="mj-meta-grid">
+                <label><span>{at.mj_lblJournalNum}</span><input value={draft.journalNumber ?? ""} onChange={(event) => updateDraft("manualJournals", "journalNumber", event.target.value)} required /></label>
+                <label><span>{at.mj_lblReference}</span><input value={draft.reference ?? ""} onChange={(event) => updateDraft("manualJournals", "reference", event.target.value)} required /></label>
+                <label><span>{at.mj_lblDate}</span><input type="date" value={draft.date ?? today()} onChange={(event) => updateDraft("manualJournals", "date", event.target.value)} required /></label>
+                <label><span>{at.mj_lblAccountFilter}</span><select value={draft.accountTypeFilter ?? "Hamısı"} onChange={(event) => updateDraft("manualJournals", "accountTypeFilter", event.target.value)}><option value="Hamısı">{at.goods_tabAll}</option><option value="Aktiv">{at.coa_asset}</option><option value="Öhdəlik">{at.coa_liability}</option><option value="Kapital">{at.coa_equity}</option><option value="Gəlir">{at.coa_income}</option><option value="Xərc">{at.coa_expense}</option></select></label>
+              </div>
+
+              <div className="journal-lines-card modern">
+                <div className="journal-lines-head">
+                  <div>
+                    <strong>{at.mj_lines}</strong>
+                    <p>{at.mj_newEntryDesc}</p>
+                  </div>
+                  <button className="ghost-btn compact-btn" type="button" onClick={addJournalLine}>{at.mj_addLine}</button>
+                </div>
+                <div className="journal-lines-list modern">
+                  {draft.journalLines.map((line, index) => {
+                    const selectedAccount = filteredAccounts.find((account) => account.accountCode === line.accountCode);
+                    const subledgerCategory = line.subledgerCategory || "goods";
+                    const subledgerOptions = getJournalSubledgerOptions(subledgerCategory);
+                    const selectedInventoryItem = state.items.find((item) => item.id === line.linkedEntityId);
+                    const isTrackedInventoryItem = subledgerCategory === "goods" && selectedInventoryItem?.trackInventory === "Bəli" && selectedInventoryItem?.type !== "Xidmət";
+                    const subledgerTabs = [
+                      { id: "goods", label: "Mallar" },
+                      { id: "services", label: "Xidmətlər" },
+                      { id: "expenses", label: "Xərclər" },
+                      { id: "incomes", label: "Gəlirlər" },
+                      { id: "debtors", label: "Debitorlar" },
+                      { id: "creditors", label: "Kreditorlar" }
+                    ];
+                    return (
+                      <div className="mj-line-card" key={line.id}>
+                        <div className="mj-line-order">{index + 1}</div>
+                        <div className="mj-line-fields">
+                          <label>
+                            <span>{at.mj_selectAccount}</span>
+                            <select value={line.accountCode} onChange={(event) => updateJournalLine(line.id, "accountCode", event.target.value)}>
+                              <option value="">{at.mj_selectAccount}</option>
+                              {filteredAccounts.map((account) => <option key={`${line.id}-${account.id}`} value={account.accountCode}>{account.accountCode} - {account.accountName}</option>)}
+                            </select>
+                          </label>
+                          <label>
+                            <span>{at.status}</span>
+                            <select value={line.entryType} onChange={(event) => updateJournalLine(line.id, "entryType", event.target.value)}>
+                              <option value="Debet">{fld("Debet")}</option>
+                              <option value="Kredit">{fld("Kredit")}</option>
+                            </select>
+                          </label>
+                          <label>
+                            <span>{at.col["Məbləğ"] || "Məbləğ"}</span>
+                            <input type="number" step="0.01" value={line.amount} onChange={(event) => updateJournalLine(line.id, "amount", event.target.value)} />
+                          </label>
+                          <div className="mj-subledger-card">
+                            <div className="mj-subledger-tabs">
+                              {subledgerTabs.map((tab) => (
+                                <button
+                                  key={`${line.id}-${tab.id}`}
+                                  type="button"
+                                  className={`mj-subledger-tab ${subledgerCategory === tab.id ? "active" : ""}`}
+                                  onClick={() => updateJournalLineSubledgerCategory(line.id, tab.id)}
+                                >
+                                  {tab.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mj-subledger-grid">
+                              <label className="mj-line-related-field">
+                                <span>Alt bölmə seçimi</span>
+                                <select
+                                  value={line.linkedEntityId || ""}
+                                  onChange={(event) => {
+                                    const selectedId = event.target.value;
+                                    const selectedOption = subledgerOptions.find((option) => option.id === selectedId);
+                                    updateJournalLineLinkedEntity(line.id, subledgerCategory, selectedId, selectedOption?.label || "", selectedOption?.unit || "");
+                                  }}
+                                >
+                                  <option value="">Seçin</option>
+                                  {subledgerOptions.map((option) => <option key={`${line.id}-${subledgerCategory}-${option.id}`} value={option.id}>{option.label}</option>)}
+                                </select>
+                              </label>
+                              {subledgerCategory === "goods" ? (
+                                <label className="mj-line-related-field">
+                                  <span>Miqdar və ölçü vahidi</span>
+                                  <div className="mj-qty-unit-row">
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={line.linkedQuantity ?? "0"}
+                                      onChange={(event) => updateJournalLine(line.id, "linkedQuantity", event.target.value)}
+                                      placeholder="Miqdar daxil edin"
+                                    />
+                                    <input
+                                      value={line.linkedUnit ?? ""}
+                                      onChange={(event) => updateJournalLine(line.id, "linkedUnit", event.target.value)}
+                                      placeholder="Ölçü vahidi"
+                                    />
+                                  </div>
+                                  {isTrackedInventoryItem ? (
+                                    <small className="mj-stock-hint">Inventory tracking aktivdir. Mövcud qalıq: {selectedInventoryItem?.stockOnHand || 0} {selectedInventoryItem?.usageUnit || line.linkedUnit || ""}</small>
+                                  ) : (
+                                    <small className="mj-stock-hint">Inventory tracking yalnız izlənən anbar mallarında stok qalığını yeniləyir.</small>
+                                  )}
+                                </label>
+                              ) : null}
+                              <label className="mj-line-related-field">
+                                <span>Yeni yarat</span>
+                                <div className="mj-inline-create-row">
+                                  <input
+                                    value={journalInlineCreate[line.id]?.[subledgerCategory] || ""}
+                                    onChange={(event) => setJournalInlineCreate((current) => ({
+                                      ...current,
+                                      [line.id]: {
+                                        ...(current[line.id] || {}),
+                                        [subledgerCategory]: event.target.value
+                                      }
+                                    }))}
+                                    placeholder={`Yeni ${subledgerTabs.find((tab) => tab.id === subledgerCategory)?.label?.toLowerCase() || "alt bölmə"}...`}
+                                  />
+                                  <button className="ghost-btn compact-btn" type="button" onClick={() => createJournalSubledgerEntity(line.id, subledgerCategory)}>Yarat</button>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mj-line-side">
+                          <span className={`mj-line-entry-tag ${line.entryType === "Debet" ? "debit" : "credit"}`}>{line.entryType === "Debet" ? "D" : "K"}</span>
+                          <small>{line.linkedEntityName || selectedAccount?.accountName || "—"}</small>
+                          <button className="table-btn danger-btn" type="button" onClick={() => removeJournalLine(line.id)} disabled={draft.journalLines.length <= 2}>{at.delete}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className={`journal-balance-note ${journalIsBalanced ? "balanced" : "unbalanced"} modern`}>
+                <strong>{journalAnalysis?.conflictingCode ? at.mj_conflict : journalIsBalanced ? at.mj_balanced : at.mj_unbalanced}</strong>
+                <span>{journalAnalysis?.conflictingCode ? `${journalAnalysis.conflictingCode} ${at.mj_conflictHint}` : journalIsBalanced ? at.mj_balancedHint : `${at.mj_diff}: ${currency(Math.abs(Number(journalAnalysis?.difference || 0)), state.settings.currency)}. ${at.mj_unbalancedHint}`}</span>
+              </div>
+
+              <div className="form-actions">
+                <button className="primary-btn" type="submit" disabled={!journalIsBalanced}>{editing.manualJournals ? at.ic_updateBtn : at.save}</button>
+                <button className="ghost-btn" type="button" onClick={() => cancelEdit("manualJournals")}>{at.cancel}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   function renderModule(moduleId) {
     const at = I18N[hubLang] || I18N.az;
     if (moduleId === "operationsJournal") return renderOperationsJournal(at);
     if (moduleId === "trialBalance") return renderTrialBalance();
+    if (moduleId === "manualJournals") return renderManualJournals(at);
     if (moduleId === "itemsCatalog") return renderItemsCatalog();
     if (moduleId === "goods") return renderGoods();
     if (moduleId === "customers") return renderCustomers();
@@ -4348,6 +5146,7 @@ function renderItemsCatalog() {
   function logoutUser() {
     if (!window.confirm("Sistemdən çıxmaq istədiyinizə əminsiniz?")) return;
     setCurrentUser(null);
+    setHubLang("en");
     setProfileMenuOpen(false);
     // Cari istifadəçinin məlumatlarını təmizlə ki, növbəti istifadəçiyə görünməsin
     setState(normalizeAppState(createResetData()));

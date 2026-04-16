@@ -252,9 +252,26 @@ function normalizeState(raw) {
     bankTransactions: normalizeList(source.bankTransactions, seed.bankTransactions, (item, index) =>
       normalizeRecord("bank-tx", index, item, seed.bankTransactions[0])
     ),
-    manualJournals: normalizeList(source.manualJournals, seed.manualJournals, (item, index) =>
-      normalizeRecord("journal", index, item, seed.manualJournals[0])
-    ),
+    manualJournals: normalizeList(source.manualJournals, seed.manualJournals, (item, index) => {
+      const normalized = normalizeRecord("journal", index, item, seed.manualJournals[0]);
+      if (normalized) {
+        normalized.journalLines = Array.isArray(item.journalLines)
+          ? item.journalLines.map((line, lineIndex) => ({
+              id: line?.id || createId(`journal-line-${index + 1}`, lineIndex),
+              accountCode: line?.accountCode || "",
+              entryType: line?.entryType || "Debet",
+              amount: asNumber(line?.amount),
+              linkedQuantity: asNumber(line?.linkedQuantity),
+              linkedUnit: line?.linkedUnit || "",
+              subledgerCategory: line?.subledgerCategory || "",
+              linkedEntityType: line?.linkedEntityType || "",
+              linkedEntityId: line?.linkedEntityId || "",
+              linkedEntityName: line?.linkedEntityName || ""
+            }))
+          : [];
+      }
+      return normalized;
+    }),
     chartOfAccounts,
     reports: normalizeList(source.reports, seed.reports, (item, index) =>
       normalizeRecord("report", index, item, seed.reports[0])
@@ -322,7 +339,7 @@ function emptyState() {
     chartOfAccounts: [],
     reports: seed.reports.map((r) => ({ ...r, amount: 0 })),
     documents: [],
-    hubLang: "az",
+    hubLang: "en",
     activeSection: "home",
     activeModule: null,
     migratedAt: ""
