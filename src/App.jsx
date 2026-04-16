@@ -93,7 +93,7 @@ const MODULES_BASE = {
   },
   chartOfAccounts: {
     title: "Hesablar planı", singular: "Hesab", collection: "chartOfAccounts", summary: "Mühasibat hesabları.",
-    columns: [["accountCode", "Kod"], ["accountName", "Hesab"], ["accountType", "Növ"], ["status", "Status", "status"], ["balance", "Balans", "currency"]],
+    columns: [["accountCode", "Kod"], ["accountName", "Hesab"], ["accountType", "Növ"], ["status", "Status", "status"]],
     form: [["accountCode", "Kod"], ["accountName", "Hesab"], ["accountType", "Növ", "select", "Aktiv", ["Aktiv", "Öhdəlik", "Gəlir", "Xərc", "Kapital"]], ["status", "Status", "select", "Aktiv", ["Aktiv", "Passiv"]], ["balance", "Balans", "number", "0"]]
   },
   trialBalance: {
@@ -201,7 +201,7 @@ function getModules(at) {
     },
     chartOfAccounts: {
       title: at.mod_chartOfAccounts, singular: at.mod_chartOfAccountsSingular, collection: "chartOfAccounts", summary: at.mod_chartOfAccountsSummary,
-      columns: [["accountCode", at.col["Kod"]], ["accountName", at.col["Hesab"]], ["accountType", at.opt_type], ["status", "Status", "status"], ["balance", at.col["Balans"], "currency"]],
+      columns: [["accountCode", at.col["Kod"]], ["accountName", at.col["Hesab"]], ["accountType", at.opt_type], ["status", "Status", "status"]],
       form: [["accountCode", at.col["Kod"]], ["accountName", at.col["Hesab"]], ["accountType", at.fld["Hesab növü"], "select", at.coa_asset, [at.coa_asset, at.coa_liability, at.coa_income, at.coa_expense, at.opt_equity]], ["status", "Status", "select", at.statusActive, [at.statusActive, at.statusPassive]], ["balance", at.col["Balans"], "number", "0"]]
     },
     trialBalance: {
@@ -3277,6 +3277,13 @@ export default function App() {
         type: category
       }));
     }
+    if (category === "bank") {
+      return state.bankingAccounts.map((item) => ({
+        id: item.id,
+        label: item.accountName || item.institution || "—",
+        type: category
+      }));
+    }
     return [];
   }
 
@@ -3339,6 +3346,19 @@ export default function App() {
       };
       setState((current) => ({ ...current, vendors: [nextRecord, ...current.vendors] }));
       updateJournalLineLinkedEntity(lineId, category, nextRecord.id, nextRecord.vendorName, "");
+    } else if (category === "bank") {
+      const nextRecord = {
+        id: crypto.randomUUID(),
+        accountName: draftValue,
+        institution: "",
+        accountType: "Cari",
+        balance: 0,
+        iban: "",
+        coaCode: "",
+        lastSync: today()
+      };
+      setState((current) => ({ ...current, bankingAccounts: [nextRecord, ...current.bankingAccounts] }));
+      updateJournalLineLinkedEntity(lineId, category, nextRecord.id, nextRecord.accountName, "");
     }
 
     setJournalInlineCreate((current) => ({
@@ -5121,7 +5141,7 @@ function renderItemsCatalog() {
 
     return (
       <section className="view active">
-        <div className="bill-form-page">
+        <div className="bill-form-page mj-form-page">
           {renderManualJournalNav()}
           <div className="bill-journal-header">
             <button className="bill-back-btn" type="button" onClick={() => cancelEdit("manualJournals")}>{at.back}</button>
@@ -5183,7 +5203,8 @@ function renderItemsCatalog() {
                       { id: "expenses", label: "Xərclər" },
                       { id: "incomes", label: "Gəlirlər" },
                       { id: "debtors", label: "Debitorlar" },
-                      { id: "creditors", label: "Kreditorlar" }
+                      { id: "creditors", label: "Kreditorlar" },
+                      { id: "bank", label: "Bank" }
                     ];
                     return (
                       <div className="mj-line-card" key={line.id}>
@@ -5332,6 +5353,51 @@ function renderItemsCatalog() {
       const lineItems = draft.lineItems || [createDefaultLineItem()];
       const rows = state.incomingGoodsServices.filter((item) => matchesSearch(item, query));
       const billTotals = calculateBillTotals(lineItems, draft.discount, draft.adjustment);
+      const incomingAccountOptions = state.chartOfAccounts
+        .filter((account) => isVisibleAccount(account))
+        .slice()
+        .sort((a, b) => Number(a.accountCode) - Number(b.accountCode));
+      const updateIncomingLineItem = (lineId, field, value) => {
+        setDrafts((current) => {
+          const currentDraft = current.incomingGoodsServices || createModuleDraft("incomingGoodsServices");
+          return {
+            ...current,
+            incomingGoodsServices: {
+              ...currentDraft,
+              lineItems: (currentDraft.lineItems || [createDefaultLineItem()]).map((item) => {
+                if (item.id !== lineId) return item;
+                const nextItem = { ...item, [field]: value };
+                return { ...nextItem, ...calculateLineItem(nextItem.quantity, nextItem.rate, nextItem.taxLabel) };
+              })
+            }
+          };
+        });
+      };
+      const addIncomingLineItem = () => {
+        setDrafts((current) => {
+          const currentDraft = current.incomingGoodsServices || createModuleDraft("incomingGoodsServices");
+          return {
+            ...current,
+            incomingGoodsServices: {
+              ...currentDraft,
+              lineItems: [...(currentDraft.lineItems || [createDefaultLineItem()]), createDefaultLineItem()]
+            }
+          };
+        });
+      };
+      const removeIncomingLineItem = (lineId) => {
+        setDrafts((current) => {
+          const currentDraft = current.incomingGoodsServices || createModuleDraft("incomingGoodsServices");
+          const currentItems = currentDraft.lineItems || [createDefaultLineItem()];
+          return {
+            ...current,
+            incomingGoodsServices: {
+              ...currentDraft,
+              lineItems: currentItems.length <= 1 ? currentItems : currentItems.filter((item) => item.id !== lineId)
+            }
+          };
+        });
+      };
 
       // ── Overview (hub) ──
       if (billView === "overview") {
@@ -5363,11 +5429,147 @@ function renderItemsCatalog() {
 
       // ── LIST (JOURNAL) ──
       if (billView === "journal") {
-        return renderBillJournal(config, rows, billTotals, setBillView, "incomingGoodsServices");
+        return (
+          <section className="view active">
+            <div className="bill-journal-header">
+              <button className="bill-back-btn" type="button" onClick={() => setBillView("overview")}>{at.back}</button>
+              <div className="bill-journal-title-row">
+                <h2>{at.hub_billsJournal}</h2>
+                <button className="primary-btn" type="button" onClick={() => { startIncomingGoodsEntry(); setBillView("form"); }}>{at.hub_billsNew}</button>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-toolbar">
+                <input className="search-input" placeholder={at.search} value={query} onChange={(event) => setSearches((current) => ({ ...current, [config.collection]: event.target.value }))} />
+              </div>
+              <Table
+                headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
+                emptyMessage={at.noItems}
+                rows={rows.map((record) => (
+                  <tr key={record.id}>
+                    {config.columns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
+                    <td>
+                      <div className="row-actions">
+                        <button className="table-btn" type="button" onClick={() => startEdit("incomingGoodsServices", record)}>{at.edit}</button>
+                        <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("incomingGoodsServices", record.id)}>{at.delete}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              />
+            </div>
+          </section>
+        );
       }
 
       // ── FORM (CREATE / EDIT) ──
-      return renderBillForm(draft, lineItems, billTotals, "incomingGoodsServices", billView);
+      return (
+        <section className="view active">
+          <div className="bill-form-page">
+            <div className="bill-journal-header">
+              <button className="bill-back-btn" type="button" onClick={() => cancelEdit("incomingGoodsServices")}>{at.back}</button>
+              <div className="bill-journal-title-row">
+                <h2>{editing.incomingGoodsServices ? at.formTitle_edit : at.formTitle_new}</h2>
+              </div>
+            </div>
+            <div className="bill-form-panel">
+              <form className="form-grid" onSubmit={(event) => submitModule("incomingGoodsServices", event)}>
+                <div className="bill-header-fields">
+                  <label className="bill-header-field">
+                    <span>{col("Qaimə №")}</span>
+                    <input value={draft.billNumber ?? ""} onChange={(event) => updateDraft("incomingGoodsServices", "billNumber", event.target.value)} required />
+                  </label>
+                  <label className="bill-header-field">
+                    <span>{col("Tarix")}</span>
+                    <input type="date" value={draft.billDate ?? today()} onChange={(event) => updateDraft("incomingGoodsServices", "billDate", event.target.value)} required />
+                  </label>
+                  <label className="bill-header-field">
+                    <span>{col("Satıcı")}</span>
+                    <input list="incoming-vendors-list" value={draft.vendorName ?? ""} onChange={(event) => updateDraft("incomingGoodsServices", "vendorName", event.target.value)} placeholder={at.opt_vendor || "Satıcı"} required />
+                  </label>
+                </div>
+                <datalist id="incoming-vendors-list">
+                  {state.vendors.map((vendor) => <option key={vendor.id} value={vendor.vendorName || vendor.companyName || ""} />)}
+                </datalist>
+
+                <div className="bill-item-table-wrap">
+                  <table className="bill-item-table">
+                    <thead>
+                      <tr>
+                        <th>{fld("Ad")}</th>
+                        <th>{col("Kod")}</th>
+                        <th>{at.inv_qty || "Miqdar"}</th>
+                        <th>{at.inv_unitPrice || "Qiymət"}</th>
+                        <th>{at.inv_taxRate || "Vergi"}</th>
+                        <th>{col("Cəmi")}</th>
+                        <th>{at.action}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lineItems.map((item) => (
+                        <tr key={item.id}>
+                          <td><input value={item.itemName ?? ""} onChange={(event) => updateIncomingLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} /></td>
+                          <td>
+                            <select value={item.accountCode ?? "205"} onChange={(event) => updateIncomingLineItem(item.id, "accountCode", event.target.value)}>
+                              {incomingAccountOptions.map((account) => <option key={`${item.id}-${account.id}`} value={account.accountCode}>{account.accountCode} - {account.accountName}</option>)}
+                            </select>
+                          </td>
+                          <td><input type="number" step="0.01" min="0" value={item.quantity ?? "1"} onChange={(event) => updateIncomingLineItem(item.id, "quantity", event.target.value)} /></td>
+                          <td><input type="number" step="0.01" min="0" value={item.rate ?? "0"} onChange={(event) => updateIncomingLineItem(item.id, "rate", event.target.value)} /></td>
+                          <td>
+                            <select value={item.taxLabel ?? PURCHASE_TAX_OPTIONS[0]} onChange={(event) => updateIncomingLineItem(item.id, "taxLabel", event.target.value)}>
+                              {PURCHASE_TAX_OPTIONS.map((option) => <option key={`${item.id}-${option}`} value={option}>{option}</option>)}
+                            </select>
+                          </td>
+                          <td>{currency(item.amount || 0, state.settings.currency)}</td>
+                          <td>
+                            <button className="table-btn danger-btn" type="button" onClick={() => removeIncomingLineItem(item.id)}>{at.delete}</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="form-actions">
+                  <button className="ghost-btn" type="button" onClick={addIncomingLineItem}>{at.mj_addLine || "Sətir əlavə et"}</button>
+                </div>
+
+                <label>
+                  <span>{at.opt_notes || "Qeydlər"}</span>
+                  <textarea rows={3} value={draft.notes ?? ""} onChange={(event) => updateDraft("incomingGoodsServices", "notes", event.target.value)} />
+                </label>
+
+                <div className="bill-header-fields">
+                  <label className="bill-header-field">
+                    <span>{at.opt_discountPct || "Endirim (%)"}</span>
+                    <input type="number" step="0.01" min="0" value={draft.discount ?? "0"} onChange={(event) => updateDraft("incomingGoodsServices", "discount", event.target.value)} />
+                  </label>
+                  <label className="bill-header-field">
+                    <span>{at.opt_adjustment || "Düzəliş"}</span>
+                    <input type="number" step="0.01" value={draft.adjustment ?? "0"} onChange={(event) => updateDraft("incomingGoodsServices", "adjustment", event.target.value)} />
+                  </label>
+                  <div className="bill-header-field">
+                    <span>{at.fld["Cəmi məbləğ"] || "Cəmi məbləğ"}</span>
+                    <input value={currency(billTotals.totalAmount || 0, state.settings.currency)} readOnly />
+                  </div>
+                </div>
+
+                <div className="ops-preview-strip">
+                  <div><span>{at.opt_subTotal || "Alt cəmi"}</span><strong>{currency(billTotals.subTotal || 0, state.settings.currency)}</strong></div>
+                  <div><span>{at.inv_form_discount || "Endirim"}</span><strong>{currency(billTotals.discountAmount || 0, state.settings.currency)}</strong></div>
+                  <div><span>{at.fld["Cəmi məbləğ"] || "Cəmi məbləğ"}</span><strong>{currency(billTotals.totalAmount || 0, state.settings.currency)}</strong></div>
+                </div>
+
+                <div className="form-actions">
+                  <button className="primary-btn" type="submit">{editing.incomingGoodsServices ? at.ic_updateBtn : at.save}</button>
+                  <button className="ghost-btn" type="button" onClick={() => cancelEdit("incomingGoodsServices")}>{at.cancel}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      );
     }
 
     if (moduleId === "vendors") {
