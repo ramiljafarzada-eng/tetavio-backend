@@ -5103,6 +5103,33 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   color: var(--muted);
 }
 
+.pl-close-actions {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pl-close-year-field {
+  display: grid;
+  gap: 6px;
+}
+
+.pl-close-year-field span {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pl-close-year-field select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+}
+
 .pl-note-head {
   display: flex;
   align-items: center;

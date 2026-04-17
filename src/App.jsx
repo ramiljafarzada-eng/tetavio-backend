@@ -646,6 +646,7 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState(null); // null | "profile" | "language" | "params"
   const [profileSaved, setProfileSaved] = useState(false);
   const [reportPeriod, setReportPeriod] = useState("Bu ay");
+  const [profitLossCloseYear, setProfitLossCloseYear] = useState(() => String(new Date().getFullYear()));
   const [trialBalanceFilter, setTrialBalanceFilter] = useState("Hamısı");
   const [debtSearch, setDebtSearch] = useState({ receivables: "", payables: "" });
   const [debtCard, setDebtCard] = useState(null);
@@ -2246,6 +2247,114 @@ export default function App() {
     });
     markOperationUsage();
     window.alert("MЙ™nfЙ™Й™t vЙ™ zЙ™rЙ™r baДџlanД±ЕџД± yaradД±ldД±.");
+  }
+
+  function buildProfitLossClosingPlan(range = getReportRange(), lookup = getTrialBalanceLookup(range)) {
+    const incomeType = normalizeAccountTypeValue("income");
+    const expenseType = normalizeAccountTypeValue("expense");
+    const lines = [...lookup.values()]
+      .filter((row) => isVisibleAccount(row))
+      .filter((row) => !["341", "801"].includes(String(row.accountCode || "")))
+      .flatMap((row) => {
+        const code = String(row.accountCode || "");
+        const normalizedAccountType = normalizeAccountTypeValue(row.accountType);
+        const inferredAccountType = normalizeAccountTypeValue(inferAccountTypeFromCode(code, row.accountType));
+        const isProfitLossIncome = /^6/.test(code) || normalizedAccountType === incomeType || inferredAccountType === incomeType;
+        const isProfitLossExpense = /^[789]/.test(code) || normalizedAccountType === expenseType || inferredAccountType === expenseType;
+        const debitValue = Number(row.closingDebit || 0);
+        const creditValue = Number(row.closingCredit || 0);
+
+        if (isProfitLossIncome) {
+          return [
+            creditValue > 0 ? {
+              id: `pl-close-${code}-debit`,
+              accountCode: code,
+              entryType: "Debet",
+              amount: Number(creditValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null,
+            debitValue > 0 ? {
+              id: `pl-close-${code}-credit`,
+              accountCode: code,
+              entryType: "Kredit",
+              amount: Number(debitValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null
+          ].filter(Boolean);
+        }
+
+        if (isProfitLossExpense) {
+          return [
+            debitValue > 0 ? {
+              id: `pl-close-${code}-credit`,
+              accountCode: code,
+              entryType: "Kredit",
+              amount: Number(debitValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null,
+            creditValue > 0 ? {
+              id: `pl-close-${code}-debit`,
+              accountCode: code,
+              entryType: "Debet",
+              amount: Number(creditValue.toFixed(2)),
+              linkedQuantity: 0,
+              linkedUnit: "",
+              subledgerCategory: getDefaultJournalSubledgerCategory(code),
+              linkedEntityType: "",
+              linkedEntityId: "",
+              linkedEntityName: ""
+            } : null
+          ].filter(Boolean);
+        }
+
+        return [];
+      });
+
+    const debitTotal = Number(lines.filter((line) => line.entryType === "Debet").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2));
+    const creditTotal = Number(lines.filter((line) => line.entryType === "Kredit").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2));
+    const difference = Number((debitTotal - creditTotal).toFixed(2));
+    const closingLines = [...lines];
+
+    if (Math.abs(difference) >= 0.01) {
+      closingLines.push({
+        id: "pl-close-801",
+        accountCode: "801",
+        entryType: difference > 0 ? "Kredit" : "Debet",
+        amount: Number(Math.abs(difference).toFixed(2)),
+        linkedQuantity: 0,
+        linkedUnit: "",
+        subledgerCategory: getDefaultJournalSubledgerCategory("801"),
+        linkedEntityType: "",
+        linkedEntityId: "",
+        linkedEntityName: ""
+      });
+    }
+
+    return {
+      range,
+      periodKey: `pl-close:${range.start}:${range.end}`,
+      journalDate: range.end || today(),
+      lines: closingLines,
+      debitTotal: Number(closingLines.filter((line) => line.entryType === "Debet").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2)),
+      creditTotal: Number(closingLines.filter((line) => line.entryType === "Kredit").reduce((sum, line) => sum + Number(line.amount || 0), 0).toFixed(2)),
+      resultAmount: Number(Math.abs(difference).toFixed(2)),
+      resultType: difference > 0 ? "profit" : difference < 0 ? "loss" : "break_even"
+    };
   }
 
   function getUnifiedLedgerEntries() {
@@ -8334,6 +8443,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const fpLabel = (key) => ({ liquidFunds: at.fp_liquidFunds, shortReceivables: at.fp_shortReceivables, shortAdvances: at.fp_shortAdvances, recoverableVat: at.fp_recoverableVat, inventory: at.fp_inventory, totalCurrentAssets: at.fp_totalCurrentAssets, nonCurrentAssets: at.fp_nonCurrentAssets, totalAssets: at.fp_totalAssets, shortLiabilities: at.fp_shortLiabilities, longLiabilities: at.fp_longLiabilities, totalLiabilities: at.fp_totalLiabilities, shareCapital: at.fp_shareCapital, retainedEarnings: at.fp_retainedEarnings, periodResult: at.fp_periodResult, totalEquity: at.fp_totalEquity, totalLiabEquity: at.fp_totalLiabEquity }[key] || key);
     const range = getReportRange();
     const previousRange = getPreviousReportRange();
+    const profitLossCloseRange = getProfitLossCloseRangeByYear(profitLossCloseYear);
     const prePreviousRange = getRangeBefore(previousRange);
     const lookup = getTrialBalanceLookup(range);
     const previousLookup = getTrialBalanceLookup(previousRange);
@@ -8634,6 +8744,88 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     );
   }
 
+  function getProfitLossCloseRangeByYear(yearValue) {
+    const normalizedYear = Number(yearValue || state.settings.fiscalYear || new Date().getFullYear());
+    return {
+      start: `${normalizedYear}-01-01`,
+      end: `${normalizedYear}-12-31`
+    };
+  }
+
+  function toggleProfitLossCloseByRange(range) {
+    const plan = buildProfitLossClosingPlan(range);
+    const rangeYear = String(range.start).slice(0, 4);
+    const existingAutoCloseJournal = state.manualJournals.find((j) =>
+      (j.autoCloseType === "profit_loss_closure" ||
+       String(j.journalNumber || "").startsWith("PLC-") ||
+       String(j.reference || "").startsWith("P&L close")) &&
+      (String(j.reference || "").includes(rangeYear) ||
+       String(j.autoCloseKey || "").includes(rangeYear) ||
+       String(j.journalNumber || "").includes(rangeYear.replace(/-/g, "")))
+    );
+
+    if (existingAutoCloseJournal) {
+      const confirmedReopen = window.confirm(`${range.start} - ${range.end} dövrü üçün bağlanışı geri açmaq istəyirsiniz?`);
+      if (!confirmedReopen) return;
+      setState((current) => ({
+        ...current,
+        manualJournals: current.manualJournals.filter((journal) => journal.id !== existingAutoCloseJournal.id)
+      }));
+      window.alert("Bağlanış geri açıldı.");
+      return;
+    }
+
+    if (!plan.lines.length) {
+      window.alert("Seçilmiş il üçün bağlanacaq gəlir və ya xərc qalığı tapılmadı.");
+      return;
+    }
+    if (!guardOperationAccess()) return;
+
+    const confirmed = window.confirm(`${range.start} - ${range.end} dövrü üçün gəlir və xərc hesabları 801 hesabına bağlanacaq. Davam edilsin?`);
+    if (!confirmed) return;
+
+    const reference = `P&L close ${plan.range.start} - ${plan.range.end}`;
+    const journalNumber = `PLC-${plan.range.end.replaceAll("-", "")}`;
+    const nextRecord = {
+      id: crypto.randomUUID(),
+      createdAt: today(),
+      date: plan.journalDate,
+      journalNumber,
+      reference,
+      notes: `Auto close for ${plan.range.start} - ${plan.range.end}`,
+      autoGenerated: true,
+      autoCloseType: "profit_loss_closure",
+      autoCloseKey: plan.periodKey,
+      journalLines: plan.lines,
+      debitAccount: plan.lines.find((line) => line.entryType === "Debet")?.accountCode || "",
+      creditAccount: plan.lines.find((line) => line.entryType === "Kredit")?.accountCode || "",
+      debit: plan.debitTotal,
+      credit: plan.creditTotal
+    };
+
+    setState((current) => {
+      const hasPeriodResultAccount = current.chartOfAccounts.some((account) => account.accountCode === "801");
+      const nextChartOfAccounts = hasPeriodResultAccount
+        ? current.chartOfAccounts
+        : [...current.chartOfAccounts, {
+            id: "801",
+            accountCode: "801",
+            accountName: getAccountNameByCode("801"),
+            accountType: "Kapital",
+            status: "Aktiv",
+            balance: 0
+          }].sort((left, right) => Number(left.accountCode) - Number(right.accountCode));
+
+      return {
+        ...current,
+        chartOfAccounts: nextChartOfAccounts,
+        manualJournals: [nextRecord, ...current.manualJournals]
+      };
+    });
+    markOperationUsage();
+    window.alert("Bağlanış yaradıldı.");
+  }
+
   function renderProfitLossReport() {
     const plLabel = (key) => ({ salesRev: at.pl_salesRev, otherOpIncome: at.pl_otherOpIncome, finIncome: at.pl_finIncome, totalRev: at.pl_totalRev, costOfSales: at.pl_costOfSales, grossProfit: at.pl_grossProfit, selling: at.pl_selling, admin: at.pl_admin, finEx: at.pl_finEx, otherOpEx: at.pl_otherOpEx, totalOpEx: at.pl_totalOpEx, incomeTax: at.pl_incomeTax, netResult: at.pl_netResult }[key] || key);
     const range = getReportRange();
@@ -8646,8 +8838,19 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const previousManualFallback = getManualJournalProfitLossFallback(previousRange, plAccounts, plLookupOptions);
     const lookupPlTotals = getProfitLossTotalsFromLookup(lookup, plAccounts);
     const previousLookupPlTotals = getProfitLossTotalsFromLookup(previousLookup, plAccounts);
-    const profitLossClosingPlan = buildProfitLossClosingPlan(range, lookup);
-    const hasProfitLossAutoClose = state.manualJournals.some((journal) => journal.autoCloseType === "profit_loss_closure" && journal.autoCloseKey === profitLossClosingPlan.periodKey);
+    const profitLossCloseRange = getProfitLossCloseRangeByYear(profitLossCloseYear);
+    const profitLossClosingPlan = buildProfitLossClosingPlan(profitLossCloseRange);
+    const selectedYearStr = String(profitLossCloseYear);
+    const isPLCloseJournal = (j) =>
+      j.autoCloseType === "profit_loss_closure" ||
+      String(j.journalNumber || "").startsWith("PLC-") ||
+      String(j.reference || "").startsWith("P&L close");
+    const isForSelectedYear = (j) =>
+      String(j.reference || "").includes(selectedYearStr) ||
+      String(j.autoCloseKey || "").includes(selectedYearStr) ||
+      String(j.journalNumber || "").includes(selectedYearStr.replace(/-/g, ""));
+    const hasProfitLossAutoClose = state.manualJournals.some((j) => isPLCloseJournal(j) && isForSelectedYear(j));
+    const profitLossCloseYears = [2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020];
     const reportManualJournals = state.manualJournals
       .filter((item) => item.autoCloseType !== "profit_loss_closure")
       .filter((item) => isDateInRange(item.date || item.createdAt || today(), range));
@@ -8803,17 +9006,24 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
           <div className="pl-close-toolbar">
             <div className="pl-close-copy">
               <strong>{at.pl_closeBtn || "Mənfəət / zərəri bağla"}</strong>
-              <p>{at.pl_closeHint || "Cari hesabat dövründəki gəlir və xərc hesablarını 801 hesabına avtomatik bağlayır."}</p>
+              <p>{at.pl_closeHint || "Seçilmiş ilin gəlir və xərc hesablarını 801 hesabına avtomatik bağlayır."}</p>
             </div>
-            <button
-              className="primary-btn compact-btn"
-              type="button"
-              onClick={() => closeProfitLossToPeriodResult(range)}
-              disabled={hasProfitLossAutoClose || !profitLossClosingPlan.lines.length}
-              title={hasProfitLossAutoClose ? (at.pl_closeExists || "Bu dövr üçün bağlanış artıq yaradılıb.") : ""}
-            >
-              {hasProfitLossAutoClose ? (at.pl_closeDone || "Bağlanıb") : (at.pl_closeBtn || "Mənfəət / zərəri bağla")}
-            </button>
+            <div className="pl-close-actions">
+              <label className="pl-close-year-field">
+                <span>{at.rpt_fiscalYear || "İl"}</span>
+                <select value={profitLossCloseYear} onChange={(event) => setProfitLossCloseYear(event.target.value)}>
+                  {profitLossCloseYears.map((year) => <option key={`pl-close-year-${year}`} value={String(year)}>{year}</option>)}
+                </select>
+              </label>
+              <button
+                className={`compact-btn ${hasProfitLossAutoClose ? "danger-btn" : "primary-btn"}`}
+                type="button"
+                onClick={() => toggleProfitLossCloseByRange(profitLossCloseRange)}
+                disabled={!hasProfitLossAutoClose && !profitLossClosingPlan.lines.length}
+              >
+                {hasProfitLossAutoClose ? "✕ Bağlanışı ləğv et" : "Bağla"}
+              </button>
+            </div>
           </div>
           <div className="pl-note-head">
             <strong>Əl ilə daxil edilən əməliyyatların təsiri</strong>
