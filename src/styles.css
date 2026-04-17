@@ -468,13 +468,14 @@ body {
 .lp-form-field input:focus,
 .lp-form-field select:focus { border-color: rgba(59,130,246,0.55); background: rgba(255,255,255,0.09); }
 .lp-form-field select option { background: #1a2d52; color: white; }
-.lp-password-field { position: relative; }
-.lp-password-field input { padding-right: 2.5rem; }
+.lp-password-field { }
+.lp-pass-input-wrap { position: relative; }
+.lp-pass-input-wrap input { padding-right: 2.5rem; width: 100%; box-sizing: border-box; }
 .password-toggle {
   position: absolute;
   right: 0.6rem;
   top: 50%;
-  transform: translateY(calc(50% - 0.35rem));
+  transform: translateY(-50%);
   background: none;
   border: none;
   font-size: 0.95rem;
@@ -483,7 +484,8 @@ body {
   opacity: 0.65;
   transition: opacity 0.15s;
 }
-.password-toggle:hover { opacity: 1; }
+.password-toggle:hover,
+.password-toggle:hover:not(:disabled) { opacity: 1; transform: translateY(-50%); }
 .lp-form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .lp-form-row { display: flex; justify-content: space-between; align-items: center; }
 .lp-remember { display: flex; align-items: center; gap: 0.4rem; font-size: 0.79rem; color: rgba(255,255,255,0.48); cursor: pointer; }
@@ -5748,6 +5750,12 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
 /* Journal & form shared header */
 .bill-journal-header {
   margin-bottom: 20px;
+}
+
+.module-back-bar {
+  padding: 0 0 12px 0;
+  display: block;
+  width: 100%;
 }
 
 .bill-back-btn {

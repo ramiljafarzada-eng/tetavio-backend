@@ -4055,6 +4055,11 @@ function renderItemsCatalog() {
     if (goodsView === "overview") {
       return (
         <section className="view active">
+          {OVERVIEWS[activeSection]?.includes("goods") && (
+            <div className="module-back-bar">
+              <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+            </div>
+          )}
           <div className="bill-hub">
             <div className="bill-hub-card" onClick={() => setGoodsView("journal")}>
               <div className="bill-hub-icon">📦</div>
@@ -5512,6 +5517,11 @@ function renderItemsCatalog() {
       if (billView === "overview") {
         return (
           <section className="view active">
+            {OVERVIEWS[activeSection]?.includes("incomingGoodsServices") && (
+              <div className="module-back-bar">
+                <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+              </div>
+            )}
             <div className="bill-hub">
               <div className="bill-hub-card" onClick={() => setBillView("journal")}>
                 <div className="bill-hub-icon">📋</div>
@@ -5690,6 +5700,11 @@ function renderItemsCatalog() {
       if (vendorView === "overview") {
         return (
           <section className="view active">
+            {OVERVIEWS[activeSection]?.includes("vendors") && (
+              <div className="module-back-bar">
+                <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+              </div>
+            )}
             <div className="bill-hub">
               <div className="bill-hub-card" onClick={() => setVendorView("journal")}>
                 <div className="bill-hub-icon">🏢</div>
@@ -5889,8 +5904,14 @@ function renderItemsCatalog() {
       .slice()
       .sort((left, right) => left.accountCode.localeCompare(right.accountCode));
 
+    const hasOverviewParent = Object.values(OVERVIEWS).some((ids) => ids.includes(moduleId));
     return (
       <section className="view active">
+        {hasOverviewParent && (
+          <div className="module-back-bar">
+            <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+          </div>
+        )}
         <div className="panel-grid two-up">
           <section className="panel">
             <div className="panel-head"><div><h3>{config.title}</h3><p className="panel-copy">{config.summary}</p></div><span>{rows.length} {at.unit_record}</span></div>
@@ -7156,8 +7177,8 @@ function renderItemsCatalog() {
         liveBadge:       "● Canlı",
         statsNote:       "Sayğaclar hər dəqiqə yenilənir · Yalnız nümayiş məqsədi daşıyır",
         highlights: [
-          { icon: "🔐", title: "Super admin",         desc: "Tam səlahiyyətli giriş ayrıca mövcuddur" },
-          { icon: "💾", title: "Desktop uyğun",        desc: "Lokal məlumatlar və backup/restore dəstəyi" },
+          { icon: "🔐", title: "Rol əsaslı giriş",       desc: "Mühasib, admin, anbardar — hər rola ayrıca icazə" },
+          { icon: "☁️", title: "Bulud əsaslı",            desc: "Hər cihazdan daxil olun, məlumatlarınız həmişə sinxrondadır" },
           { icon: "📈", title: "Real vaxt hesabatlar", desc: "Maliyyə vəziyyətinizi anlıq izləyin" },
           { icon: "⚡", title: "Sürətli giriş",        desc: "Saniyələr içində işə başlayın" },
         ],
@@ -7213,8 +7234,8 @@ function renderItemsCatalog() {
         liveBadge:       "● Live",
         statsNote:       "Counters update every minute · For demonstration purposes only",
         highlights: [
-          { icon: "🔐", title: "Super admin",      desc: "Full-access login available separately" },
-          { icon: "💾", title: "Desktop ready",    desc: "Local data with backup/restore support" },
+          { icon: "🔐", title: "Role-based access",  desc: "Accountant, admin, warehouse — each role has its own permissions" },
+          { icon: "☁️", title: "Cloud-based",       desc: "Access from any device, your data is always in sync" },
           { icon: "📈", title: "Real-time reports", desc: "Monitor your financial status instantly" },
           { icon: "⚡", title: "Fast access",       desc: "Get started in seconds" },
         ],
@@ -7557,8 +7578,10 @@ function renderItemsCatalog() {
                 </div>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}</label>
-                  <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
                 </div>
                 <div className="lp-form-row">
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
@@ -7609,8 +7632,10 @@ function renderItemsCatalog() {
                 </div>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}</label>
-                  <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
                 </div>
                 <button className="lp-submit-btn" type="submit">{t.fSignupBtn}</button>
               </form>
@@ -7633,13 +7658,17 @@ function renderItemsCatalog() {
                 <p className="lp-form-title">{t.fResetTitle}</p>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fNewPass}</label>
-                  <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
                 </div>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fConfirmPass}</label>
-                  <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
                 </div>
                 <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
               </form>
@@ -10458,11 +10487,8 @@ function renderSettings() {
                 }}
               >
                 <span>{at.nav[item.id] || item.label}</span>
-                {item.children ? (
-                  <span className={`nav-chevron${isExpanded ? " open" : ""}`}>‹</span>
-                ) : null}
               </button>
-              {item.children && isExpanded ? (
+              {item.children && isExpanded && !["banking", "purchases", "sales", "accountant"].includes(item.id) ? (
                 <div className="subnav-list">
                   {item.children.map((moduleId) => (
                     <div className={`subnav-row ${activeModule === moduleId ? "active" : ""}`} key={moduleId}>
