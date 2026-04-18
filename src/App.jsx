@@ -622,17 +622,17 @@ export default function App() {
   const [bankTxAccountSearch, setBankTxAccountSearch] = useState("");
   const [bankTxAccountOpen, setBankTxAccountOpen] = useState(false);
   const [bankTxEditId, setBankTxEditId] = useState(null);
-  const [billView, setBillView] = useState("overview"); // "overview" | "journal" | "form"
-  const [journalView, setJournalView] = useState("overview"); // "overview" | "journal" | "form"
+  const [billView, setBillView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "bills" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [journalView, setJournalView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "manualJournals" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [opJournalFilter, setOpJournalFilter] = useState({ type: "all", search: "", dateFrom: "", dateTo: "" });
   const [opJournalExpanded, setOpJournalExpanded] = useState(new Set());
-  const [chartView, setChartView] = useState("overview"); // "overview" | "journal" | "form"
-  const [vendorView, setVendorView] = useState("overview"); // "overview" | "journal" | "form"
-  const [goodsView, setGoodsView] = useState("overview"); // "overview" | "journal" | "form"
-  const [bankView, setBankView] = useState("overview"); // "overview" | "journal" | "form"
-  const [invoiceView, setInvoiceView] = useState("overview"); // "overview" | "journal" | "form"
-  const [customerView, setCustomerView] = useState("overview"); // "overview" | "journal" | "form"
-  const [documentView, setDocumentView] = useState("overview"); // "overview" | "journal" | "form"
+  const [chartView, setChartView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "chartOfAccounts" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [vendorView, setVendorView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "vendors" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [goodsView, setGoodsView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "goods" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [bankView, setBankView] = useState(() => { const p = getInitialRouteParts(); return p[0] === "banking" && ["overview","journal","form","tx-form"].includes(p[1]) ? p[1] : "overview"; });
+  const [invoiceView, setInvoiceView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "invoices" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [customerView, setCustomerView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "customers" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [documentView, setDocumentView] = useState(() => { const p = getInitialRouteParts(); return p[0] === "documents" && ["overview","journal","form"].includes(p[1]) ? p[1] : "overview"; });
   const [expandedSections, setExpandedSections] = useState(() => {
     const parts = getInitialRouteParts();
     const sec = parts[0];

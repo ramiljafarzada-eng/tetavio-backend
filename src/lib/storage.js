@@ -49,45 +49,7 @@ function mergeMissingAccounts(existing, seedAccounts) {
   return [...existing, ...seedAccounts.filter((account) => !seenCodes.has(account.accountCode))];
 }
 
-const REQUIRED_ACCOUNTS = [
-  { accountCode: "101", accountName: "Intangible assets", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "111", accountName: "Property, plant and equipment", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "113", accountName: "Investment property", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "131", accountName: "Long-term financial investments", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "141", accountName: "Long-term receivables", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "201", accountName: "Inventories", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "205", accountName: "Goods purchased", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "211", accountName: "Short-term receivables", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "221", accountName: "Cash on hand", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "223", accountName: "Bank settlement accounts", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "224", accountName: "Foreign currency accounts", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "225", accountName: "Cash equivalents", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "231", accountName: "Accounts receivable from customers", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "233", accountName: "Short-term advances paid", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "241", accountName: "Recoverable VAT", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "243", accountName: "Other tax receivables", accountType: "Aktiv", status: "Aktiv", balance: 0 },
-  { accountCode: "301", accountName: "Share capital", accountType: "Kapital", status: "Aktiv", balance: 0 },
-  { accountCode: "311", accountName: "Share premium", accountType: "Kapital", status: "Aktiv", balance: 0 },
-  { accountCode: "341", accountName: "Retained earnings", accountType: "Kapital", status: "Aktiv", balance: 0 },
-  { accountCode: "411", accountName: "Long-term bank loans", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "421", accountName: "Long-term borrowings", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "511", accountName: "Short-term bank loans", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "521", accountName: "Tax and statutory liabilities", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "522", accountName: "Social security and insurance liabilities", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "531", accountName: "Short-term accounts payable to suppliers", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "541", accountName: "Short-term advances received", accountType: "Öhdəlik", status: "Aktiv", balance: 0 },
-  { accountCode: "601", accountName: "Sales revenue", accountType: "Gəlir", status: "Aktiv", balance: 0 },
-  { accountCode: "611", accountName: "Other operating income", accountType: "Gəlir", status: "Aktiv", balance: 0 },
-  { accountCode: "621", accountName: "Financial income", accountType: "Gəlir", status: "Aktiv", balance: 0 },
-  { accountCode: "631", accountName: "Other income", accountType: "Gəlir", status: "Aktiv", balance: 0 },
-  { accountCode: "701", accountName: "Cost of goods sold", accountType: "Xərc", status: "Aktiv", balance: 0 },
-  { accountCode: "711", accountName: "Selling expenses", accountType: "Xərc", status: "Aktiv", balance: 0 },
-  { accountCode: "712", accountName: "Administrative expenses", accountType: "Xərc", status: "Aktiv", balance: 0 },
-  { accountCode: "721", accountName: "Financial expenses", accountType: "Xərc", status: "Aktiv", balance: 0 },
-  { accountCode: "731", accountName: "Other operating expenses", accountType: "Xərc", status: "Aktiv", balance: 0 },
-  { accountCode: "801", accountName: "Profit or loss", accountType: "Kapital", status: "Aktiv", balance: 0 },
-  { accountCode: "901", accountName: "Income tax", accountType: "Xərc", status: "Aktiv", balance: 0 }
-];
+const REQUIRED_ACCOUNTS = [];
 
 function normalizeList(value, fallback, mapItem) {
   if (!Array.isArray(value)) {
@@ -157,12 +119,10 @@ function normalizeState(raw) {
       amount: totalAmount
     };
   });
-  const chartOfAccounts = mergeMissingAccounts(
-    normalizeList(source.chartOfAccounts, seed.chartOfAccounts, (item, index) =>
-      normalizeRecord("account", index, item, seed.chartOfAccounts[0])
-    ),
-    [...seed.chartOfAccounts, ...REQUIRED_ACCOUNTS.map((account, index) => ({ id: createId("required-account", index), ...account }))]
-  );
+  const accountTemplate = seed.chartOfAccounts[0] || { id: "", accountCode: "", accountName: "", accountType: "Aktiv", status: "Aktiv", balance: 0 };
+  const chartOfAccounts = Array.isArray(source.chartOfAccounts)
+    ? normalizeList(source.chartOfAccounts, [], (item, index) => normalizeRecord("account", index, item, accountTemplate))
+    : seed.chartOfAccounts.map((account, index) => ({ ...account, id: account.id || createId("account", index) }));
 
   return {
     ...seed,

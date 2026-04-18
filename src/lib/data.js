@@ -96,18 +96,7 @@ export function createSeedData() {
       { id: crypto.randomUUID(), journalNumber: "MJ-2026-001", reference: "Month-end accrual", date: "2026-04-01", debit: 900, credit: 900 },
       { id: crypto.randomUUID(), journalNumber: "MJ-2026-002", reference: "Prepaid expense adjustment", date: "2026-04-04", debit: 250, credit: 250 }
     ],
-    chartOfAccounts: [
-      { id: crypto.randomUUID(), accountCode: "111", accountName: "Cash on hand", accountType: "Aktiv", status: "Aktiv", balance: 1500 },
-      { id: crypto.randomUUID(), accountCode: "201", accountName: "Inventories", accountType: "Aktiv", status: "Aktiv", balance: 4200 },
-      { id: crypto.randomUUID(), accountCode: "231", accountName: "Accounts receivable from customers", accountType: "Aktiv", status: "Aktiv", balance: 7410 },
-      { id: crypto.randomUUID(), accountCode: "241", accountName: "Recoverable VAT", accountType: "Aktiv", status: "Aktiv", balance: 890 },
-      { id: crypto.randomUUID(), accountCode: "311", accountName: "Bank accounts", accountType: "Aktiv", status: "Aktiv", balance: 18450 },
-      { id: crypto.randomUUID(), accountCode: "521", accountName: "VAT liability", accountType: "Öhdəlik", status: "Aktiv", balance: 620 },
-      { id: crypto.randomUUID(), accountCode: "531", accountName: "Accounts payable to suppliers", accountType: "Öhdəlik", status: "Aktiv", balance: 1490 },
-      { id: crypto.randomUUID(), accountCode: "601", accountName: "Service revenue", accountType: "Gəlir", status: "Aktiv", balance: 8360 },
-      { id: crypto.randomUUID(), accountCode: "701", accountName: "Cost of goods sold", accountType: "Xərc", status: "Aktiv", balance: 3180 },
-      { id: crypto.randomUUID(), accountCode: "712", accountName: "Administrative expenses", accountType: "Xərc", status: "Aktiv", balance: 1240 }
-    ],
+    chartOfAccounts: [],
     reports: [
       { id: crypto.randomUUID(), name: "Mənfəət və zərər", amount: 4975, description: "Cari dövr üzrə gəlir və xərclərin fərqi." },
       { id: crypto.randomUUID(), name: "Balans hesabatı", amount: 24370, description: "Aktiv, öhdəlik və kapitalın anlıq vəziyyəti." },
