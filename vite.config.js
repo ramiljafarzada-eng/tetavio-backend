@@ -18,6 +18,15 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         admin: resolve(__dirname, "wp-admin/index.html")
+      },
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.split("\\").join("/");
+          if (normalizedId.includes("/node_modules/")) return "vendor";
+          if (normalizedId.endsWith("/src/i18n.js")) return "i18n";
+          if (normalizedId.endsWith("/src/lib/data.js")) return "seed-data";
+          return undefined;
+        }
       }
     }
   }
