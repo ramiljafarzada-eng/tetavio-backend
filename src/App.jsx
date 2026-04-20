@@ -717,6 +717,7 @@ export default function App() {
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
   const [booksNotice, setBooksNotice] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [appNavOpen, setAppNavOpen] = useState(false);
   const [accountPanel, setAccountPanel] = useState(null);
   const [passwordDraft, setPasswordDraft] = useState({ current: "", next: "", confirm: "", notice: "", tone: "" });
   const [subscriptionBillingCycle, setSubscriptionBillingCycle] = useState("monthly");
@@ -1059,6 +1060,11 @@ export default function App() {
       observer.disconnect();
     };
   }, [activeProduct, hubBillingCycle, hubLang]);
+
+  useEffect(() => {
+    if (activeProduct !== "books") return;
+    setAppNavOpen(false);
+  }, [activeProduct, activeSection, activeModule]);
 
   useEffect(() => {
     const expiredUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId !== "free" && user.subscription?.endsAt && String(user.subscription.endsAt) < today());
@@ -10993,6 +10999,7 @@ function renderSettings() {
   }
 
   const at = I18N[hubLang] || I18N.az;
+  const appMenuLabel = ({ az: "Menyu", en: "Menu", ru: "Меню", tr: "Menü", de: "Menü" }[hubLang] || "Menu");
   const col = (label) => (at.col && at.col[label]) || label;
   const fld = (label) => (at.fld && at.fld[label]) || label;
   const MODULES = getModules(at);
@@ -11019,9 +11026,10 @@ function renderSettings() {
   const backupTone = backupStatus.tone || "info";
 
   return (
-    <div className="app-shell" data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); }}>
-      <aside className="sidebar">
-        <button className="brand-block" type="button" onClick={() => { setActiveSection("home"); setActiveModule(null); setExpandedSections(new Set(["home"])); }}>
+    <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
+      <button className={`mobile-nav-overlay${appNavOpen ? " visible" : ""}`} type="button" aria-label={appMenuLabel} onClick={() => setAppNavOpen(false)} />
+      <aside className="sidebar" onClick={(event) => event.stopPropagation()}>
+        <button className="brand-block" type="button" onClick={() => { setActiveSection("home"); setActiveModule(null); setExpandedSections(new Set(["home"])); setAppNavOpen(false); }}>
           <div className="brand-icon">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
               <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533"/>
@@ -11047,9 +11055,11 @@ function renderSettings() {
                     } else {
                       setSection(item.id);
                       setExpandedSections(new Set([item.id]));
+                      setAppNavOpen(false);
                     }
                   } else {
                     setSection(item.id);
+                    setAppNavOpen(false);
                   }
                 }}
               >
@@ -11061,12 +11071,12 @@ function renderSettings() {
                     <div className={`subnav-row ${activeModule === moduleId ? "active" : ""}`} key={moduleId}>
                       <button
                         className={`subnav-item ${activeModule === moduleId ? "active" : ""}`}
-                        onClick={() => { setActiveModule(moduleId); setActiveSection(item.id); if (moduleId === "itemsCatalog") setItemFormOpen(false); }}
+                        onClick={() => { setActiveModule(moduleId); setActiveSection(item.id); if (moduleId === "itemsCatalog") setItemFormOpen(false); setAppNavOpen(false); }}
                       >
                         {MODULES[moduleId].title}
                       </button>
                       {moduleId === "itemsCatalog" ? (
-                        <button className="subnav-add-btn" type="button" onClick={(event) => { event.stopPropagation(); setActiveModule("itemsCatalog"); openNewItemForm(setDrafts, setEditing, setItemFormOpen); }}>+</button>
+                        <button className="subnav-add-btn" type="button" onClick={(event) => { event.stopPropagation(); setActiveModule("itemsCatalog"); setAppNavOpen(false); openNewItemForm(setDrafts, setEditing, setItemFormOpen); }}>+</button>
                       ) : null}
                     </div>
                   ))}
@@ -11092,6 +11102,10 @@ function renderSettings() {
                 <h1>{pageTitle}</h1>
               </div>
               <div className="topbar-actions">
+                <button className="mobile-nav-trigger" type="button" aria-label={appMenuLabel} onClick={(event) => { event.stopPropagation(); setAppNavOpen((current) => !current); }}>
+                  <span aria-hidden="true">☰</span>
+                  <span>{appMenuLabel}</span>
+                </button>
                 <button className="ghost-btn" onClick={() => setActiveProduct("hub")}>{at.btnProducts}</button>
                 {currentUser ? (
                   <div className={`profile-menu ${profileMenuOpen ? "open" : ""}`}>
