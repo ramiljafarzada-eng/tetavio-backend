@@ -604,7 +604,8 @@ export default function App() {
   const [activeSection, setActiveSection] = useState(() => {
     const parts = getInitialRouteParts();
     const sec = parts[0];
-    if (!sec || sec === "hub" || sec === "landing") return "home";
+    if (!sec || sec === "hub" || sec === "homepage" || sec === "landing") return "home";
+    if (sec === "dashboard") return "home";
     return sec;
   });
   const [activeModule, setActiveModule] = useState(() => {
@@ -671,8 +672,8 @@ export default function App() {
   const restoreInputRef = useRef(null);
   const [activeProduct, setActiveProduct] = useState(() => {
     const route = getLocationRoute();
-    if (!route || route === "landing" || route.startsWith("landing/")) return "booksLanding";
-    if (route === "hub") return "hub";
+    if (!route || route === "hub" || route === "homepage") return "hub";
+    if (route === "landing" || route.startsWith("landing/") || route === "accounting" || route.startsWith("accounting/")) return "booksLanding";
     return "books";
   });
   const [hubLang, setHubLang] = useState(() => {
@@ -684,6 +685,7 @@ export default function App() {
     }
   });
   const [hubLangOpen, setHubLangOpen] = useState(false);
+  const [hubNavOpen, setHubNavOpen] = useState(false);
   const [authUsers, setAuthUsers] = useState([normalizeAuthUser(SUPER_ADMIN)]);
   const [currentUser, setCurrentUser] = useState(null);
   const [authHydrated, setAuthHydrated] = useState(false);
@@ -718,6 +720,7 @@ export default function App() {
   const [accountPanel, setAccountPanel] = useState(null);
   const [passwordDraft, setPasswordDraft] = useState({ current: "", next: "", confirm: "", notice: "", tone: "" });
   const [subscriptionBillingCycle, setSubscriptionBillingCycle] = useState("monthly");
+  const [hubBillingCycle, setHubBillingCycle] = useState("annual");
   const [adminPlanDrafts, setAdminPlanDrafts] = useState({});
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
   const [paymentDraft, setPaymentDraft] = useState({ planId: "", billingCycle: "monthly" });
@@ -769,8 +772,9 @@ export default function App() {
   }
 
   function buildHashFromState() {
-    if (activeProduct === "hub") return "/hub";
-    if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/landing/${booksView}` : "/";
+    if (activeProduct === "hub") return "/homepage";
+    if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/accounting/${booksView}` : "/accounting";
+    if (activeSection === "home") return "/dashboard";
     if (activeSection === "settings") return settingsTab ? `/settings/${settingsTab}` : "/settings";
     if (activeSection === "banking") return bankView && bankView !== "overview" ? `/banking/${bankView}` : "/banking";
     if (activeSection === "documents") return documentView && documentView !== "overview" ? `/documents/${documentView}` : "/documents";
@@ -786,18 +790,11 @@ export default function App() {
     const [part1, part2, part3] = path.split("/");
 
     if (!part1) {
-      if (currentUser) {
-        setActiveProduct("books");
-        setSection("home");
-      } else {
-        setActiveProduct("booksLanding");
-        setBooksView("home");
-        setBooksNotice("");
-      }
+      setActiveProduct("hub");
       return;
     }
 
-    if (part1 === "hub") {
+    if (part1 === "hub" || part1 === "homepage") {
       setActiveProduct("hub");
       return;
     }
@@ -809,8 +806,15 @@ export default function App() {
       return;
     }
 
+    if (part1 === "accounting") {
+      setActiveProduct("booksLanding");
+      setBooksView(["home", "signin", "signup", "forgot", "reset", "demo"].includes(part2) ? part2 : "home");
+      setBooksNotice("");
+      return;
+    }
+
     setActiveProduct("books");
-    if (part1 === "home") {
+    if (part1 === "home" || part1 === "dashboard") {
       setSection("home");
       return;
     }
@@ -1019,6 +1023,42 @@ export default function App() {
     frameId = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frameId);
   }, [demoPreviewStats]);
+
+  useEffect(() => {
+    if (activeProduct !== "hub") return;
+    const revealNodes = Array.from(document.querySelectorAll("[data-ph-reveal]"));
+    if (!revealNodes.length) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      revealNodes.forEach((node) => node.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.2,
+        rootMargin: "0px 0px -6% 0px"
+      }
+    );
+
+    revealNodes.forEach((node, index) => {
+      node.style.setProperty("--ph-reveal-delay", `${Math.min(index * 45, 360)}ms`);
+      observer.observe(node);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeProduct, hubBillingCycle, hubLang]);
 
   useEffect(() => {
     const expiredUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId !== "free" && user.subscription?.endsAt && String(user.subscription.endsAt) < today());
@@ -4195,6 +4235,11 @@ function renderItemsCatalog() {
     if (customerView === "overview") {
       return (
         <section className="view active">
+          {OVERVIEWS[activeSection]?.includes("customers") && (
+            <div className="module-back-bar">
+              <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+            </div>
+          )}
           <div className="bill-hub">
             <div className="bill-hub-card" onClick={() => setCustomerView("journal")}>
               <div className="bill-hub-icon">👥</div>
@@ -4288,6 +4333,11 @@ function renderItemsCatalog() {
     if (invoiceView === "overview") {
       return (
         <section className="view active">
+          {OVERVIEWS[activeSection]?.includes("invoices") && (
+            <div className="module-back-bar">
+              <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+            </div>
+          )}
           <div className="bill-hub">
             <div className="bill-hub-card" onClick={() => setInvoiceView("journal")}>
               <div className="bill-hub-icon">🧾</div>
@@ -5076,6 +5126,11 @@ function renderItemsCatalog() {
     if (journalView === "overview") {
       return (
         <section className="view active">
+          {OVERVIEWS[activeSection]?.includes("manualJournals") && (
+            <div className="module-back-bar">
+              <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+            </div>
+          )}
           <section className="mj-hero">
             <div className="mj-hero-copy">
               <span className="mj-hero-badge">Manual Journal Studio</span>
@@ -5803,6 +5858,11 @@ function renderItemsCatalog() {
       if (chartView === "overview") {
         return (
           <section className="view active">
+            {OVERVIEWS[activeSection]?.includes("chartOfAccounts") && (
+              <div className="module-back-bar">
+                <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+              </div>
+            )}
             <div className="bill-hub">
               <div className="bill-hub-card" onClick={() => setChartView("journal")}>
                 <div className="bill-hub-icon">📊</div>
@@ -6296,6 +6356,11 @@ function renderItemsCatalog() {
 
     return (
       <section className="view active">
+        {OVERVIEWS[activeSection]?.includes("operationsJournal") && (
+          <div className="module-back-bar">
+            <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
+          </div>
+        )}
 
         {/* ── Başlıq ── */}
         <div className="opj-page-header">
@@ -6670,116 +6735,473 @@ function renderItemsCatalog() {
     const hubCompanyName = "Tetavio LLC";
     const LANGS = [
       { code: "az", label: "Azərbaycan dili", flag: "🇦🇿" },
-      { code: "en", label: "English",          flag: "🇬🇧" },
-      { code: "ru", label: "Русский",          flag: "🇷🇺" },
-      { code: "tr", label: "Türkçe",           flag: "🇹🇷" },
-      { code: "de", label: "Deutsch",          flag: "🇩🇪" },
+      { code: "en", label: "English", flag: "🇬🇧" },
+      { code: "ru", label: "Русский", flag: "🇷🇺" },
+      { code: "tr", label: "Türkçe", flag: "🇹🇷" },
+      { code: "de", label: "Deutsch", flag: "🇩🇪" }
     ];
     const HUB_T = {
       az: {
-        platform:      "Məhsul platforması",
-        eyebrow:       "Tetavio məhsulları",
-        headline1:     "İdarəetmə həllini",
-        headline2:     "seçin",
-        subtitle:      "Hər məhsul ayrıca iş sahəsi kimi açılır. Hazırda aktiv məhsul Mühasibat proqramı moduludur.",
-        activeBadge:   "● Aktiv məhsul",
-        activeBrand:   "Mühasibat proqramı",
-        activeTitle:   "Mühasibat uçotu və hesabatların idarə olunması sistemi",
-        activeDesc:    "Tetavio ERP mühasibat proqramına daxil olun, satış, alış, əməliyyatlar və hesabatlarla işləyin.",
-        activeFeats:   ["Satış və alış idarəetməsi", "Maliyyə hesabatları", "Bank və əməliyyatlar", "Bulud əsaslı məlumat saxlaması"],
-        activeBtn:     "Mühasibat proqramını aç →",
-        soonBadge:     "⏳ Planlaşdırılır",
-        soonTitle:     "Beynəlxalq logistika iş platforması",
-        soonDesc:      "Beynəlxalq yük daşımaları sahəsində iş axtaranlar və işverənlər üçün ayrıca platforma modulu burada qurulacaq.",
-        soonFeats:     ["Yük daşıma elanları", "İşveren–Sürücü eşləşməsi", "Marşrut idarəetməsi", "Real vaxt izləmə"],
-        soonBtn:       "Tezliklə",
+        platform: "Məhsul platforması",
+        nav: [
+          { id: "features", label: "Üstünlüklər" },
+          { id: "how", label: "Necə işləyir" },
+          { id: "about", label: "Haqqımızda" },
+          { id: "pricing", label: "Tariflər" },
+          { id: "faq", label: "FAQ" }
+        ],
+        navContact: "Əlaqə",
+        navMenu: "Menyu",
+        heroEyebrow: "Cloud accounting SaaS",
+        heroTitle: "Mühasibat uçotunu bir paneldən idarə edin",
+        heroSubtitle: "Tetavio ilə satış, alış, bank əməliyyatları və maliyyə hesabatlarını real vaxtda idarə edin. Komandanız üçün sürətli, təhlükəsiz və etibarlı mühit qurun.",
+        heroTrust: ["Bulud əsaslı giriş", "Lokal bazara uyğun iş axını", "Yüksək sürətli əməliyyat paneli"],
+        heroPrimary: "Mühasibat proqramını aç →",
+        heroSecondary: "Tariflərə bax",
+        heroPanelTitle: "Canlı iş paneli",
+        heroPanelHint: "Nümayiş məqsədli göstəricilər",
+        featureTitle: "Məhsulun əsas üstünlükləri",
+        featureSubtitle: "Gündəlik maliyyə əməliyyatlarını daha sadə və daha dəqiq idarə etmək üçün hazırlanıb.",
+        features: [
+          { icon: "🧾", title: "Sənəd axını nəzarətdə", text: "Qaimə, faktura və ödəniş axınlarını bir sistemdə izləyin." },
+          { icon: "📊", title: "Dəqiq hesabatlar", text: "Mənfəət-zərər, balans və pul axını hesabatları hazır formada." },
+          { icon: "🔒", title: "Etibarlı təhlükəsizlik", text: "Rollar üzrə giriş, audit izi və məlumat bütövlüyü nəzarəti." },
+          { icon: "⚡", title: "Sürətli istifadə", text: "Komandanız üçün öyrənməsi asan, gündəlik iş üçün çevik interfeys." }
+        ],
+        howTitle: "Platforma necə işləyir?",
+        howSubtitle: "İşə başlamaq üçün uzun inteqrasiya prosesinə ehtiyac yoxdur.",
+        howSteps: [
+          { title: "Hesab yaradın və şirkəti aktivləşdirin", text: "Şirkət məlumatlarınızı daxil edin və sistem parametrlərini 2-3 addımda tamamlayın." },
+          { title: "Satış və alış axınını qurun", text: "Müştəri, təchizatçı, qaimə və fakturaları bir pəncərədən idarə edin." },
+          { title: "Əməliyyatları bağlayın və hesabat alın", text: "Maliyyə nəticələrini real vaxtda izləyin və qərarları daha sürətli verin." }
+        ],
+        aboutTitle: "Haqqımızda",
+        aboutText: "Tetavio komandası mühasibat proseslərini sadələşdirmək üçün yerli bazarın gündəlik ehtiyaclarına uyğun cloud platforma qurur. Məqsədimiz şirkətlərə daha az vaxtda daha düzgün maliyyə qərarları verməyə kömək etməkdir.",
+        servicesTitle: "Nə təklif edirik?",
+        services: ["Mühasibat uçotu və sənəd idarəetməsi", "Satış, alış və bank əməliyyatlarının mərkəzləşmiş idarəsi", "Plan əsaslı istifadə və komanda rolları", "Texniki dəstək və davamlı məhsul yenilənməsi"],
+        whyTitle: "Niyə bizi seçməlisiniz?",
+        whyCards: [
+          { title: "Lokal uyğunluq", text: "Məzmun və əməliyyat məntiqi yerli biznes praktikasına uyğunlaşdırılıb." },
+          { title: "Şəffaf tariflər", text: "Bütün planlar aydın qiymət və əməliyyat limiti ilə təqdim olunur." },
+          { title: "Komanda üçün hazır", text: "Rollar, icazələr və istifadəçi idarəetməsi ilə böyüməyə uyğundur." }
+        ],
+        pricingTitle: "Tariflər",
+        pricingSubtitle: "Şirkətinizin ölçüsünə uyğun planı seçin. İllik və 1 aylıq rejimlər arasında asan keçid edin.",
+        monthly: "1 aylıq",
+        annual: "İllik",
+        recommended: "Tövsiyə olunan",
+        activePlan: "Aktiv plan",
+        freePrice: "Pulsuz",
+        freeLimit: "5 əməliyyat limiti",
+        operationLimitSuffix: "əməliyyat limiti",
+        annualDuration: "365 günlük aktiv plan",
+        monthlyDuration: "30 günlük aktiv plan",
+        annualPriceSuffix: "/ay",
+        monthlyPriceSuffix: "/1 ay",
+        trustTitle: "Etibar və performans",
+        trustItems: [
+          { title: "Təhlükəsiz giriş", text: "Rollar üzrə giriş nəzarəti və məlumat müdafiəsi." },
+          { title: "Yüksək sürət", text: "Gündəlik əməliyyatlarda gecikməsiz iş axını." },
+          { title: "Rahat istifadə", text: "Öyrənməsi asan, komandalar üçün intuitiv interfeys." },
+          { title: "Operativ dəstək", text: "Sual və ehtiyaclara sürətli cavab verən dəstək komandası." }
+        ],
+        faqTitle: "Tez-tez verilən suallar",
+        faqs: [
+          { q: "Tetavio bulud əsaslı sistemdirmi?", a: "Bəli. Platformaya internet olan istənilən cihazdan daxil ola bilərsiniz." },
+          { q: "Free planda limit nə qədərdir?", a: "Free plan başlanğıc istifadə üçün nəzərdə tutulub və 5 əməliyyat limiti təqdim edir." },
+          { q: "Planı sonradan dəyişmək mümkündürmü?", a: "Bəli. Hesabınızdan istənilən vaxt daha uyğun plana keçə bilərsiniz." },
+          { q: "Komanda üzvləri üçün ayrıca giriş mümkündürmü?", a: "Bəli. Rol əsaslı istifadəçi girişi və icazə idarəetməsi mövcuddur." }
+        ],
+        ctaTitle: "Mühasibat prosesini bu gün optimallaşdırın",
+        ctaText: "Platformaya keçin, uyğun planı seçin və bütün maliyyə axınını vahid sistemdən idarə edin.",
+        ctaButton: "Mühasibat proqramını aç →",
+        contact: "Əlaqə: info@tetavio.com",
+        footerNote: "Tetavio ERP · Cloud Accounting Platform",
+        planDescriptions: {
+          free: "Başlanğıc istifadə üçün pulsuz plan",
+          standard: "Kiçik komandalar üçün baza plan",
+          professional: "Daha aktiv əməliyyat axını üçün",
+          premium: "Geniş istifadə və yüksək çeviklik üçün",
+          elite: "Peşəkar və intensiv istifadəçilər üçün",
+          ultimate: "Maksimum səviyyəli xidmət paketi"
+        }
       },
       en: {
-        platform:      "Product platform",
-        eyebrow:       "Tetavio products",
-        headline1:     "Choose your",
-        headline2:     "solution",
-        subtitle:      "Each product opens as a separate workspace. The currently active product is the Accounting software module.",
-        activeBadge:   "● Active product",
-        activeBrand:   "Accounting software",
-        activeTitle:   "Accounting and financial reporting management system",
-        activeDesc:    "Access the Tetavio ERP accounting module and work with sales, purchases, transactions and reports.",
-        activeFeats:   ["Sales & purchase management", "Financial reports", "Banking & transactions", "Cloud-based data storage"],
-        activeBtn:     "Open Accounting →",
-        soonBadge:     "⏳ Coming soon",
-        soonTitle:     "International logistics job platform",
-        soonDesc:      "A separate platform module for job seekers and employers in the international freight transport sector will be built here.",
-        soonFeats:     ["Freight listings", "Employer–Driver matching", "Route management", "Real-time tracking"],
-        soonBtn:       "Coming soon",
+        platform: "Product platform",
+        nav: [
+          { id: "features", label: "Features" },
+          { id: "how", label: "How it works" },
+          { id: "about", label: "About" },
+          { id: "pricing", label: "Pricing" },
+          { id: "faq", label: "FAQ" }
+        ],
+        navContact: "Contact",
+        navMenu: "Menu",
+        heroEyebrow: "Cloud accounting SaaS",
+        heroTitle: "Manage accounting from one dashboard",
+        heroSubtitle: "With Tetavio, manage sales, purchases, banking operations and financial reports in real time. Build a fast, secure and reliable workflow for your team.",
+        heroTrust: ["Cloud access", "Local market fit", "High-speed operations"],
+        heroPrimary: "Open Accounting App →",
+        heroSecondary: "See pricing",
+        heroPanelTitle: "Live dashboard",
+        heroPanelHint: "Demo indicators",
+        featureTitle: "Core product advantages",
+        featureSubtitle: "Built to simplify daily financial operations with better control and accuracy.",
+        features: [
+          { icon: "🧾", title: "Document flow control", text: "Track invoices, bills and payment flows in one place." },
+          { icon: "📊", title: "Accurate reporting", text: "Profit-loss, balance sheet and cash flow reports are ready instantly." },
+          { icon: "🔒", title: "Reliable security", text: "Role-based access, audit trail and data integrity control." },
+          { icon: "⚡", title: "Fast to use", text: "Easy to learn and efficient for everyday team workflows." }
+        ],
+        howTitle: "How does the platform work?",
+        howSubtitle: "No long integration process required to get started.",
+        howSteps: [
+          { title: "Create account and activate company", text: "Add company details and finish core settings in a few steps." },
+          { title: "Set up sales and purchasing flow", text: "Manage customers, vendors, invoices and bills from one workspace." },
+          { title: "Close operations and get reports", text: "Track financial outcomes in real time and make faster decisions." }
+        ],
+        aboutTitle: "About us",
+        aboutText: "The Tetavio team builds cloud accounting tools tailored for local business needs. Our mission is to help companies make better financial decisions in less time.",
+        servicesTitle: "What we offer",
+        services: ["Accounting and document management", "Centralized sales, purchasing and banking operations", "Plan-based usage and team roles", "Technical support and continuous product updates"],
+        whyTitle: "Why choose us?",
+        whyCards: [
+          { title: "Local fit", text: "Content and business logic are adapted to local operating practices." },
+          { title: "Transparent pricing", text: "All plans are shown with clear prices and operation limits." },
+          { title: "Team-ready", text: "Role and permission management built for growth." }
+        ],
+        pricingTitle: "Pricing",
+        pricingSubtitle: "Choose a plan that fits your company size. Switch between annual and monthly modes easily.",
+        monthly: "1 month",
+        annual: "Annual",
+        recommended: "Recommended",
+        activePlan: "Active plan",
+        freePrice: "Free",
+        freeLimit: "5 operation limit",
+        operationLimitSuffix: "operation limit",
+        annualDuration: "365-day active plan",
+        monthlyDuration: "30-day active plan",
+        annualPriceSuffix: "/month",
+        monthlyPriceSuffix: "/1 month",
+        trustTitle: "Trust and performance",
+        trustItems: [
+          { title: "Secure access", text: "Role-based access control and data protection." },
+          { title: "High speed", text: "Smooth performance for daily operations." },
+          { title: "Easy usage", text: "Intuitive interface for teams." },
+          { title: "Responsive support", text: "Fast responses from our support team." }
+        ],
+        faqTitle: "Frequently asked questions",
+        faqs: [
+          { q: "Is Tetavio cloud-based?", a: "Yes. You can access the platform from any device with internet." },
+          { q: "What is the Free plan limit?", a: "The Free plan is for getting started and includes a 5-operation limit." },
+          { q: "Can I change plan later?", a: "Yes. You can switch to another plan anytime." },
+          { q: "Can team members have separate access?", a: "Yes. Role-based user access and permissions are available." }
+        ],
+        ctaTitle: "Optimize accounting today",
+        ctaText: "Move to the platform, pick the right plan and manage all financial workflows in one system.",
+        ctaButton: "Open Accounting App →",
+        contact: "Contact: info@tetavio.com",
+        footerNote: "Tetavio ERP · Cloud Accounting Platform",
+        planDescriptions: {
+          free: "Free starter plan",
+          standard: "Base plan for small teams",
+          professional: "For more active operations",
+          premium: "For broader usage and flexibility",
+          elite: "For professional and intensive usage",
+          ultimate: "Maximum-level service package"
+        }
       },
       ru: {
-        platform:      "Платформа продуктов",
-        eyebrow:       "Продукты Tetavio",
-        headline1:     "Выберите",
-        headline2:     "решение",
-        subtitle:      "Каждый продукт открывается как отдельное рабочее пространство. Активный продукт — модуль Бухгалтерского ПО.",
-        activeBadge:   "● Активный продукт",
-        activeBrand:   "Бухгалтерское ПО",
-        activeTitle:   "Система бухгалтерского учёта и управления отчётностью",
-        activeDesc:    "Войдите в модуль ERP-бухгалтерии Tetavio и работайте с продажами, закупками, операциями и отчётами.",
-        activeFeats:   ["Управление продажами и закупками", "Финансовые отчёты", "Банк и операции", "Облачное хранение данных"],
-        activeBtn:     "Открыть бухгалтерию →",
-        soonBadge:     "⏳ Скоро",
-        soonTitle:     "Международная логистическая рабочая платформа",
-        soonDesc:      "Здесь будет создан отдельный модуль платформы для соискателей и работодателей в сфере международных грузоперевозок.",
-        soonFeats:     ["Объявления о грузоперевозках", "Подбор работодатель–водитель", "Управление маршрутами", "Отслеживание в реальном времени"],
-        soonBtn:       "Скоро",
+        platform: "Платформа продуктов",
+        nav: [
+          { id: "features", label: "Преимущества" },
+          { id: "how", label: "Как работает" },
+          { id: "about", label: "О нас" },
+          { id: "pricing", label: "Тарифы" },
+          { id: "faq", label: "FAQ" }
+        ],
+        navContact: "Контакты",
+        navMenu: "Меню",
+        heroEyebrow: "Cloud accounting SaaS",
+        heroTitle: "Управляйте бухгалтерией из одной панели",
+        heroSubtitle: "С Tetavio управляйте продажами, закупками, банковскими операциями и финансовой отчетностью в реальном времени.",
+        heroTrust: ["Облачный доступ", "Локальная адаптация", "Высокая скорость"],
+        heroPrimary: "Открыть бухгалтерию →",
+        heroSecondary: "Смотреть тарифы",
+        heroPanelTitle: "Живая панель",
+        heroPanelHint: "Демо-показатели",
+        featureTitle: "Ключевые преимущества",
+        featureSubtitle: "Платформа для упрощения ежедневных финансовых операций.",
+        features: [
+          { icon: "🧾", title: "Контроль документов", text: "Счета, накладные и оплаты в одной системе." },
+          { icon: "📊", title: "Точные отчеты", text: "P&L, баланс и денежный поток в готовом виде." },
+          { icon: "🔒", title: "Надежная безопасность", text: "Ролевой доступ, аудит и контроль целостности данных." },
+          { icon: "⚡", title: "Быстрая работа", text: "Интерфейс, удобный для ежедневной работы команды." }
+        ],
+        howTitle: "Как работает платформа?",
+        howSubtitle: "Начать можно без длительной интеграции.",
+        howSteps: [
+          { title: "Создайте аккаунт и активируйте компанию", text: "Заполните данные компании и завершите настройки за несколько шагов." },
+          { title: "Настройте продажи и закупки", text: "Управляйте клиентами, поставщиками и документами в одном месте." },
+          { title: "Закрывайте операции и получайте отчеты", text: "Отслеживайте результат в реальном времени." }
+        ],
+        aboutTitle: "О нас",
+        aboutText: "Команда Tetavio создает облачную платформу бухгалтерии под локальные бизнес-потребности.",
+        servicesTitle: "Что мы предлагаем",
+        services: ["Бухучет и управление документами", "Централизованное управление продажами, закупками и банковскими операциями", "Тарифы и командные роли", "Техподдержка и постоянные обновления"],
+        whyTitle: "Почему выбирают нас?",
+        whyCards: [
+          { title: "Локальная адаптация", text: "Логика продукта адаптирована под местную практику." },
+          { title: "Прозрачные тарифы", text: "Ясные цены и лимиты операций." },
+          { title: "Готово для команды", text: "Роли и права доступа для масштабирования." }
+        ],
+        pricingTitle: "Тарифы",
+        pricingSubtitle: "Выберите план под ваш бизнес. Переключайтесь между годовым и месячным режимом.",
+        monthly: "1 месяц",
+        annual: "Годовой",
+        recommended: "Рекомендуем",
+        activePlan: "Активный план",
+        freePrice: "Бесплатно",
+        freeLimit: "Лимит 5 операций",
+        operationLimitSuffix: "лимит операций",
+        annualDuration: "План активен 365 дней",
+        monthlyDuration: "План активен 30 дней",
+        annualPriceSuffix: "/мес",
+        monthlyPriceSuffix: "/1 мес",
+        trustTitle: "Надежность и производительность",
+        trustItems: [
+          { title: "Безопасный доступ", text: "Ролевой контроль доступа и защита данных." },
+          { title: "Высокая скорость", text: "Плавная работа в ежедневных задачах." },
+          { title: "Удобство", text: "Интуитивный интерфейс для команды." },
+          { title: "Оперативная поддержка", text: "Быстрые ответы от команды поддержки." }
+        ],
+        faqTitle: "Частые вопросы",
+        faqs: [
+          { q: "Tetavio — облачная система?", a: "Да. Доступ возможен с любого устройства с интернетом." },
+          { q: "Какой лимит у Free?", a: "Free-план включает 5 операций." },
+          { q: "Можно ли сменить план позже?", a: "Да, план можно изменить в любой момент." },
+          { q: "Можно ли дать отдельный доступ сотрудникам?", a: "Да, доступ и права настраиваются по ролям." }
+        ],
+        ctaTitle: "Оптимизируйте бухгалтерию уже сегодня",
+        ctaText: "Перейдите на платформу и управляйте всеми финансовыми потоками в одном месте.",
+        ctaButton: "Открыть бухгалтерию →",
+        contact: "Контакт: info@tetavio.com",
+        footerNote: "Tetavio ERP · Cloud Accounting Platform",
+        planDescriptions: {
+          free: "Бесплатный стартовый план",
+          standard: "Базовый план для маленьких команд",
+          professional: "Для более активных операций",
+          premium: "Для гибкого и широкого использования",
+          elite: "Для профессионального и интенсивного использования",
+          ultimate: "Максимальный пакет услуг"
+        }
       },
       tr: {
-        platform:      "Ürün platforması",
-        eyebrow:       "Tetavio ürünleri",
-        headline1:     "Yönetim çözümünüzü",
-        headline2:     "seçin",
-        subtitle:      "Her ürün ayrı bir çalışma alanı olarak açılır. Şu anda aktif ürün Muhasebe yazılımı modülüdür.",
-        activeBadge:   "● Aktif ürün",
-        activeBrand:   "Muhasebe yazılımı",
-        activeTitle:   "Muhasebe ve finansal raporlama yönetim sistemi",
-        activeDesc:    "Tetavio ERP muhasebe modülüne erişin; satış, satın alma, işlemler ve raporlarla çalışın.",
-        activeFeats:   ["Satış ve satın alma yönetimi", "Finansal raporlar", "Bankacılık ve işlemler", "Bulut tabanlı veri depolama"],
-        activeBtn:     "Muhasebeyi aç →",
-        soonBadge:     "⏳ Yakında",
-        soonTitle:     "Uluslararası lojistik iş platforması",
-        soonDesc:      "Uluslararası yük taşımacılığı sektöründeki iş arayanlar ve işverenler için ayrı bir platform modülü burada kurulacak.",
-        soonFeats:     ["Yük taşıma ilanları", "İşveren–Sürücü eşleştirme", "Rota yönetimi", "Gerçek zamanlı takip"],
-        soonBtn:       "Yakında",
+        platform: "Ürün platformu",
+        nav: [
+          { id: "features", label: "Avantajlar" },
+          { id: "how", label: "Nasıl çalışır" },
+          { id: "about", label: "Hakkımızda" },
+          { id: "pricing", label: "Fiyatlar" },
+          { id: "faq", label: "SSS" }
+        ],
+        navContact: "İletişim",
+        navMenu: "Menü",
+        heroEyebrow: "Cloud accounting SaaS",
+        heroTitle: "Muhasebeyi tek panelden yönetin",
+        heroSubtitle: "Tetavio ile satış, satın alma, banka işlemleri ve finansal raporları gerçek zamanlı yönetin.",
+        heroTrust: ["Bulut erişimi", "Yerel uyum", "Yüksek hız"],
+        heroPrimary: "Muhasebe yazılımını aç →",
+        heroSecondary: "Fiyatlara bak",
+        heroPanelTitle: "Canlı panel",
+        heroPanelHint: "Demo göstergeler",
+        featureTitle: "Temel avantajlar",
+        featureSubtitle: "Günlük finans operasyonlarını daha kolay yönetmek için tasarlandı.",
+        features: [
+          { icon: "🧾", title: "Belge akışı kontrolü", text: "Fatura ve ödeme akışını tek sistemde izleyin." },
+          { icon: "📊", title: "Doğru raporlar", text: "Kâr-zarar, bilanço ve nakit akış raporları hazır." },
+          { icon: "🔒", title: "Güvenilir güvenlik", text: "Rol bazlı erişim ve veri bütünlüğü kontrolü." },
+          { icon: "⚡", title: "Hızlı kullanım", text: "Ekipler için sezgisel ve verimli arayüz." }
+        ],
+        howTitle: "Platform nasıl çalışır?",
+        howSubtitle: "Başlamak için uzun entegrasyona gerek yok.",
+        howSteps: [
+          { title: "Hesap oluşturun ve şirketi etkinleştirin", text: "Şirket bilgilerini ekleyin ve ayarları hızlıca tamamlayın." },
+          { title: "Satış ve satın alma akışını kurun", text: "Müşteri, tedarikçi ve belgeleri tek yerden yönetin." },
+          { title: "İşlemleri kapatın ve rapor alın", text: "Finansal sonuçları anlık izleyin." }
+        ],
+        aboutTitle: "Hakkımızda",
+        aboutText: "Tetavio ekibi yerel iş ihtiyaçlarına uygun bulut muhasebe platformu geliştirir.",
+        servicesTitle: "Neler sunuyoruz",
+        services: ["Muhasebe ve belge yönetimi", "Satış, satın alma ve banka işlemlerinin merkezi yönetimi", "Plan bazlı kullanım ve ekip rolleri", "Teknik destek ve sürekli güncellemeler"],
+        whyTitle: "Neden bizi seçmelisiniz?",
+        whyCards: [
+          { title: "Yerel uyum", text: "İş akışı yerel uygulamalara uyarlanmıştır." },
+          { title: "Şeffaf fiyatlandırma", text: "Net fiyatlar ve işlem limitleri." },
+          { title: "Ekip için hazır", text: "Rol ve yetki yönetimiyle ölçeklenebilir." }
+        ],
+        pricingTitle: "Fiyatlar",
+        pricingSubtitle: "Şirketinize uygun planı seçin. Yıllık ve aylık modlar arasında geçiş yapın.",
+        monthly: "1 aylık",
+        annual: "Yıllık",
+        recommended: "Önerilen",
+        activePlan: "Aktif plan",
+        freePrice: "Ücretsiz",
+        freeLimit: "5 işlem limiti",
+        operationLimitSuffix: "işlem limiti",
+        annualDuration: "365 gün aktif plan",
+        monthlyDuration: "30 gün aktif plan",
+        annualPriceSuffix: "/ay",
+        monthlyPriceSuffix: "/1 ay",
+        trustTitle: "Güven ve performans",
+        trustItems: [
+          { title: "Güvenli erişim", text: "Rol bazlı erişim kontrolü ve veri koruması." },
+          { title: "Yüksek hız", text: "Günlük operasyonlarda akıcı performans." },
+          { title: "Kolay kullanım", text: "Ekipler için sezgisel arayüz." },
+          { title: "Hızlı destek", text: "Destek ekibinden hızlı geri dönüş." }
+        ],
+        faqTitle: "Sık sorulan sorular",
+        faqs: [
+          { q: "Tetavio bulut tabanlı mı?", a: "Evet. İnternet olan her cihazdan erişebilirsiniz." },
+          { q: "Free plan limiti nedir?", a: "Free plan başlangıç için 5 işlem limiti sunar." },
+          { q: "Planı sonradan değiştirebilir miyim?", a: "Evet, planınızı istediğiniz zaman değiştirebilirsiniz." },
+          { q: "Ekip üyeleri için ayrı erişim var mı?", a: "Evet, rol bazlı erişim ve yetki yönetimi vardır." }
+        ],
+        ctaTitle: "Muhasebe sürecinizi bugün optimize edin",
+        ctaText: "Platforma geçin ve tüm finans süreçlerini tek sistemde yönetin.",
+        ctaButton: "Muhasebe yazılımını aç →",
+        contact: "İletişim: info@tetavio.com",
+        footerNote: "Tetavio ERP · Cloud Accounting Platform",
+        planDescriptions: {
+          free: "Başlangıç için ücretsiz plan",
+          standard: "Küçük ekipler için temel plan",
+          professional: "Daha yoğun işlem akışı için",
+          premium: "Geniş kullanım ve esneklik için",
+          elite: "Profesyonel ve yoğun kullanım için",
+          ultimate: "Maksimum hizmet paketi"
+        }
       },
       de: {
-        platform:      "Produktplattform",
-        eyebrow:       "Tetavio-Produkte",
-        headline1:     "Verwaltungslösung",
-        headline2:     "wählen",
-        subtitle:      "Jedes Produkt öffnet sich als separater Arbeitsbereich. Das derzeit aktive Produkt ist das Buchhaltungssoftware-Modul.",
-        activeBadge:   "● Aktives Produkt",
-        activeBrand:   "Buchhaltungssoftware",
-        activeTitle:   "Buchhaltungs- und Finanzberichtsverwaltungssystem",
-        activeDesc:    "Greifen Sie auf das Tetavio ERP-Buchhaltungsmodul zu und arbeiten Sie mit Verkäufen, Einkäufen, Transaktionen und Berichten.",
-        activeFeats:   ["Verkaufs- & Einkaufsverwaltung", "Finanzberichte", "Banking & Transaktionen", "Cloud-basierte Datenspeicherung"],
-        activeBtn:     "Buchhaltung öffnen →",
-        soonBadge:     "⏳ Demnächst",
-        soonTitle:     "Internationale Logistik-Arbeitsplattform",
-        soonDesc:      "Hier wird ein separates Plattformmodul für Arbeitssuchende und Arbeitgeber im internationalen Gütertransport aufgebaut.",
-        soonFeats:     ["Frachtanzeigen", "Arbeitgeber–Fahrer-Matching", "Routenverwaltung", "Echtzeit-Tracking"],
-        soonBtn:       "Demnächst",
-      },
+        platform: "Produktplattform",
+        nav: [
+          { id: "features", label: "Vorteile" },
+          { id: "how", label: "So funktioniert es" },
+          { id: "about", label: "Über uns" },
+          { id: "pricing", label: "Preise" },
+          { id: "faq", label: "FAQ" }
+        ],
+        navContact: "Kontakt",
+        navMenu: "Menü",
+        heroEyebrow: "Cloud accounting SaaS",
+        heroTitle: "Buchhaltung in einem Dashboard steuern",
+        heroSubtitle: "Mit Tetavio verwalten Sie Verkauf, Einkauf, Bankvorgänge und Finanzberichte in Echtzeit.",
+        heroTrust: ["Cloud-Zugriff", "Lokale Anpassung", "Hohe Geschwindigkeit"],
+        heroPrimary: "Buchhaltung öffnen →",
+        heroSecondary: "Preise ansehen",
+        heroPanelTitle: "Live-Dashboard",
+        heroPanelHint: "Demo-Kennzahlen",
+        featureTitle: "Kernvorteile",
+        featureSubtitle: "Für einfachere und präzisere tägliche Finanzabläufe entwickelt.",
+        features: [
+          { icon: "🧾", title: "Dokumentenfluss im Blick", text: "Rechnungen und Zahlungen in einem System verfolgen." },
+          { icon: "📊", title: "Präzise Berichte", text: "GuV, Bilanz und Cashflow-Berichte sofort verfügbar." },
+          { icon: "🔒", title: "Zuverlässige Sicherheit", text: "Rollenbasierter Zugriff, Audit-Trail und Datenintegrität." },
+          { icon: "⚡", title: "Schnelle Nutzung", text: "Intuitive Oberfläche für tägliche Teamarbeit." }
+        ],
+        howTitle: "Wie funktioniert die Plattform?",
+        howSubtitle: "Sie können ohne lange Integrationsphase starten.",
+        howSteps: [
+          { title: "Konto erstellen und Unternehmen aktivieren", text: "Unternehmensdaten eingeben und Kerneinstellungen schnell abschließen." },
+          { title: "Verkaufs- und Einkaufsfluss aufsetzen", text: "Kunden, Lieferanten und Dokumente zentral verwalten." },
+          { title: "Vorgänge abschließen und Berichte erhalten", text: "Finanzergebnisse in Echtzeit verfolgen." }
+        ],
+        aboutTitle: "Über uns",
+        aboutText: "Das Tetavio-Team entwickelt eine Cloud-Buchhaltungsplattform für lokale Geschäftsanforderungen.",
+        servicesTitle: "Was wir anbieten",
+        services: ["Buchhaltung und Dokumentenmanagement", "Zentrale Verwaltung von Verkauf, Einkauf und Bankvorgängen", "Planbasierte Nutzung und Teamrollen", "Technischer Support und kontinuierliche Updates"],
+        whyTitle: "Warum uns wählen?",
+        whyCards: [
+          { title: "Lokale Eignung", text: "Inhalte und Logik sind an lokale Praxis angepasst." },
+          { title: "Transparente Preise", text: "Klare Preise und Operationslimits in allen Plänen." },
+          { title: "Teamfähig", text: "Rollen und Rechte für Wachstum und Skalierung." }
+        ],
+        pricingTitle: "Preise",
+        pricingSubtitle: "Wählen Sie den passenden Plan für Ihr Unternehmen. Wechseln Sie einfach zwischen jährlich und monatlich.",
+        monthly: "1 Monat",
+        annual: "Jährlich",
+        recommended: "Empfohlen",
+        activePlan: "Aktiver Plan",
+        freePrice: "Kostenlos",
+        freeLimit: "5 Vorgänge Limit",
+        operationLimitSuffix: "Vorgänge Limit",
+        annualDuration: "365 Tage aktiv",
+        monthlyDuration: "30 Tage aktiv",
+        annualPriceSuffix: "/Monat",
+        monthlyPriceSuffix: "/1 Monat",
+        trustTitle: "Vertrauen und Leistung",
+        trustItems: [
+          { title: "Sicherer Zugriff", text: "Rollenbasierter Zugriff und Datenschutz." },
+          { title: "Hohe Geschwindigkeit", text: "Flüssige Performance im Tagesgeschäft." },
+          { title: "Einfache Nutzung", text: "Intuitive Oberfläche für Teams." },
+          { title: "Schneller Support", text: "Schnelle Antworten vom Support-Team." }
+        ],
+        faqTitle: "Häufige Fragen",
+        faqs: [
+          { q: "Ist Tetavio cloudbasiert?", a: "Ja. Zugriff ist von jedem Gerät mit Internet möglich." },
+          { q: "Was ist das Free-Limit?", a: "Der Free-Plan enthält ein Limit von 5 Vorgängen." },
+          { q: "Kann ich später den Plan wechseln?", a: "Ja, ein Planwechsel ist jederzeit möglich." },
+          { q: "Gibt es separaten Zugang für Teammitglieder?", a: "Ja, rollenbasierter Zugang und Rechteverwaltung sind verfügbar." }
+        ],
+        ctaTitle: "Optimieren Sie Ihre Buchhaltung noch heute",
+        ctaText: "Wechseln Sie auf die Plattform und steuern Sie alle Finanzprozesse zentral.",
+        ctaButton: "Buchhaltung öffnen →",
+        contact: "Kontakt: info@tetavio.com",
+        footerNote: "Tetavio ERP · Cloud Accounting Platform",
+        planDescriptions: {
+          free: "Kostenloser Einstiegsplan",
+          standard: "Basisplan für kleine Teams",
+          professional: "Für aktivere Abläufe",
+          premium: "Für breite Nutzung und Flexibilität",
+          elite: "Für professionelle und intensive Nutzung",
+          ultimate: "Maximales Servicepaket"
+        }
+      }
     };
     const activeLang = LANGS.find((l) => l.code === hubLang) || LANGS[0];
     const t = HUB_T[hubLang] || HUB_T.az;
-    return (
-      <div className="ph-shell" onClick={() => hubLangOpen && setHubLangOpen(false)}>
+    const planDescriptions = t.planDescriptions || HUB_T.az.planDescriptions;
+    const ownerEmail = currentUser ? getAccountOwnerEmail(currentUser) : "";
+    const ownerUser = ownerEmail ? (authUsers.find((user) => user.email === ownerEmail) || currentUser) : null;
+    const currentPlanId = ownerUser?.subscription?.planId || "free";
+    const currentPlanCycle = ownerUser?.subscription?.billingCycle === "monthly" ? "monthly" : "annual";
+    const publicPlans = getPublicPlans();
 
-        {/* ── Topbar ── */}
+    const scrollToSection = (sectionId) => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setHubNavOpen(false);
+      setHubLangOpen(false);
+    };
+
+    const getHubPriceLabel = (plan) => {
+      if (plan.id === "free") return t.freePrice;
+      if (hubBillingCycle === "annual") return `$${getPlanPrice(plan, "annual")}${t.annualPriceSuffix}`;
+      return `$${getPlanPrice(plan, "monthly")}${t.monthlyPriceSuffix}`;
+    };
+
+    const getHubPlanDuration = (plan) => {
+      if (plan.id === "free") return t.freeLimit;
+      return hubBillingCycle === "annual" ? t.annualDuration : t.monthlyDuration;
+    };
+
+    return (
+      <div className="ph-shell" onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (hubNavOpen) setHubNavOpen(false); }}>
         <header className="ph-topbar">
           <div className="ph-topbar-inner">
             <div className="lp-brand">
               <div className="lp-brand-icon">
                 <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533"/>
-                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)"/>
+                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
                 </svg>
               </div>
               <div>
@@ -6788,13 +7210,19 @@ function renderItemsCatalog() {
               </div>
             </div>
             <div className="ph-topbar-right">
-              {/* Language switcher */}
+              <nav className="ph-nav-links" aria-label="Ana səhifə bölmələri">
+                {t.nav.map((item) => (
+                  <button key={item.id} type="button" className="ph-nav-link" onClick={() => scrollToSection(item.id)}>
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+              <button className="ph-mobile-menu-btn" type="button" aria-expanded={hubNavOpen} aria-controls="ph-mobile-nav" onClick={(e) => { e.stopPropagation(); setHubNavOpen((current) => !current); }}>
+                <span>{t.navMenu}</span>
+                <span className="ph-mobile-menu-icon" aria-hidden="true">{hubNavOpen ? "✕" : "☰"}</span>
+              </button>
               <div className="ph-lang-wrap" onClick={(e) => e.stopPropagation()}>
-                <button
-                  className="ph-lang-btn"
-                  type="button"
-                  onClick={() => setHubLangOpen((o) => !o)}
-                >
+                <button className="ph-lang-btn" type="button" onClick={() => setHubLangOpen((o) => !o)}>
                   <span>{activeLang.flag}</span>
                   <span>{activeLang.code.toUpperCase()}</span>
                   <span className="ph-lang-chevron">{hubLangOpen ? "▲" : "▼"}</span>
@@ -6815,63 +7243,196 @@ function renderItemsCatalog() {
                   </div>
                 )}
               </div>
-              {/* Company pill */}
               <div className="ph-company-pill">
                 <span className="ph-company-dot" />
                 <span>{hubCompanyName}</span>
               </div>
             </div>
           </div>
+          <div className={`ph-mobile-nav ${hubNavOpen ? "open" : ""}`} id="ph-mobile-nav" onClick={(e) => e.stopPropagation()}>
+            <div className="ph-mobile-nav-links">
+              {t.nav.map((item) => (
+                <button key={item.id} type="button" onClick={() => scrollToSection(item.id)}>{item.label}</button>
+              ))}
+              <button type="button" onClick={() => scrollToSection("contact")}>{t.navContact}</button>
+            </div>
+          </div>
         </header>
 
-        {/* ── Hero ── */}
-        <section className="ph-hero">
-          <div className="ph-eyebrow">{t.eyebrow}</div>
-          <h1 className="ph-headline">{t.headline1} <span className="ph-headline-accent">{t.headline2}</span></h1>
-          <p className="ph-subtitle">{t.subtitle}</p>
-        </section>
-
-        {/* ── Product cards ── */}
-        <section className="ph-grid">
-
-          {/* Active — Mühasibat */}
-          <article className="ph-card ph-card-active">
-            <div className="ph-card-glow" />
-            <div className="ph-card-header">
-              <div className="ph-card-icon-wrap ph-icon-blue">📊</div>
-              <div className="ph-card-header-right">
-                <span className="ph-badge ph-badge-active">{t.activeBadge}</span>
-                <span className="ph-card-brand">{t.activeBrand}</span>
+        <section className="ph-hero" data-ph-reveal>
+          <div className="ph-eyebrow">{t.heroEyebrow}</div>
+          <div className="ph-hero-grid">
+            <div>
+              <h1 className="ph-headline">{t.heroTitle}</h1>
+              <p className="ph-subtitle">{t.heroSubtitle}</p>
+              <div className="ph-hero-cta-row">
+                <button className="ph-btn-primary" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice(""); }}>
+                  {t.heroPrimary}
+                </button>
+                <button className="ph-btn-secondary" type="button" onClick={() => scrollToSection("pricing")}>{t.heroSecondary}</button>
+              </div>
+              <div className="ph-trust-pills">
+                {t.heroTrust.map((item) => <span key={item}>{item}</span>)}
               </div>
             </div>
-            <h2 className="ph-card-title">{t.activeTitle}</h2>
-            <p className="ph-card-desc">{t.activeDesc}</p>
-            <ul className="ph-feature-list">
-              {t.activeFeats.map((f) => <li key={f}>✓ {f}</li>)}
-            </ul>
-            <button className="ph-btn-primary" type="button" onClick={() => { if (currentUser) { setActiveProduct("books"); } else { setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice(""); } }}>
-              {t.activeBtn}
-            </button>
-          </article>
-
-          {/* Coming soon — FreightLink */}
-          <article className="ph-card ph-card-soon">
-            <div className="ph-card-header">
-              <div className="ph-card-icon-wrap ph-icon-muted">🚚</div>
-              <div className="ph-card-header-right">
-                <span className="ph-badge ph-badge-soon">{t.soonBadge}</span>
-                <span className="ph-card-brand">FreightLink</span>
+            <aside className="ph-hero-panel" aria-label="Dashboard önizləməsi">
+              <div className="ph-hero-panel-head">
+                <strong>{t.heroPanelTitle}</strong>
+                <span>{t.heroPanelHint}</span>
               </div>
-            </div>
-            <h2 className="ph-card-title">{t.soonTitle}</h2>
-            <p className="ph-card-desc">{t.soonDesc}</p>
-            <ul className="ph-feature-list ph-feature-muted">
-              {t.soonFeats.map((f) => <li key={f}>◦ {f}</li>)}
-            </ul>
-            <button className="ph-btn-soon" type="button" disabled>{t.soonBtn}</button>
-          </article>
-
+              <div className="ph-hero-metrics">
+                {animatedPreviewStats.map((item) => (
+                  <article key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{formatPreviewMetric(item.value)}</strong>
+                  </article>
+                ))}
+              </div>
+            </aside>
+          </div>
         </section>
+
+        <section id="features" className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.featureTitle}</h2>
+            <p>{t.featureSubtitle}</p>
+          </div>
+          <div className="ph-feature-grid">
+            {t.features.map((feature) => (
+              <article key={feature.title} className="ph-feature-card" data-ph-reveal>
+                <span className="ph-feature-icon">{feature.icon}</span>
+                <h3>{feature.title}</h3>
+                <p>{feature.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="how" className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.howTitle}</h2>
+            <p>{t.howSubtitle}</p>
+          </div>
+          <div className="ph-step-grid">
+            {t.howSteps.map((step, index) => (
+              <article key={step.title} className="ph-step-card" data-ph-reveal>
+                <span className="ph-step-index">0{index + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="about" className="ph-section ph-about" data-ph-reveal>
+          <article className="ph-about-card">
+            <h2>{t.aboutTitle}</h2>
+            <p>{t.aboutText}</p>
+          </article>
+          <article className="ph-about-card">
+            <h2>{t.servicesTitle}</h2>
+            <ul className="ph-list">
+              {t.services.map((service) => <li key={service}>{service}</li>)}
+            </ul>
+          </article>
+        </section>
+
+        <section className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.whyTitle}</h2>
+          </div>
+          <div className="ph-why-grid">
+            {t.whyCards.map((item) => (
+              <article key={item.title} className="ph-why-card" data-ph-reveal>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="pricing" className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.pricingTitle}</h2>
+            <p>{t.pricingSubtitle}</p>
+          </div>
+          <div className="ph-pricing-toggle" role="tablist" aria-label="Tarif periodu">
+            <button className={hubBillingCycle === "annual" ? "ph-toggle-btn active" : "ph-toggle-btn"} type="button" onClick={() => setHubBillingCycle("annual")}>{t.annual}</button>
+            <button className={hubBillingCycle === "monthly" ? "ph-toggle-btn active" : "ph-toggle-btn"} type="button" onClick={() => setHubBillingCycle("monthly")}>{t.monthly}</button>
+          </div>
+          <div className="ph-pricing-grid">
+            {publicPlans.map((plan) => {
+              const isRecommended = plan.id === "professional";
+              const isActive = currentPlanId === plan.id && (currentPlanCycle === hubBillingCycle || currentPlanCycle === "demo");
+              return (
+                <article key={plan.id} className={`ph-price-card${isRecommended ? " recommended" : ""}${isActive ? " active" : ""}`} data-ph-reveal>
+                  <div className="ph-price-head">
+                    <strong>{plan.name}</strong>
+                    {isRecommended ? <span className="ph-price-badge">{t.recommended}</span> : null}
+                    {isActive && plan.id !== "free" ? <span className="ph-price-badge ph-price-badge-active">{t.activePlan}</span> : null}
+                  </div>
+                  <p className="ph-price-value">{getHubPriceLabel(plan)}</p>
+                  <p className="ph-price-copy">{planDescriptions[plan.id]}</p>
+                  <ul className="ph-list ph-list-tight">
+                    <li>{plan.id === "free" ? t.freeLimit : `${Number(plan.operationLimit).toLocaleString("en-US")} ${t.operationLimitSuffix}`}</li>
+                    <li>{getHubPlanDuration(plan)}</li>
+                  </ul>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.trustTitle}</h2>
+          </div>
+          <div className="ph-trust-grid">
+            {t.trustItems.map((item) => (
+              <article key={item.title} className="ph-trust-card" data-ph-reveal>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="faq" className="ph-section" data-ph-reveal>
+          <div className="ph-section-head">
+            <h2>{t.faqTitle}</h2>
+          </div>
+          <div className="ph-faq-grid">
+            {t.faqs.map((item) => (
+              <details key={item.q} className="ph-faq-item" data-ph-reveal>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section id="contact" className="ph-section" data-ph-reveal>
+          <article className="ph-cta-card">
+            <h2>{t.ctaTitle}</h2>
+            <p>{t.ctaText}</p>
+            <div className="ph-hero-cta-row">
+              <button className="ph-btn-primary" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice(""); }}>
+                {t.ctaButton}
+              </button>
+              <a className="ph-contact-link" href="mailto:info@tetavio.com">{t.contact}</a>
+            </div>
+          </article>
+        </section>
+
+        <footer className="ph-footer" data-ph-reveal>
+          <div className="ph-footer-links">
+            <button type="button" onClick={() => scrollToSection("about")}>{t.nav.find((item) => item.id === "about")?.label || "About"}</button>
+            <button type="button" onClick={() => scrollToSection("pricing")}>{t.nav.find((item) => item.id === "pricing")?.label || "Pricing"}</button>
+            <button type="button" onClick={() => scrollToSection("faq")}>{t.nav.find((item) => item.id === "faq")?.label || "FAQ"}</button>
+            <button type="button" onClick={() => scrollToSection("contact")}>{t.navContact}</button>
+          </div>
+          <small>{t.footerNote}</small>
+        </footer>
       </div>
     );
   }
@@ -7162,7 +7723,8 @@ function renderItemsCatalog() {
     const LP_T = {
       az: {
         brandSub:        "Mühasibat Proqramı",
-        navProducts:     "Məhsullar",
+        backHome:        "← Geri",
+        navProducts:     "Ana səhifə",
         navSignin:       "Daxil ol",
         navSignup:       "İndi qeydiyyatdan keç →",
         eyebrow:         "Mühasibat proqramı",
@@ -7219,7 +7781,8 @@ function renderItemsCatalog() {
       },
       en: {
         brandSub:        "Accounting Software",
-        navProducts:     "Products",
+        backHome:        "← Back",
+        navProducts:     "Homepage",
         navSignin:       "Sign in",
         navSignup:       "Register now →",
         eyebrow:         "Accounting software",
@@ -7276,7 +7839,8 @@ function renderItemsCatalog() {
       },
       ru: {
         brandSub:        "Бухгалтерское ПО",
-        navProducts:     "Продукты",
+        backHome:        "← Назад",
+        navProducts:     "Главная",
         navSignin:       "Войти",
         navSignup:       "Зарегистрироваться →",
         eyebrow:         "Бухгалтерское ПО",
@@ -7333,7 +7897,8 @@ function renderItemsCatalog() {
       },
       tr: {
         brandSub:        "Muhasebe Yazılımı",
-        navProducts:     "Ürünler",
+        backHome:        "← Geri",
+        navProducts:     "Ana sayfa",
         navSignin:       "Giriş yap",
         navSignup:       "Hemen kayıt ol →",
         eyebrow:         "Muhasebe yazılımı",
@@ -7390,7 +7955,8 @@ function renderItemsCatalog() {
       },
       de: {
         brandSub:        "Buchhaltungssoftware",
-        navProducts:     "Produkte",
+        backHome:        "← Zurück",
+        navProducts:     "Startseite",
         navSignin:       "Anmelden",
         navSignup:       "Jetzt registrieren →",
         eyebrow:         "Buchhaltungssoftware",
@@ -7470,7 +8036,7 @@ function renderItemsCatalog() {
                   <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)"/>
                 </svg>
               </div>
-              <div>
+              <div className="lp-brand-copy">
                 <strong>Tetavio</strong>
                 <span>{t.brandSub}</span>
               </div>
@@ -7507,6 +8073,7 @@ function renderItemsCatalog() {
         {/* ── Hero ── */}
         <section className="lp-hero">
           <div className="lp-hero-copy">
+            <button className="lp-inline-back" type="button" onClick={() => setActiveProduct("hub")}>{t.backHome}</button>
             <div className="lp-eyebrow">{t.eyebrow}</div>
             <h1 className="lp-headline">{t.headline1}<br /><span className="lp-headline-accent">{t.headline2}</span></h1>
             <p className="lp-subtitle">{t.subtitle}</p>
@@ -10475,7 +11042,7 @@ function renderSettings() {
                 className={`nav-item${isActive ? " active" : ""}${item.children ? " has-children" : ""}`}
                 onClick={() => {
                   if (item.children) {
-                    if (isActive) {
+                    if (isActive && activeModule === null) {
                       toggleSectionExpand(item.id);
                     } else {
                       setSection(item.id);
