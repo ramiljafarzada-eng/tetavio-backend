@@ -68,9 +68,9 @@ export function createSeedData() {
       { id: crypto.randomUUID(), creditNumber: "CN-2026-002", customerName: "Atlas Cargo", invoiceRef: "INV-2026-021", date: "2026-04-06", status: "Tətbiq edilib", amount: 60 }
     ],
     vendors: [
-      { id: crypto.randomUUID(), vendorName: "FuelNet", companyName: "FuelNet Services", email: "billing@fuelnet.com", outstandingPayables: 740 },
-      { id: crypto.randomUUID(), vendorName: "OfficeHub", companyName: "OfficeHub Supplies", email: "ar@officehub.com", outstandingPayables: 210 },
-      { id: crypto.randomUUID(), vendorName: "CloudLedger", companyName: "CloudLedger Software", email: "accounts@cloudledger.io", outstandingPayables: 540 }
+      { id: crypto.randomUUID(), vendorName: "FuelNet", companyName: "FuelNet Services", phone: "+994501112233", email: "billing@fuelnet.com", taxId: "1001001001", outstandingPayables: 740 },
+      { id: crypto.randomUUID(), vendorName: "OfficeHub", companyName: "OfficeHub Supplies", phone: "+994502223344", email: "ar@officehub.com", taxId: "1001001002", outstandingPayables: 210 },
+      { id: crypto.randomUUID(), vendorName: "CloudLedger", companyName: "CloudLedger Software", phone: "+994503334455", email: "accounts@cloudledger.io", taxId: "1001001003", outstandingPayables: 540 }
     ],
     goods: [],
     incomingGoodsServices: [],

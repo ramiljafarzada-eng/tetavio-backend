@@ -57,8 +57,8 @@ const MODULES_BASE = {
   },
   vendors: {
     title: "Təchizatçılar", singular: "Təchizatçı", collection: "vendors", summary: "Təchizatçı bazası və kreditor borcları.",
-    columns: [["vendorName", "Təchizatçı"], ["companyName", "Şirkət"], ["email", "E-poçt"], ["outstandingPayables", "Kreditor borcu", "currency"]],
-    form: [["vendorName", "Təchizatçı"], ["companyName", "Şirkət"], ["email", "E-poçt", "email"], ["outstandingPayables", "Kreditor borcu", "number", "0"]]
+    columns: [["companyName", "Şirkət"], ["phone", "Əlaqə"], ["email", "E-poçt"], ["taxId", "VÖEN"]],
+    form: [["vendorName", "Təchizatçı"], ["companyName", "Şirkət"], ["phone", "Əlaqə"], ["email", "E-poçt", "email"], ["taxId", "VÖEN"]]
   },
   goods: {
     title: "Nomenklatura",
@@ -171,8 +171,8 @@ function getModules(at) {
     },
     vendors: {
       title: at.mod_vendors, singular: at.mod_vendorsSingular, collection: "vendors", summary: at.mod_vendorsSummary,
-      columns: [["vendorName", at.opt_vendor], ["companyName", at.col["Şirkət"]], ["email", at.col["E-poçt"]], ["outstandingPayables", at.col["Kreditor borcu"], "currency"]],
-      form: [["vendorName", at.opt_vendor], ["companyName", at.col["Şirkət"]], ["email", at.fld["E-poçt"], "email"], ["outstandingPayables", at.col["Kreditor borcu"], "number", "0"]]
+      columns: [["companyName", at.col["Şirkət"]], ["phone", at.col["Əlaqə"] || "Əlaqə"], ["email", at.col["E-poçt"]], ["taxId", at.col["VÖEN"] || "VÖEN"]],
+      form: [["vendorName", at.opt_vendor], ["companyName", at.col["Şirkət"]], ["phone", at.col["Əlaqə"] || "Əlaqə"], ["email", at.fld["E-poçt"], "email"], ["taxId", at.col["VÖEN"] || "VÖEN"]]
     },
     goods: {
       title: at.mod_goods, singular: at.mod_goodsSingular, collection: "goods", summary: at.mod_goodsSummary,
@@ -468,6 +468,18 @@ function calculateLineItem(quantity, rate, taxLabel) {
   const taxAmount = taxRate > 0 ? Number((baseAmount * taxRate / 100).toFixed(2)) : 0;
   const amount = Number((baseAmount + taxAmount).toFixed(2));
   return { baseAmount, taxRate, taxAmount, amount };
+}
+
+function normalizeAccountCodeInput(value, fallback = "205") {
+  const match = String(value ?? "").match(/\d{3}/);
+  return match ? match[0] : String(fallback || "205");
+}
+
+function resolveIncomingLineAccountCode(item, fallback = "205") {
+  const primary = normalizeAccountCodeInput(item?.accountCode || "", "");
+  const legacy = normalizeAccountCodeInput(item?.account || item?.accountName || item?.code || "", "");
+  if (primary && legacy && primary !== legacy && primary === "205") return legacy;
+  return primary || legacy || String(fallback || "205");
 }
 
 function calculateBillTotals(lineItems, discount, adjustment) {
@@ -1902,7 +1914,7 @@ export default function App() {
       entry.lineItems.forEach((item, i) => {
         const baseAmount = Number(item.baseAmount || (Number(item.quantity || 0) * Number(item.rate || 0)));
         const taxAmount = Number(item.taxAmount || 0);
-        const accountCode = item.accountCode || "205";
+        const accountCode = normalizeAccountCodeInput(item.accountCode || item.account || "", "205");
         if (baseAmount > 0) {
           allEntries.push({ key: `${entry.id}-line${i}-main`, accountCode, accountName: getAccountNameByCode(accountCode), debit: baseAmount, credit: 0 });
         }
@@ -3678,8 +3690,9 @@ export default function App() {
       : moduleId === "incomingGoodsServices"
         ? (() => {
           const lineItems = (activeDraft.lineItems || []).map((item) => {
+            const accountCode = normalizeAccountCodeInput(item.accountCode || item.account || "", "205");
             const calc = calculateLineItem(item.quantity, item.rate, item.taxLabel);
-            return { ...item, ...calc };
+            return { ...item, accountCode, ...calc };
           });
           const totals = calculateBillTotals(lineItems, activeDraft.discount, activeDraft.adjustment);
           return {
@@ -3693,6 +3706,14 @@ export default function App() {
             ...totals
           };
         })()
+        : moduleId === "vendors"
+          ? (() => {
+            const parsed = { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
+            return {
+              ...parsed,
+              vendorName: String(parsed.vendorName || "").trim() || String(parsed.companyName || "").trim()
+            };
+          })()
         : { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
     let blockedByInventory = false;
     setState((current) => {
@@ -3718,6 +3739,33 @@ export default function App() {
       }
 
       let nextState = { ...inventoryBaseState, [config.collection]: nextCollection };
+      if (moduleId === "incomingGoodsServices") {
+        const goodsNameMap = nextState.goods.reduce((map, item) => {
+          const existingName = String(item.name || "").trim();
+          if (!existingName) return map;
+          map.set(existingName.toLowerCase(), existingName);
+          return map;
+        }, new Map());
+        const createdGoods = [];
+        (nextRecord.lineItems || []).forEach((lineItem) => {
+          const name = String(lineItem.itemName || "").trim();
+          if (!name) return;
+          const key = name.toLowerCase();
+          if (goodsNameMap.has(key)) return;
+          goodsNameMap.set(key, name);
+          createdGoods.push({
+            id: crypto.randomUUID(),
+            createdAt: today(),
+            name,
+            type: "Mal",
+            unit: "",
+            code: ""
+          });
+        });
+        if (createdGoods.length > 0) {
+          nextState = { ...nextState, goods: [...createdGoods, ...nextState.goods] };
+        }
+      }
       if (moduleId === "manualJournals") {
         nextState = applyManualJournalInventory(nextState, nextRecord, "apply");
       }
@@ -5528,6 +5576,15 @@ function renderItemsCatalog() {
       const lineItems = draft.lineItems || [createDefaultLineItem()];
       const rows = state.incomingGoodsServices.filter((item) => matchesSearch(item, query));
       const billTotals = calculateBillTotals(lineItems, draft.discount, draft.adjustment);
+      const incomingGoodsNameOptions = Array.from(
+        state.goods.reduce((map, item) => {
+          const name = String(item.name || "").trim();
+          if (!name) return map;
+          const key = name.toLowerCase();
+          if (!map.has(key)) map.set(key, name);
+          return map;
+        }, new Map()).values()
+      );
       const incomingAccountOptions = state.chartOfAccounts
         .filter((account) => isVisibleAccount(account))
         .slice()
@@ -5541,7 +5598,8 @@ function renderItemsCatalog() {
               ...currentDraft,
               lineItems: (currentDraft.lineItems || [createDefaultLineItem()]).map((item) => {
                 if (item.id !== lineId) return item;
-                const nextItem = { ...item, [field]: value };
+                const nextValue = field === "accountCode" ? normalizeAccountCodeInput(value, item.accountCode || "205") : value;
+                const nextItem = { ...item, [field]: nextValue };
                 return { ...nextItem, ...calculateLineItem(nextItem.quantity, nextItem.rate, nextItem.taxLabel) };
               })
             }
@@ -5688,7 +5746,7 @@ function renderItemsCatalog() {
                     <tbody>
                       {lineItems.map((item) => (
                         <tr key={item.id}>
-                          <td><input value={item.itemName ?? ""} onChange={(event) => updateIncomingLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} /></td>
+                          <td><input list="incoming-goods-list" value={item.itemName ?? ""} onChange={(event) => updateIncomingLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} /></td>
                           <td>
                             <select value={item.accountCode ?? "205"} onChange={(event) => updateIncomingLineItem(item.id, "accountCode", event.target.value)}>
                               {incomingAccountOptions.map((account) => <option key={`${item.id}-${account.id}`} value={account.accountCode}>{account.accountCode} - {account.accountName}</option>)}
@@ -5710,6 +5768,9 @@ function renderItemsCatalog() {
                     </tbody>
                   </table>
                 </div>
+                <datalist id="incoming-goods-list">
+                  {incomingGoodsNameOptions.map((name) => <option key={name} value={name} />)}
+                </datalist>
 
                 <div className="form-actions">
                   <button className="ghost-btn" type="button" onClick={addIncomingLineItem}>{at.mj_addLine || "Sətir əlavə et"}</button>
@@ -5835,7 +5896,7 @@ function renderItemsCatalog() {
             </div>
             <div className="bill-form-panel">
               <form className="form-grid" onSubmit={(event) => submitModule("vendors", event)}>
-                {config.form.map((field) => (
+                {config.form.filter((field) => field[0] !== "vendorName").map((field) => (
                   <label key={field[0]}>
                     <span>{fld(field[1])}</span>
                     <SmartField field={field} value={draft[field[0]] ?? ""} onChange={(e) => updateDraft("vendors", field[0], e.target.value)} at={at} />
