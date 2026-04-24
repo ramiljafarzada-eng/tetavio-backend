@@ -237,6 +237,28 @@ const LEGAL_NAV_ITEMS = [
   { id: "company-info", label: "Hüquqi məlumatlar", href: "/accounting/contact-info#legal-info", pageId: "contact-info", hash: "legal-info" },
   { id: "contact", label: "Əlaqə", href: "/accounting/contact-info#contact", pageId: "contact-info", hash: "contact" },
 ];
+
+function getContactInfoHash() {
+  return String(window.location.hash || "").replace(/^#/, "").trim();
+}
+
+function getActiveLegalNavId(pageId) {
+  if (pageId !== "contact-info") return pageId;
+  return getContactInfoHash() === "contact" ? "contact" : "company-info";
+}
+
+function getVisibleLegalSections(page) {
+  if (page?.id !== "contact-info") return page?.sections || [];
+  const currentHash = getContactInfoHash();
+  if (currentHash === "legal-info") {
+    return page.sections.filter((section) => section.heading === "Hüquqi məlumatlar");
+  }
+  if (currentHash === "contact") {
+    return page.sections.filter((section) => section.heading === "Əlaqə vasitələri");
+  }
+  return page.sections || [];
+}
+
 const MODULES_BASE = {
   itemsCatalog: {
     title: "Mal və Xidmət Kataloqu", singular: "Mal və xidmət", collection: "items", summary: "Mal və xidmət adlarının siyahısı.",
@@ -904,7 +926,8 @@ function ModuleOverviewCard({ moduleId, state, onOpen, MODULES, at }) {
 }
 
 function StandaloneLegalPage({ page }) {
-  const activeLegalNavId = page.id === "contact-info" ? "company-info" : page.id;
+  const activeLegalNavId = getActiveLegalNavId(page.id);
+  const visibleSections = getVisibleLegalSections(page);
   return (
     <div className="lp-shell">
       <header className="lp-topbar">
@@ -953,7 +976,7 @@ function StandaloneLegalPage({ page }) {
           </div>
 
           <div className="lp-legal-sections">
-            {page.sections.map((section) => {
+            {visibleSections.map((section) => {
               const sectionId = page.id === "contact-info"
                 ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
                 : undefined;
@@ -990,14 +1013,22 @@ function StandaloneLegalPage({ page }) {
 }
 
 export default function App() {
+  const [hash, setHash] = useState(() => window.location.hash);
   const pathname = window.location.pathname;
+
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
   const slug = pathname.startsWith("/accounting/")
     ? pathname.replace("/accounting/", "").split("/")[0]
     : null;
   const legalPage = slug ? COMPLIANCE_LEGAL_PAGE_MAP[slug] : null;
 
   if (legalPage) {
-    return <StandaloneLegalPage page={legalPage} />;
+    return <StandaloneLegalPage key={hash} page={legalPage} />;
   }
 
   return <MainApp />;
@@ -9048,6 +9079,8 @@ function renderItemsCatalog() {
 
     function renderLandingLegalSection() {
       if (!legalPage) return null;
+      const activeLegalNavId = getActiveLegalNavId(legalPage.id);
+      const visibleSections = getVisibleLegalSections(legalPage);
 
       return (
         <section className="lp-legal-shell">
@@ -9062,9 +9095,19 @@ function renderItemsCatalog() {
                 Ana səhifəyə qayıt
               </button>
             </div>
-            {renderLegalLinks()}
+            <div className="lp-legal-links">
+              {LEGAL_NAV_ITEMS.map((item) => (
+                <a
+                  key={item.id}
+                  className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
+                  href={item.href}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
             <div className="lp-legal-sections">
-              {legalPage.sections.map((section) => {
+              {visibleSections.map((section) => {
                 const sectionId = legalPage.id === "contact-info"
                   ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
                   : undefined;
@@ -12416,6 +12459,8 @@ function renderSettings() {
 
   function renderStandaloneLegalRouteGuard(routeInfo) {
     const legalPage = routeInfo?.legalPage || null;
+    const activeLegalNavId = legalPage ? getActiveLegalNavId(legalPage.id) : "";
+    const visibleSections = legalPage ? getVisibleLegalSections(legalPage) : [];
 
     if (!legalPage) {
       return (
@@ -12494,7 +12539,7 @@ function renderSettings() {
               {LEGAL_NAV_ITEMS.map((legalItem) => (
                 <a
                   key={legalItem.id}
-                  className={`lp-legal-link${legalPage.id === legalItem.pageId ? " active" : ""}`}
+                  className={`lp-legal-link${legalItem.id === activeLegalNavId ? " active" : ""}`}
                   href={legalItem.href}
                 >
                   {legalItem.label}
@@ -12503,7 +12548,7 @@ function renderSettings() {
             </div>
 
             <div className="lp-legal-sections">
-              {legalPage.sections.map((section) => {
+              {visibleSections.map((section) => {
                 const sectionId = legalPage.id === "contact-info"
                   ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
                   : undefined;
@@ -12526,7 +12571,7 @@ function renderSettings() {
             {LEGAL_NAV_ITEMS.map((legalItem) => (
               <a
                 key={legalItem.id}
-                className={`lp-legal-link${legalPage.id === legalItem.pageId ? " active" : ""}`}
+                className={`lp-legal-link${legalItem.id === activeLegalNavId ? " active" : ""}`}
                 href={legalItem.href}
               >
                 {legalItem.label}
