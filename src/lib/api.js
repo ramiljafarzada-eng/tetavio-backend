@@ -1,4 +1,4 @@
-const API_BASE_URL =
+export const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").replace(/\/$/, "");
 
 let activeSession = null;
@@ -16,13 +16,31 @@ function unwrapEnvelope(payload) {
 }
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    const isNetworkError =
+      error instanceof TypeError ||
+      /Failed to fetch|fetch failed|NetworkError/i.test(String(error?.message || ""));
+
+    if (isNetworkError) {
+      const networkError = new Error(
+        "Backend server is not reachable. Please make sure backend is running.",
+      );
+      networkError.code = "BACKEND_UNREACHABLE";
+      networkError.cause = error;
+      throw networkError;
+    }
+
+    throw error;
+  }
 
   const isJson = response.headers.get("content-type")?.includes("application/json");
   const payload = isJson ? await response.json() : null;

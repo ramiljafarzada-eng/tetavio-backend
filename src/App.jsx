@@ -781,6 +781,7 @@ export default function App() {
     };
   });
   const restoreInputRef = useRef(null);
+  const landingAuthRef = useRef(null);
   const [activeProduct, setActiveProduct] = useState(() => {
     const route = getLocationRoute();
     if (!route || route === "hub" || route === "homepage") return "hub";
@@ -1189,6 +1190,17 @@ export default function App() {
     }, 60000);
     return () => window.clearInterval(timerId);
   }, []);
+
+  useEffect(() => {
+    if (activeProduct !== "booksLanding") return;
+    if (!["signin", "signup", "forgot", "reset", "demo"].includes(booksView)) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      landingAuthRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeProduct, booksView]);
 
   useEffect(() => {
     let frameId = 0;
@@ -8345,7 +8357,8 @@ function renderItemsCatalog() {
   }
 
   function renderBooksLanding() {
-    const isAuthView = booksView === "signin" || booksView === "signup" || booksView === "home";
+    const isAuthView = booksView === "signin" || booksView === "signup";
+    const authSectionExpanded = booksView !== "home";
     const LANGS = [
       { code: "az", label: "Azərbaycan dili", flag: "🇦🇿" },
       { code: "en", label: "English",          flag: "🇬🇧" },
@@ -8651,9 +8664,154 @@ function renderItemsCatalog() {
     function goAuth(view) {
       setBooksView(view);
       setBooksNotice("");
-      setTimeout(() => {
-        document.getElementById("lp-auth-anchor")?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
+      setShowPassword(false);
+    }
+
+    function renderLandingAuthSection() {
+      return (
+        <section id="lp-auth-anchor" ref={landingAuthRef} className={`lp-auth-section${authSectionExpanded ? " lp-auth-section-expanded" : ""}`}>
+          <div className="lp-auth-info">
+            <h2>{t.authInfoTitle.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</h2>
+            <p>{t.authInfoDesc}</p>
+            {booksNotice ? <div className="lp-notice">{booksNotice}</div> : null}
+            <div className="lp-auth-bullets">
+              {t.bullets.map((b) => <div key={b} className="lp-bullet">{b}</div>)}
+            </div>
+          </div>
+
+          <div className="lp-auth-card">
+            {isAuthView && (
+              <div className="lp-auth-tabs">
+                <button className={`lp-auth-tab${booksView !== "signup" ? " active" : ""}`} type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); }}>{t.tabSignin}</button>
+                <button className={`lp-auth-tab${booksView === "signup" ? " active" : ""}`} type="button" onClick={() => { setBooksView("signup"); setBooksNotice(""); setShowPassword(false); }}>{t.tabSignup}</button>
+              </div>
+            )}
+
+            {booksView === "home" ? (
+              <div className="lp-form lp-auth-home">
+                <p className="lp-form-title">{t.authInfoTitle.split("\n")[0]}</p>
+                <p className="lp-form-hint">{t.authInfoDesc}</p>
+                <div className="lp-auth-home-actions">
+                  <button className="lp-submit-btn" type="button" onClick={() => goAuth("signin")}>{t.tabSignin}</button>
+                  <button className="lp-btn-ghost" type="button" onClick={() => goAuth("signup")}>{t.tabSignup}</button>
+                </div>
+              </div>
+
+            ) : booksView === "signin" ? (
+              <form className="lp-form" onSubmit={submitSignIn}>
+                <div className="lp-form-field">
+                  <label>{t.fEmail}</label>
+                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
+                </div>
+                <div className="lp-form-field lp-password-field">
+                  <label>{t.fPassword}</label>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
+                </div>
+                <div className="lp-form-row">
+                  <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
+                  <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
+                </div>
+                <button className="lp-submit-btn" type="submit">{t.fSigninBtn}</button>
+              </form>
+
+            ) : booksView === "signup" ? (
+              <form className="lp-form" onSubmit={submitSignUp}>
+                <div className="lp-form-field">
+                  <label>{t.fFullName}</label>
+                  <input value={authDraft.fullName} onChange={(e) => setAuthDraft((c) => ({ ...c, fullName: e.target.value }))} placeholder={t.fFullName} required />
+                </div>
+                <div className="lp-form-2col">
+                  <div className="lp-form-field">
+                    <label>{t.fEntityType}</label>
+                    <select value={authDraft.entityType} onChange={(e) => setAuthDraft((c) => ({ ...c, entityType: e.target.value }))}>
+                      <option value="Fiziki şəxs">{t.fEntityIndiv}</option>
+                      <option value="Hüquqi şəxs">{t.fEntityLegal}</option>
+                    </select>
+                  </div>
+                  <div className="lp-form-field">
+                    <label>{t.fTaxId}</label>
+                    <input value={authDraft.taxId} onChange={(e) => setAuthDraft((c) => ({ ...c, taxId: e.target.value }))} placeholder="0000000000" required />
+                  </div>
+                </div>
+                <div className="lp-form-field">
+                  <label>{authDraft.entityType === "Fiziki şəxs" ? t.fOwnerName : t.fCompanyName}</label>
+                  <input value={authDraft.companyName} onChange={(e) => setAuthDraft((c) => ({ ...c, companyName: e.target.value }))} required />
+                </div>
+                <div className="lp-form-2col">
+                  <div className="lp-form-field">
+                    <label>{t.fPhone}</label>
+                    <input value={authDraft.mobilePhone} onChange={(e) => setAuthDraft((c) => ({ ...c, mobilePhone: e.target.value }))} placeholder="+994..." required />
+                  </div>
+                  <div className="lp-form-field">
+                    <label>{t.fPlan}</label>
+                    <select value={authDraft.signupPlan || "free"} onChange={(e) => setAuthDraft((c) => ({ ...c, signupPlan: e.target.value }))}>
+                      <option value="free">Free</option>
+                      <option value="demo">{t.fPlanDemo}</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="lp-form-field">
+                  <label>{t.fEmail}</label>
+                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
+                </div>
+                <div className="lp-form-field lp-password-field">
+                  <label>{t.fPassword}</label>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
+                </div>
+                <button className="lp-submit-btn" type="submit">{t.fSignupBtn}</button>
+              </form>
+
+            ) : booksView === "forgot" ? (
+              <form className="lp-form" onSubmit={submitForgotPassword}>
+                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); }}>{t.fForgotBack}</button></div>
+                <p className="lp-form-title">{t.fForgotTitle}</p>
+                <p className="lp-form-hint">{t.fForgotHint}</p>
+                <div className="lp-form-field">
+                  <label>{t.fEmail}</label>
+                  <input type="email" value={forgotDraft.email} onChange={(e) => setForgotDraft({ email: e.target.value })} required />
+                </div>
+                <button className="lp-submit-btn" type="submit">{t.fForgotBtn}</button>
+              </form>
+
+            ) : booksView === "reset" ? (
+              <form className="lp-form" onSubmit={submitResetPassword}>
+                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setActiveResetToken(""); setShowPassword(false); }}>{t.fResetBack}</button></div>
+                <p className="lp-form-title">{t.fResetTitle}</p>
+                <div className="lp-form-field lp-password-field">
+                  <label>{t.fNewPass}</label>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
+                </div>
+                <div className="lp-form-field lp-password-field">
+                  <label>{t.fConfirmPass}</label>
+                  <div className="lp-pass-input-wrap">
+                    <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                  </div>
+                </div>
+                <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
+              </form>
+
+            ) : booksView === "demo" ? (
+              <form className="lp-form" onSubmit={submitDemoRequest}>
+                <p className="lp-form-title">{t.fDemoTitle}</p>
+                <div className="lp-form-field"><label>{t.fDemoCompany}</label><input value={demoDraft.companyName} onChange={(e) => setDemoDraft((c) => ({ ...c, companyName: e.target.value }))} required /></div>
+                <div className="lp-form-field"><label>{t.fDemoPerson}</label><input value={demoDraft.fullName} onChange={(e) => setDemoDraft((c) => ({ ...c, fullName: e.target.value }))} required /></div>
+                <div className="lp-form-field"><label>{t.fEmail}</label><input type="email" value={demoDraft.email} onChange={(e) => setDemoDraft((c) => ({ ...c, email: e.target.value }))} required /></div>
+                <button className="lp-submit-btn" type="submit">{t.fDemoBtn}</button>
+              </form>
+            ) : null}
+          </div>
+        </section>
+      );
     }
 
     return (
@@ -8741,6 +8899,8 @@ function renderItemsCatalog() {
         </section>
 
         {/* ── Feature highlights ── */}
+        {authSectionExpanded ? renderLandingAuthSection() : null}
+
         <div className="lp-highlights">
           {t.highlights.map((h) => (
             <div key={h.title} className="lp-highlight-card">
@@ -8752,7 +8912,8 @@ function renderItemsCatalog() {
         </div>
 
         {/* ── Auth section ── */}
-        <section id="lp-auth-anchor" className="lp-auth-section">
+        {!authSectionExpanded ? (
+        <section id="lp-auth-anchor" ref={landingAuthRef} className="lp-auth-section">
           <div className="lp-auth-info">
             <h2>{t.authInfoTitle.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</h2>
             <p>{t.authInfoDesc}</p>
@@ -8884,6 +9045,7 @@ function renderItemsCatalog() {
             ) : null}
           </div>
         </section>
+        ) : null}
 
       </div>
     );

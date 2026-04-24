@@ -460,6 +460,9 @@ body {
   max-width: 1000px; margin: 0 auto 5rem; padding: 0 2rem;
   display: grid; grid-template-columns: 1fr 1.1fr; gap: 2.5rem; align-items: start;
 }
+.lp-auth-section-expanded {
+  margin-bottom: 2rem;
+}
 .lp-auth-info h2 {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 1.75rem; font-weight: 800; color: white;
@@ -497,6 +500,15 @@ body {
 .lp-form { display: flex; flex-direction: column; gap: 0.9rem; padding: 1.5rem; }
 .lp-form-title { font-family: "Bahnschrift", "Segoe UI", sans-serif; font-size: 1.05rem; font-weight: 800; color: white; margin: 0; }
 .lp-form-hint { font-size: 0.78rem; color: rgba(255,255,255,0.42); line-height: 1.65; margin: 0; }
+.lp-auth-home-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.lp-auth-home-actions .lp-submit-btn,
+.lp-auth-home-actions .lp-btn-ghost {
+  flex: 1 1 180px;
+}
 .lp-form-field { display: flex; flex-direction: column; gap: 0.35rem; }
 .lp-form-field label {
   font-size: 0.72rem; font-weight: 700;
