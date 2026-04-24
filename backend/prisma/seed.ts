@@ -1,6 +1,16 @@
-import { PrismaClient, PlanInterval } from '@prisma/client';
+import {
+  PrismaClient,
+  PlanInterval,
+  SubscriptionStatus,
+  UserStatus,
+} from '@prisma/client';
+import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+const DEFAULT_ADMIN_EMAIL = 'admin@finotam.local';
+const DEFAULT_ADMIN_PASSWORD = 'Tetavio@2026';
+const DEFAULT_ADMIN_NAME = 'Finotam Super Admin';
 
 async function main() {
   const plans = [
@@ -61,6 +71,114 @@ async function main() {
   });
 
   console.log('Seeded plans:', result);
+
+  const freePlan = await prisma.plan.findUnique({
+    where: { code: 'FREE' },
+  });
+
+  if (!freePlan || !freePlan.isActive) {
+    throw new Error('FREE plan must exist and be active before seeding the default admin');
+  }
+
+  const passwordHash = await hash(DEFAULT_ADMIN_PASSWORD, 12);
+  const now = new Date();
+
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: DEFAULT_ADMIN_EMAIL },
+    select: {
+      id: true,
+      accountId: true,
+      email: true,
+    },
+  });
+
+  let adminAccountId = existingAdmin?.accountId;
+
+  if (!adminAccountId) {
+    const account = await prisma.account.create({
+      data: {
+        name: DEFAULT_ADMIN_NAME,
+        type: 'INDIVIDUAL',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    adminAccountId = account.id;
+  } else {
+    await prisma.account.update({
+      where: { id: adminAccountId },
+      data: {
+        name: DEFAULT_ADMIN_NAME,
+      },
+    });
+  }
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: DEFAULT_ADMIN_EMAIL },
+    create: {
+      accountId: adminAccountId,
+      email: DEFAULT_ADMIN_EMAIL,
+      passwordHash,
+      fullName: DEFAULT_ADMIN_NAME,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+    },
+    update: {
+      accountId: adminAccountId,
+      passwordHash,
+      fullName: DEFAULT_ADMIN_NAME,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+    },
+    select: {
+      id: true,
+      accountId: true,
+      email: true,
+      isEmailVerified: true,
+      status: true,
+    },
+  });
+
+  const subscription = await prisma.subscription.upsert({
+    where: { accountId: adminAccountId },
+    create: {
+      accountId: adminAccountId,
+      planId: freePlan.id,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodStart: now,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    },
+    update: {
+      planId: freePlan.id,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodStart: now,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      scheduledPlanId: null,
+      scheduledChangeAt: null,
+    },
+    select: {
+      id: true,
+      accountId: true,
+      status: true,
+      plan: {
+        select: {
+          code: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  console.log('Seeded default admin:', {
+    email: adminUser.email,
+    isEmailVerified: adminUser.isEmailVerified,
+    status: adminUser.status,
+    subscription: subscription.plan.code,
+  });
 }
 
 main()

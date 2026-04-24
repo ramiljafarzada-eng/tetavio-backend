@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "node ./node_modules/ts-node/dist/bin.js prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/config": "^4.0.2",
@@ -85,6 +85,6 @@
     "testEnvironment": "node"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node ./node_modules/ts-node/dist/bin.js prisma/seed.ts"
   }
 }
