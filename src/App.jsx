@@ -27,6 +27,216 @@ const NAV = [
   { id: "settings", label: "Tənzimləmələr" }
 ];
 
+const BOOKS_LANDING_AUTH_VIEWS = ["signin", "signup", "forgot", "reset", "demo"];
+const COMPLIANCE_LEGAL_PAGES = [
+  {
+    id: "terms-of-use",
+    title: "İstifadə şərtləri",
+    summary: "Bu istifadə şərtləri Tetavio mühasibat proqramından istifadə qaydalarını, istifadəçi öhdəliklərini və xidmətin təqdim olunması prinsiplərini müəyyən edir.",
+    sections: [
+      {
+        heading: "Platformanın təyinatı",
+        paragraphs: [
+          "Tetavio rəqəmsal mühasibat SaaS platformasıdır və istifadəçilərə onlayn qaydada mühasibat, uçot, hesabat və abunəlik əsaslı proqram funksiyaları təqdim edir.",
+          "Platforma yalnız rəqəmsal xidmət kimi təqdim olunur və istifadəçi Tetavio xidmətindən biznes, uçot və əlaqəli qanuni fəaliyyət məqsədləri üçün istifadə etməyi qəbul edir.",
+        ],
+      },
+      {
+        heading: "İstifadəçi hesabı və qanuni istifadə",
+        paragraphs: [
+          "İstifadəçi hesabına giriş üçün istifadə etdiyi e-poçt, şifrə və digər autentifikasiya məlumatlarının məxfiliyinə görə özü cavabdehdir.",
+          "Tetavio xidmətindən qanunsuz, saxta, aldatma məqsədli, üçüncü şəxslərin hüquqlarını pozan və ya sistemin təhlükəsizliyini sarsıdan formada istifadə etmək qadağandır.",
+          "İstifadəçi hesabı vasitəsilə daxil edilən məlumatların düzgünlüyü və qanunvericiliyə uyğunluğu istifadəçinin məsuliyyətindədir.",
+        ],
+      },
+      {
+        heading: "Abunəlik girişi və əqli mülkiyyət",
+        paragraphs: [
+          "Ödənişli planlara giriş yalnız uğurlu ödəniş və ya aktiv abunəlik olduğu halda təmin edilir və istifadəçiyə seçdiyi plan çərçivəsində məhdud istifadə hüququ verir.",
+          "Tetavio platformasına aid proqram təminatı, dizayn, məzmun, loqotiplər və digər bütün elementlər Tetavio MMC-nin müstəsna əqli mülkiyyətidir və Azərbaycan Respublikasının qüvvədə olan qanunvericiliyi ilə qorunur.",
+        ],
+      },
+      {
+        heading: "Xidmətin əlçatanlığı, məsuliyyət və yeniləmələr",
+        paragraphs: [
+          "Tetavio xidmətin fasiləsiz işləməsi üçün səy göstərsə də, texniki xidmət, yenilənmə, inteqrasiya problemi, şəbəkə nasazlığı və fors-major hallar nəticəsində müvəqqəti əlçatanlıq problemi yarana bilər.",
+          "Qanunla tələb olunan hallar istisna olmaqla, Tetavio dolayı zərər, itirilmiş gəlir, məlumat itkisi və ya üçüncü tərəf sistemlərindən qaynaqlanan nəticələrə görə tam məsuliyyət daşımır.",
+          "Bu şərtlər Azərbaycan Respublikasının qanunvericiliyinə uyğun tənzimlənir.",
+          "Tetavio bu istifadə şərtlərini və xidmət qaydalarını istənilən vaxt yeniləmək hüququnu özündə saxlayır.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "payment-terms",
+    title: "Ödəniş şərtləri",
+    summary: "Bu səhifə Tetavio üzrə abunəlik ödənişlərinin qaydasını, ödəniş təhlükəsizliyi prinsiplərini və ödənişdən sonra plan aktivləşmə mexanizmini izah edir.",
+    sections: [
+      {
+        heading: "Ödənişin predmeti və valyuta",
+        paragraphs: [
+          "Tetavio üzrə ödənişlər yalnız rəqəmsal SaaS abunəlik planlarının alınması, yenilənməsi və ya yüksəldilməsi üçündür. Fiziki məhsul satışı və fiziki çatdırılma həyata keçirilmir.",
+          "Platformada göstərilən bütün qiymətlər Azərbaycan manatı (AZN) ilə ifadə olunur, əgər ayrıca başqa cür göstərilməyibsə.",
+        ],
+      },
+      {
+        heading: "Ödəniş üsulu və kart məlumatlarının emalı",
+        paragraphs: [
+          "Ödəniş bank kartı vasitəsilə PASHA Bank E-commerce / Virtual POS və ya uyğun ödəniş provayderi infrastrukturu üzərindən həyata keçirilir.",
+          "İstifadəçi tərəfindən təqdim edilən ödəniş məlumatlarının düzgünlüyünə görə istifadəçi məsuliyyət daşıyır.",
+          "Kart nömrəsi, CVV/CVC kodu və kartın son istifadə tarixi Tetavio serverlərində saxlanılmır, emal edilmir və Tetavio tərəfindən əldə edilmir.",
+          "Kart üzrə ödəniş məlumatları yalnız bankın və ya ödəniş provayderinin təhlükəsiz ödəniş infrastrukturunda emal olunur.",
+        ],
+      },
+      {
+        heading: "Ödəniş təsdiqi və planın aktivləşməsi",
+        paragraphs: [
+          "Ödəniş uğurla təsdiqləndikdən sonra seçilmiş ödənişli plan istifadəçi hesabında rəqəmsal qaydada aktivləşdirilir və sistemdə müvafiq plan statusu yenilənir.",
+          "Tetavio MMC ödənişlərin bank və ya ödəniş provayderi tərəfindən təsdiqlənməsinə əsaslanır və ödəniş təsdiqlənmədən xidmət aktivləşdirilmir.",
+          "Ödəniş uğursuz olarsa, yarımçıq qalarsa və ya bank tərəfindən təsdiqlənməzsə, ödənişli giriş aktivləşdirilmir və istifadəçi mövcud planında qalır.",
+          "İstifadəçi checkout prosesini davam etdirməzdən əvvəl ödəniş şərtləri ilə tanış olduğunu və onları qəbul etdiyini təsdiqləməlidir.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "refund-policy",
+    title: "Geri qaytarma və ləğv siyasəti",
+    summary: "Bu siyasət Tetavio üzrə abunəlik ləğvi, downgrade və mümkün geri qaytarma hallarına tətbiq olunan əsas qaydaları müəyyən edir.",
+    sections: [
+      {
+        heading: "Ləğv və downgrade qaydası",
+        paragraphs: [
+          "İstifadəçi abunəlik ləğvi və ya daha aşağı plana keçid barədə sorğunu dəstək və ya əlaqə kanalına müraciət etməklə təqdim edə bilər.",
+          "Abunəlik ləğvi və ya downgrade, ayrıca başqa hal göstərilmədiyi təqdirdə, növbəti ödəniş dövründən etibarən tətbiq olunur.",
+          "Cari aktivləşdirilmiş dövr üzrə təqdim edilmiş rəqəmsal giriş hüququ dövr sonuna qədər qüvvədə qala bilər.",
+        ],
+      },
+      {
+        heading: "Geri qaytarma prinsipləri",
+        paragraphs: [
+          "Tetavio rəqəmsal xidmət təqdim etdiyindən, aktivləşdirilmiş abunəlik dövrləri ümumilikdə geri qaytarılmır.",
+          "Lakin təkrar ödəniş, texniki səbəbdən planın aktivləşməməsi və ya təsdiqlənmiş icazəsiz tranzaksiya hallarında geri qaytarma sorğusu ayrıca araşdırıla bilər.",
+          "Geri qaytarma yalnız Tetavio tərəfindən təsdiqlənmiş əsaslı hallarda həyata keçirilir.",
+          "Geri qaytarma təsdiqləndiyi halda, məbləğ mümkün olduqda eyni ödəniş üsuluna qaytarılır.",
+        ],
+      },
+      {
+        heading: "Müraciət və baxılma müddəti",
+        paragraphs: [
+          "Geri qaytarma müraciətində istifadəçi e-poçtu, əməliyyatın tarixi, məbləği və müraciətin səbəbi qeyd edilməlidir.",
+          "Müraciətlər 5-10 iş günü ərzində baxılır və nəticə istifadəçiyə əlaqə məlumatları vasitəsilə bildirilir.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "privacy-policy",
+    title: "Məxfilik siyasəti",
+    summary: "Bu siyasət Tetavio tərəfindən hansı məlumatların toplandığını, necə istifadə edildiyini və ödəniş təhlükəsizliyi üzrə əsas prinsipləri izah edir.",
+    sections: [
+      {
+        heading: "Toplanan məlumatlar",
+        paragraphs: [
+          "Tetavio istifadəçidən və ya istifadəçi hesabından ad, e-poçt ünvanı, telefon nömrəsi, şirkət məlumatları, təqdim edildiyi halda VÖEN, giriş və sessiya məlumatları, abunəlik və ödəniş statusu kimi məlumatları toplaya və emal edə bilər.",
+          "Bu məlumatlar hesabın idarə olunması, abunəliyin aktivləşdirilməsi, dəstək xidmətinin göstərilməsi, təhlükəsizliyin təmin edilməsi və mühasibat/hüquqi öhdəliklərin yerinə yetirilməsi məqsədilə istifadə olunur.",
+        ],
+      },
+      {
+        heading: "Kart məlumatları və paylaşım prinsipləri",
+        paragraphs: [
+          "Tetavio serverlərində kart nömrəsi, CVV/CVC kodu, kartın son istifadə tarixi və digər məxfi kart məlumatları saxlanılmır.",
+          "Kart üzrə ödəniş məlumatları bank və ya ödəniş provayderi tərəfindən emal olunur.",
+          "Məlumatlar yalnız zəruri hallarda ödəniş provayderi, hostinq və təhlükəsizlik xidmətləri təminatçıları ilə və ya qanunla tələb olunduqda səlahiyyətli dövlət orqanları ilə paylaşılır.",
+        ],
+      },
+      {
+        heading: "İstifadəçi hüquqları və təhlükəsizlik tədbirləri",
+        paragraphs: [
+          "İstifadəçi qanunvericiliklə mümkün olduğu həddə öz məlumatlarının düzəldilməsi, yenilənməsi və ya silinməsi barədə müraciət edə bilər.",
+          "Tetavio məlumatların qorunması üçün HTTPS/TLS bağlantısı, giriş nəzarəti, parolların hash-lənməsi və digər təşkilati-texniki təhlükəsizlik tədbirlərindən istifadə edir.",
+          "Platformada sessiyanın idarə olunması və istifadəçi seçimlərinin saxlanması üçün cookie və ya local storage mexanizmlərindən istifadə oluna bilər.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "delivery-policy",
+    title: "Xidmətin təqdim edilməsi / rəqəmsal aktivləşdirmə siyasəti",
+    summary: "Tetavio fiziki məhsul təqdim etmir; xidmət ödənişdən sonra istifadəçi hesabında rəqəmsal olaraq aktivləşdirilir.",
+    sections: [
+      {
+        heading: "Rəqəmsal xidmətin təqdim olunması",
+        paragraphs: [
+          "Tetavio rəqəmsal mühasibat SaaS xidməti təqdim edir və istifadəçi ödəniş etdikdən sonra müvafiq plan üzrə xidmətə veb hesabı vasitəsilə çıxış əldə edir.",
+          "Uğurlu ödəniş təsdiqləndikdən sonra ödənişli plan adətən dərhal və ya qısa texniki emal müddəti ərzində istifadəçi hesabında aktivləşdirilir.",
+        ],
+      },
+      {
+        heading: "Fiziki çatdırılmanın olmaması",
+        paragraphs: [
+          "Tetavio tərəfindən heç bir fiziki məhsul göndərilmir və heç bir fiziki çatdırılma xidməti tətbiq edilmir.",
+          "Xidmətin təqdim olunması yalnız rəqəmsal giriş hüququnun aktivləşdirilməsi formasında həyata keçirilir.",
+        ],
+      },
+      {
+        heading: "Aktivləşmə, dəstək və elektron sənədlər",
+        paragraphs: [
+          "İstifadəçi xidmətə öz veb hesabı vasitəsilə daxil olur və aktiv plan çərçivəsində təqdim olunan funksionallıqlardan istifadə edir.",
+          "Ödənişdən sonra aktivləşmə baş vermədiyi hallarda istifadəçi dəstək komandası ilə əlaqə saxlaya bilər.",
+          "Zərurət olduqda ödəniş, qəbz və ya faktura məlumatları elektron formada təqdim oluna bilər.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "contact-info",
+    title: "Hüquqi məlumatlar və əlaqə vasitələri",
+    summary: "Bu səhifədə Tetavio MMC-nin hüquqi məlumatları və istifadəçilər üçün rəsmi əlaqə vasitələri təqdim olunur.",
+    sections: [
+      {
+        heading: "Hüquqi məlumatlar",
+        paragraphs: [
+          "Hüquqi şəxs: Tetavio MMC",
+          "Brend / platforma: Tetavio",
+          "VÖEN: 2009752131",
+          "Hüquqi ünvan: Bakı şəhəri, Xətai rayonu, Xudu Məmmədov küç., bina 6, mənzil 185",
+        ],
+      },
+      {
+        heading: "Əlaqə vasitələri",
+        paragraphs: [
+          "Ümumi e-poçt: info@tetavio.com",
+          "Dəstək e-poçtu: support@tetavio.com",
+          "Telefon: +994 10 311 91 87",
+          "İş saatları: Bazar ertəsi – Cümə, 09:00 – 18:00",
+          "İstifadəçilər ödəniş, geri qaytarma, ləğv, hesab girişi və texniki problemlərlə bağlı bu əlaqə vasitələri üzərindən müraciət edə bilərlər.",
+        ],
+      },
+    ],
+  },
+];
+const BOOKS_LANDING_LEGAL_PAGES = COMPLIANCE_LEGAL_PAGES;
+const BOOKS_LANDING_VIEWS = [
+  "home",
+  ...BOOKS_LANDING_AUTH_VIEWS,
+  ...COMPLIANCE_LEGAL_PAGES.map((page) => page.id),
+];
+const COMPLIANCE_LEGAL_PAGE_MAP = Object.fromEntries(
+  COMPLIANCE_LEGAL_PAGES.map((page) => [page.id, page]),
+);
+const LEGAL_STANDALONE_PAGES = Object.fromEntries(
+  COMPLIANCE_LEGAL_PAGES.map((page) => [page.id, page]),
+);
+const LEGAL_NAV_ITEMS = [
+  { id: "terms-of-use", label: "İstifadə şərtləri", href: "/accounting/terms-of-use", pageId: "terms-of-use" },
+  { id: "payment-terms", label: "Ödəniş şərtləri", href: "/accounting/payment-terms", pageId: "payment-terms" },
+  { id: "refund-policy", label: "Geri qaytarma və ləğv siyasəti", href: "/accounting/refund-policy", pageId: "refund-policy" },
+  { id: "privacy-policy", label: "Məxfilik siyasəti", href: "/accounting/privacy-policy", pageId: "privacy-policy" },
+  { id: "delivery-policy", label: "Xidmətin təqdim edilməsi / rəqəmsal aktivləşdirmə siyasəti", href: "/accounting/delivery-policy", pageId: "delivery-policy" },
+  { id: "company-info", label: "Hüquqi məlumatlar", href: "/accounting/contact-info#legal-info", pageId: "contact-info", hash: "legal-info" },
+  { id: "contact", label: "Əlaqə", href: "/accounting/contact-info#contact", pageId: "contact-info", hash: "contact" },
+];
 const MODULES_BASE = {
   itemsCatalog: {
     title: "Mal və Xidmət Kataloqu", singular: "Mal və xidmət", collection: "items", summary: "Mal və xidmət adlarının siyahısı.",
@@ -693,13 +903,144 @@ function ModuleOverviewCard({ moduleId, state, onOpen, MODULES, at }) {
   return <article className="summary-card interactive-card"><span>{config.collection}</span><strong>{config.title}</strong><p className="card-note">{state[config.collection].length} {at.unit_record}</p><button className="ghost-btn compact-btn" onClick={() => onOpen(moduleId)}>{at.hub_reports}</button></article>;
 }
 
+function StandaloneLegalPage({ page }) {
+  const activeLegalNavId = page.id === "contact-info" ? "company-info" : page.id;
+  return (
+    <div className="lp-shell">
+      <header className="lp-topbar">
+        <div className="lp-topbar-inner">
+          <div className="lp-brand">
+            <div className="lp-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+                <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
+              </svg>
+            </div>
+            <div className="lp-brand-copy">
+              <strong>Tetavio</strong>
+              <span>Accounting Software</span>
+            </div>
+          </div>
+          <div className="lp-nav">
+            <a className="lp-nav-ghost" href="/accounting">Accounting</a>
+          </div>
+        </div>
+      </header>
+
+      <section className="lp-legal-shell">
+        <div className="lp-legal-card">
+          <div className="lp-legal-head">
+            <div>
+              <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
+              <h2>{page.title}</h2>
+              <p>{page.summary}</p>
+            </div>
+            <a className="lp-btn-ghost lp-legal-back" href="/accounting">
+              Ana səhifəyə qayıt
+            </a>
+          </div>
+
+          <div className="lp-legal-links">
+            {LEGAL_NAV_ITEMS.map((item) => (
+              <a
+                key={item.id}
+                className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+
+          <div className="lp-legal-sections">
+            {page.sections.map((section) => {
+              const sectionId = page.id === "contact-info"
+                ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
+                : undefined;
+
+              return (
+                <article key={section.heading} id={sectionId} className="lp-legal-section">
+                  <h3>{section.heading}</h3>
+                  {section.paragraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <footer className="lp-footer">
+        <div className="lp-footer-links">
+          {LEGAL_NAV_ITEMS.map((item) => (
+            <a
+              key={item.id}
+              className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
+              href={item.href}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+        <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+      </footer>
+    </div>
+  );
+}
+
 export default function App() {
+  const pathname = window.location.pathname;
+  const slug = pathname.startsWith("/accounting/")
+    ? pathname.replace("/accounting/", "").split("/")[0]
+    : null;
+  const legalPage = slug ? COMPLIANCE_LEGAL_PAGE_MAP[slug] : null;
+
+  if (legalPage) {
+    return <StandaloneLegalPage page={legalPage} />;
+  }
+
+  return <MainApp />;
+}
+
+function MainApp() {
   function getLocationRoute() {
     const hashPath = (window.location.hash || "").replace(/^#\/?/, "").trim();
     if (hashPath) return hashPath;
     const pathName = String(window.location.pathname || "").replace(/^\/+|\/+$/g, "");
     if (!pathName || pathName === "index.html") return "";
     return pathName;
+  }
+
+  function getBooksLandingRouteDetails(routeValue = getLocationRoute()) {
+    const path = String(routeValue || "").replace(/^#\/?/, "").replace(/^\/+|\/+$/g, "");
+    const [part1, part2] = path.split("/");
+    const isBooksLandingRoute = part1 === "landing" || part1 === "accounting";
+    const legalPage = isBooksLandingRoute
+      ? COMPLIANCE_LEGAL_PAGES.find((page) => page.id === part2) || null
+      : null;
+    const initialBooksView = isBooksLandingRoute && BOOKS_LANDING_VIEWS.includes(part2) ? part2 : "home";
+
+    return {
+      part1,
+      part2,
+      isBooksLandingRoute,
+      legalPage,
+      initialBooksView,
+    };
+  }
+
+  function getStandaloneLegalRouteInfo() {
+    const path = String(window.location.pathname || "").replace(/^\/+|\/+$/g, "");
+    const [part1, part2] = path.split("/");
+    const legalPage = part1 === "accounting"
+      ? COMPLIANCE_LEGAL_PAGES.find((page) => page.id === part2) || null
+      : null;
+
+    return {
+      slug: part1 === "accounting" ? (part2 || "") : "",
+      legalPage,
+    };
   }
 
   function getInitialRouteParts() {
@@ -823,7 +1164,9 @@ export default function App() {
       return null;
     }
   });
-  const [booksView, setBooksView] = useState("home");
+  const [booksView, setBooksView] = useState(() => {
+    return getBooksLandingRouteDetails().initialBooksView;
+  });
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -851,6 +1194,7 @@ export default function App() {
   const [adminPlanDrafts, setAdminPlanDrafts] = useState({});
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
   const [paymentDraft, setPaymentDraft] = useState({ planCode: "", billingCycle: "monthly" });
+  const [paymentTermsAccepted, setPaymentTermsAccepted] = useState(false);
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
@@ -969,6 +1313,7 @@ export default function App() {
   function applyHashRoute(routeValue) {
     const path = String(routeValue || "").replace(/^#\/?/, "").replace(/^\/+|\/+$/g, "");
     const [part1, part2, part3] = path.split("/");
+    const landingRoute = getBooksLandingRouteDetails(routeValue);
 
     if (!part1) {
       setActiveProduct("hub");
@@ -982,14 +1327,14 @@ export default function App() {
 
     if (part1 === "landing") {
       setActiveProduct("booksLanding");
-      setBooksView(["home", "signin", "signup", "forgot", "reset", "demo"].includes(part2) ? part2 : "home");
+      setBooksView(landingRoute.initialBooksView);
       setBooksNotice("");
       return;
     }
 
     if (part1 === "accounting") {
       setActiveProduct("booksLanding");
-      setBooksView(["home", "signin", "signup", "forgot", "reset", "demo"].includes(part2) ? part2 : "home");
+      setBooksView(landingRoute.initialBooksView);
       setBooksNotice("");
       return;
     }
@@ -1537,9 +1882,19 @@ export default function App() {
 
   function openPaymentPanel(planCode, billingCycle) {
     setPaymentDraft({ planCode, billingCycle });
+    setPaymentTermsAccepted(false);
     setCheckoutResult(null);
     setPaymentStatusDraft("SUCCESS");
     setAccountPanel("payment");
+  }
+
+  function openBooksLegalPage(view) {
+    if (!COMPLIANCE_LEGAL_PAGES.some((page) => page.id === view)) return;
+    setAccountPanel(null);
+    setActiveProduct("booksLanding");
+    setBooksView(view);
+    setBooksNotice("");
+    setShowPassword(false);
   }
 
   async function submitTestPayment() {
@@ -1703,7 +2058,7 @@ export default function App() {
       };
     }
 
-    if (reportPeriod === "Bu rГјb") {
+    if (reportPeriod === "Bu rüb") {
       const quarterStartMonth = Math.floor(month / 3) * 3;
       const previousQuarterStart = new Date(year, quarterStartMonth - 3, 1);
       const previousQuarterEnd = new Date(year, quarterStartMonth, 0);
@@ -2099,7 +2454,7 @@ export default function App() {
   function isLowStockItem(item) {
     return state.settings.stockWarning === "Bəli"
       && item.trackInventory === "Bəli"
-      && item.type !== "XidmЙ™t"
+      && item.type !== "Xidmət"
       && Number(item.reorderPoint || 0) > 0
       && Number(item.stockOnHand || 0) <= Number(item.reorderPoint || 0);
   }
@@ -2303,9 +2658,9 @@ export default function App() {
     if (!/^\d{3}$/.test(code)) return normalizedFallback || "Aktiv";
     if (/^[12]/.test(code)) return "Aktiv";
     if (/^3/.test(code)) return "Kapital";
-    if (/^[45]/.test(code)) return "Г–hdЙ™lik";
-    if (/^6/.test(code)) return "GЙ™lir";
-    if (/^[789]/.test(code)) return "XЙ™rc";
+    if (/^[45]/.test(code)) return "Öhdəlik";
+    if (/^6/.test(code)) return "Gəlir";
+    if (/^[789]/.test(code)) return "Xərc";
     return "Aktiv";
   }
 
@@ -2484,10 +2839,10 @@ export default function App() {
         const normalizedAccountType = normalizeAccountTypeValue(row.accountType);
         const isIncomeAccount = /^6/.test(code) || normalizedAccountType === normalizeAccountTypeValue("income");
         const isExpenseAccount = /^[789]/.test(code) || normalizedAccountType === normalizeAccountTypeValue("expense");
-        const accountType = isIncomeAccount ? "GР™в„ўlir" : (isExpenseAccount ? "XР™в„ўrc" : inferAccountTypeFromCode(code, row.accountType));
+        const accountType = isIncomeAccount ? "Gəlir" : (isExpenseAccount ? "Xərc" : inferAccountTypeFromCode(code, row.accountType));
         const debitValue = Number(row.closingDebit || 0);
         const creditValue = Number(row.closingCredit || 0);
-        if (accountType === "GЙ™lir") {
+        if (accountType === "Gəlir") {
           return [
             creditValue > 0 ? {
               id: `pl-close-${code}-debit`,
@@ -2515,7 +2870,7 @@ export default function App() {
             } : null
           ].filter(Boolean);
         }
-        if (accountType === "XЙ™rc") {
+        if (accountType === "Xərc") {
           return [
             debitValue > 0 ? {
               id: `pl-close-${code}-credit`,
@@ -2582,15 +2937,15 @@ export default function App() {
     const plan = buildProfitLossClosingPlan(range);
     const existingAutoCloseJournal = state.manualJournals.find((journal) => journal.autoCloseType === "profit_loss_closure" && journal.autoCloseKey === plan.periodKey);
     if (existingAutoCloseJournal) {
-      window.alert("Bu hesabat dГ¶vrГј ГјГ§Гјn mЙ™nfЙ™Й™t vЙ™ zЙ™rЙ™r baДџlanД±ЕџД± artД±q yaradД±lД±b.");
+      window.alert("Bu hesabat dövrü üçün mənfəət və zərər bağlanışı artıq yaradılıb.");
       return;
     }
     if (!plan.lines.length) {
-      window.alert("BaДџlanacaq gЙ™lir vЙ™ ya xЙ™rc qalД±ДџД± tapД±lmadД±.");
+      window.alert("Bağlanacaq gəlir və ya xərc qalığı tapılmadı.");
       return;
     }
     if (!guardOperationAccess()) return;
-    const confirmed = window.confirm(`SeГ§ilmiЕџ dГ¶vr ГјГ§Гјn gЙ™lir vЙ™ xЙ™rc hesablarД± 801 hesabД±na baДџlanacaq. Davam edilsin?`);
+    const confirmed = window.confirm(`Seçilmiş dövr üçün gəlir və xərc hesabları 801 hesabına bağlanacaq. Davam edilsin?`);
     if (!confirmed) return;
 
     const reference = `P&L close ${plan.range.start} - ${plan.range.end}`;
@@ -2632,7 +2987,7 @@ export default function App() {
       };
     });
     markOperationUsage();
-    window.alert("MЙ™nfЙ™Й™t vЙ™ zЙ™rЙ™r baДџlanД±ЕџД± yaradД±ldД±.");
+    window.alert("Mənfəət və zərər bağlanışı yaradıldı.");
   }
 
   function buildProfitLossClosingPlan(range = getReportRange(), lookup = getTrialBalanceLookup(range)) {
@@ -5195,7 +5550,7 @@ function renderItemsCatalog() {
         lines.forEach((line) => {
           const accountCode = String(line.accountCode || "");
           const accountType = inferAccountTypeFromCode(accountCode, state.chartOfAccounts.find((account) => account.accountCode === accountCode)?.accountType || "");
-          const isCreditorLine = line.subledgerCategory === "creditors" || (accountType === "Г–hdЙ™lik" && ["411", "421", "511", "521", "522", "531", "541"].includes(accountCode));
+          const isCreditorLine = line.subledgerCategory === "creditors" || (accountType === "Öhdəlik" && ["411", "421", "511", "521", "522", "531", "541"].includes(accountCode));
           if (!isCreditorLine) return;
           const linkedName = line.linkedEntityName || "Manual kreditor";
           const existing = getDebtRecord(linkedName);
@@ -8110,6 +8465,9 @@ function renderItemsCatalog() {
             <button type="button" onClick={() => scrollToSection("pricing")}>{t.nav.find((item) => item.id === "pricing")?.label || "Pricing"}</button>
             <button type="button" onClick={() => scrollToSection("faq")}>{t.nav.find((item) => item.id === "faq")?.label || "FAQ"}</button>
             <button type="button" onClick={() => scrollToSection("contact")}>{t.navContact}</button>
+            {COMPLIANCE_LEGAL_PAGES.map((page) => (
+              <button key={page.id} type="button" onClick={() => openBooksLegalPage(page.id)}>{page.title}</button>
+            ))}
           </div>
           <small>{t.footerNote}</small>
         </footer>
@@ -8357,8 +8715,12 @@ function renderItemsCatalog() {
   }
 
   function renderBooksLanding() {
+    const landingRoute = getBooksLandingRouteDetails();
+    const directLegalPage = landingRoute.legalPage;
+    const legalPage = directLegalPage || COMPLIANCE_LEGAL_PAGES.find((page) => page.id === booksView) || null;
+    const isLegalView = Boolean(legalPage);
     const isAuthView = booksView === "signin" || booksView === "signup";
-    const authSectionExpanded = booksView !== "home";
+    const authSectionExpanded = BOOKS_LANDING_AUTH_VIEWS.includes(booksView);
     const LANGS = [
       { code: "az", label: "Azərbaycan dili", flag: "🇦🇿" },
       { code: "en", label: "English",          flag: "🇬🇧" },
@@ -8667,6 +9029,109 @@ function renderItemsCatalog() {
       setShowPassword(false);
     }
 
+    function renderLegalLinks(className = "lp-legal-links") {
+      return (
+        <div className={className}>
+          {LEGAL_NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`lp-legal-link${booksView === item.pageId ? " active" : ""}`}
+              onClick={() => openBooksLegalPage(item.pageId)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    function renderLandingLegalSection() {
+      if (!legalPage) return null;
+
+      return (
+        <section className="lp-legal-shell">
+          <div className="lp-legal-card">
+            <div className="lp-legal-head">
+              <div>
+                <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
+                <h2>{legalPage.title}</h2>
+                <p>{legalPage.summary}</p>
+              </div>
+              <button type="button" className="lp-btn-ghost lp-legal-back" onClick={() => setBooksView("home")}>
+                Ana səhifəyə qayıt
+              </button>
+            </div>
+            {renderLegalLinks()}
+            <div className="lp-legal-sections">
+              {legalPage.sections.map((section) => {
+                const sectionId = legalPage.id === "contact-info"
+                  ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
+                  : undefined;
+
+                return (
+                  <article key={section.heading} id={sectionId} className="lp-legal-section">
+                    <h3>{section.heading}</h3>
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function renderStandaloneLegalPage() {
+      if (!directLegalPage) return null;
+
+      return (
+        <div className="lp-shell" onClick={() => hubLangOpen && setHubLangOpen(false)}>
+          <header className="lp-topbar">
+            <div className="lp-topbar-inner">
+              <div className="lp-brand">
+                <div className="lp-brand-icon">
+                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                    <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+                    <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
+                  </svg>
+                </div>
+                <div className="lp-brand-copy">
+                  <strong>Tetavio</strong>
+                  <span>{t.brandSub}</span>
+                </div>
+              </div>
+              <div className="lp-nav">
+                <button
+                  className="lp-nav-ghost"
+                  type="button"
+                  onClick={() => {
+                    setActiveProduct("booksLanding");
+                    setBooksView("home");
+                    setBooksNotice("");
+                    setShowPassword(false);
+                  }}
+                >
+                  {t.navProducts}
+                </button>
+                <button className="lp-nav-ghost" type="button" onClick={() => goAuth("signin")}>{t.navSignin}</button>
+                <button className="lp-nav-cta" type="button" onClick={() => goAuth("signup")}>{t.navSignup}</button>
+              </div>
+            </div>
+          </header>
+
+          {renderLandingLegalSection()}
+
+          <footer className="lp-footer">
+            {renderLegalLinks("lp-footer-links")}
+            <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+          </footer>
+        </div>
+      );
+    }
+
     function renderLandingAuthSection() {
       return (
         <section id="lp-auth-anchor" ref={landingAuthRef} className={`lp-auth-section${authSectionExpanded ? " lp-auth-section-expanded" : ""}`}>
@@ -8814,6 +9279,10 @@ function renderItemsCatalog() {
       );
     }
 
+    if (directLegalPage) {
+      return renderStandaloneLegalPage();
+    }
+
     return (
       <div className="lp-shell" onClick={() => hubLangOpen && setHubLangOpen(false)}>
 
@@ -8862,6 +9331,10 @@ function renderItemsCatalog() {
         </header>
 
         {/* ── Hero ── */}
+        {isLegalView ? renderLandingLegalSection() : null}
+
+        {!isLegalView ? (
+        <>
         <section className="lp-hero">
           <div className="lp-hero-copy">
             <button className="lp-inline-back" type="button" onClick={() => setActiveProduct("hub")}>{t.backHome}</button>
@@ -8899,8 +9372,13 @@ function renderItemsCatalog() {
         </section>
 
         {/* ── Feature highlights ── */}
-        {authSectionExpanded ? renderLandingAuthSection() : null}
+        </>
+        ) : null}
 
+        {!isLegalView && authSectionExpanded ? renderLandingAuthSection() : null}
+
+        {!isLegalView ? (
+        <>
         <div className="lp-highlights">
           {t.highlights.map((h) => (
             <div key={h.title} className="lp-highlight-card">
@@ -8912,7 +9390,10 @@ function renderItemsCatalog() {
         </div>
 
         {/* ── Auth section ── */}
-        {!authSectionExpanded ? (
+        </>
+        ) : null}
+
+        {!isLegalView && !authSectionExpanded ? (
         <section id="lp-auth-anchor" ref={landingAuthRef} className="lp-auth-section">
           <div className="lp-auth-info">
             <h2>{t.authInfoTitle.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</h2>
@@ -9046,6 +9527,21 @@ function renderItemsCatalog() {
           </div>
         </section>
         ) : null}
+
+        <footer className="lp-footer">
+          <div className="lp-footer-links">
+            {LEGAL_NAV_ITEMS.map((legalItem) => (
+              <a
+                key={legalItem.id}
+                className={`lp-legal-link${booksView === legalItem.pageId ? " active" : ""}`}
+                href={legalItem.href}
+              >
+                {legalItem.label}
+              </a>
+            ))}
+          </div>
+          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+        </footer>
 
       </div>
     );
@@ -9572,7 +10068,7 @@ function renderItemsCatalog() {
     const reportLineKeys = Object.keys(configs);
     return [...lookup.values()]
       .filter((row) => isVisibleAccount(row))
-      .filter((row) => ["Aktiv", "Г–hdЙ™lik", "Kapital"].includes(normalizeAccountTypeValue(row.accountType)))
+      .filter((row) => ["Aktiv", "Öhdəlik", "Kapital"].includes(normalizeAccountTypeValue(row.accountType)))
       .filter((row) => Number(row.closingDebit || 0) > 0 || Number(row.closingCredit || 0) > 0)
       .filter((row) => !reportLineKeys.some((lineKey) => getFinancialPositionLineRows(new Map([[row.accountCode, row]]), lineKey).length > 0))
       .map((row) => ({
@@ -11764,9 +12260,17 @@ function renderSettings() {
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0 ? at.sub_free : `${(Number(selectedPaymentPlan.priceMinor || 0) / 100).toFixed(2)} ${selectedPaymentPlan.currency || "AZN"} / ay`) : "—"}</strong></article>
                   <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : `30 ${at.sub_days}`) : "—"}</strong></article>
                 </div>
+                <div className="payment-consent-card">
+                  <label className="payment-consent-check">
+                    <input type="checkbox" checked={paymentTermsAccepted} onChange={(event) => setPaymentTermsAccepted(event.target.checked)} />
+                    <span>Ödəniş şərtləri ilə tanış oldum və qəbul edirəm</span>
+                  </label>
+                  <button type="button" className="text-btn payment-consent-link" onClick={() => openBooksLegalPage("payment-terms")}>Ödəniş şərtləri</button>
+                  <p className="payment-consent-note">Davam etməzdən əvvəl ödəniş şərtlərini qəbul etməyiniz tələb olunur. Uğurlu ödənişdən sonra plan istifadəçi hesabında rəqəmsal olaraq aktivləşdirilir.</p>
+                </div>
                 <div className="form-actions split-actions">
                   <button className="ghost-btn" type="button" onClick={() => setAccountPanel("plans")}>{at.sub_backToPlans}</button>
-                  <button className="primary-btn" type="button" onClick={submitTestPayment}>{at.sub_completeTest}</button>
+                  <button className="primary-btn" type="button" onClick={submitTestPayment} disabled={!paymentTermsAccepted || subscriptionLoading}>{at.sub_completeTest}</button>
                 </div>
               </section>
             </div>
@@ -11900,10 +12404,148 @@ function renderSettings() {
     { code: "tr", label: "Türkçe",           flag: "🇹🇷" },
     { code: "de", label: "Deutsch",          flag: "🇩🇪" },
   ];
+  const pathname = window.location.pathname;
+  const legalSlug = pathname.startsWith("/accounting/") ? pathname.replace("/accounting/", "").split("/")[0] : null;
+  const standaloneLegalPage = legalSlug ? COMPLIANCE_LEGAL_PAGE_MAP[legalSlug] : null;
   const visibleNav = getAccessibleNavItems(currentUser);
   const pageTitle = activeModule ? MODULES[activeModule].title : (at.nav[activeSection] || visibleNav.find((item) => item.id === activeSection)?.label || at.nav.home);
   const activeCompanyName = state.settings.companyName || (currentUser ? getProfileDisplayName(currentUser) : "");
   const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
+  const standaloneLegalRoute = getStandaloneLegalRouteInfo();
+  const standaloneLegalSlugMatched = COMPLIANCE_LEGAL_PAGES.some((page) => page.id === standaloneLegalRoute.slug);
+
+  function renderStandaloneLegalRouteGuard(routeInfo) {
+    const legalPage = routeInfo?.legalPage || null;
+
+    if (!legalPage) {
+      return (
+        <div className="lp-shell">
+          <header className="lp-topbar">
+            <div className="lp-topbar-inner">
+              <div className="lp-brand">
+                <div className="lp-brand-icon">
+                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                    <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+                    <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
+                  </svg>
+                </div>
+                <div className="lp-brand-copy">
+                  <strong>Tetavio</strong>
+                  <span>Accounting Software</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <section className="lp-legal-shell">
+            <div className="lp-legal-card">
+              <div className="lp-legal-head">
+                <div>
+                  <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
+                  <h2>Page not found</h2>
+                  <p>İstədiyiniz hüquqi səhifə tapılmadı.</p>
+                </div>
+                <a className="lp-btn-ghost lp-legal-back" href="/accounting">
+                  Ana səhifəyə qayıt
+                </a>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    return (
+      <div className="lp-shell">
+        <header className="lp-topbar">
+          <div className="lp-topbar-inner">
+            <div className="lp-brand">
+              <div className="lp-brand-icon">
+                <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
+                </svg>
+              </div>
+              <div className="lp-brand-copy">
+                <strong>Tetavio</strong>
+                <span>Accounting Software</span>
+              </div>
+            </div>
+            <div className="lp-nav">
+              <a className="lp-nav-ghost" href="/accounting">Accounting</a>
+            </div>
+          </div>
+        </header>
+
+        <section className="lp-legal-shell">
+          <div className="lp-legal-card">
+            <div className="lp-legal-head">
+              <div>
+                <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
+                <h2>{legalPage.title}</h2>
+                <p>{legalPage.summary}</p>
+              </div>
+              <a className="lp-btn-ghost lp-legal-back" href="/accounting">
+                Ana səhifəyə qayıt
+              </a>
+            </div>
+
+            <div className="lp-legal-links">
+              {LEGAL_NAV_ITEMS.map((legalItem) => (
+                <a
+                  key={legalItem.id}
+                  className={`lp-legal-link${legalPage.id === legalItem.pageId ? " active" : ""}`}
+                  href={legalItem.href}
+                >
+                  {legalItem.label}
+                </a>
+              ))}
+            </div>
+
+            <div className="lp-legal-sections">
+              {legalPage.sections.map((section) => {
+                const sectionId = legalPage.id === "contact-info"
+                  ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
+                  : undefined;
+
+                return (
+                  <article key={section.heading} id={sectionId} className="lp-legal-section">
+                    <h3>{section.heading}</h3>
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <footer className="lp-footer">
+          <div className="lp-footer-links">
+            {LEGAL_NAV_ITEMS.map((legalItem) => (
+              <a
+                key={legalItem.id}
+                className={`lp-legal-link${legalPage.id === legalItem.pageId ? " active" : ""}`}
+                href={legalItem.href}
+              >
+                {legalItem.label}
+              </a>
+            ))}
+          </div>
+          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+        </footer>
+      </div>
+    );
+  }
+
+  if (standaloneLegalPage) {
+    return <StandaloneLegalPage page={standaloneLegalPage} />;
+  }
+
+  if (standaloneLegalSlugMatched) {
+    return renderStandaloneLegalRouteGuard(standaloneLegalRoute);
+  }
 
   if (activeProduct === "hub") {
     return renderProductHub();
@@ -12078,3 +12720,8 @@ function renderSettings() {
     </div>
   );
 }
+
+
+
+
+
