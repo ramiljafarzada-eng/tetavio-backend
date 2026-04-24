@@ -38,9 +38,9 @@ export function createSeedData() {
       { id: crypto.randomUUID(), itemId: "seed-item-3", itemName: "Qablaşdırma materialları", movementType: "Satış", quantity: 25, unitPrice: 35, partner: "Atlas Cargo", movementDate: "2026-04-08", note: "Müştəri sifarişi", amount: 875 }
     ],
     customers: [
-      { id: crypto.randomUUID(), displayName: "Atlas Cargo", companyName: "Atlas Cargo MMC", email: "ops@atlascargo.com", outstandingReceivables: 4250 },
-      { id: crypto.randomUUID(), displayName: "BlueBay Trade", companyName: "BlueBay Trade LTD", email: "finance@bluebaytrade.com", outstandingReceivables: 2180 },
-      { id: crypto.randomUUID(), displayName: "Metro Retail", companyName: "Metro Retail Group", email: "payables@metroretail.com", outstandingReceivables: 980 }
+      { id: crypto.randomUUID(), displayName: "Atlas Cargo", companyName: "Atlas Cargo MMC", phone: "+994504445566", email: "ops@atlascargo.com", taxId: "2002002001", outstandingReceivables: 4250 },
+      { id: crypto.randomUUID(), displayName: "BlueBay Trade", companyName: "BlueBay Trade LTD", phone: "+994505556677", email: "finance@bluebaytrade.com", taxId: "2002002002", outstandingReceivables: 2180 },
+      { id: crypto.randomUUID(), displayName: "Metro Retail", companyName: "Metro Retail Group", phone: "+994506667788", email: "payables@metroretail.com", taxId: "2002002003", outstandingReceivables: 980 }
     ],
     quotes: [
       { id: crypto.randomUUID(), quoteNumber: "Q-2026-004", customerName: "Atlas Cargo", status: "Göndərilib", validUntil: "2026-04-15", amount: 3800 },
@@ -84,13 +84,13 @@ export function createSeedData() {
       { id: crypto.randomUUID(), billNumber: "BILL-2026-019", vendorName: "CloudLedger", status: "Qismən ödənilib", dueDate: "2026-04-14", amount: 540 }
     ],
     bankingAccounts: [
-      { id: crypto.randomUUID(), accountName: "Main Operating Account", institution: "Kapital Bank", accountType: "Current", balance: 18450, lastSync: "2026-04-08" },
-      { id: crypto.randomUUID(), accountName: "Expense Card", institution: "PASHA Bank", accountType: "Card", balance: 2860, lastSync: "2026-04-08" }
+      { id: crypto.randomUUID(), bankName: "Kapital Bank", bankTaxId: "1300247081", bankCode: "KTBIAZ22", swift: "AIIBAZ2X", correspondentAccount: "AZ34NABZ01350100000000000000", settlementAccount: "AZ12NABZ01350100000012345678", accountName: "Kapital Bank", institution: "KTBIAZ22", accountType: "Current", balance: 18450, iban: "AZ12NABZ01350100000012345678", lastSync: "2026-04-08" },
+      { id: crypto.randomUUID(), bankName: "PASHA Bank", bankTaxId: "1700767721", bankCode: "PAHAAZ22", swift: "PAHAAZ22", correspondentAccount: "AZ34NABZ01350100000000000001", settlementAccount: "AZ45NABZ01350100000087654321", accountName: "PASHA Bank", institution: "PAHAAZ22", accountType: "Card", balance: 2860, iban: "AZ45NABZ01350100000087654321", lastSync: "2026-04-08" }
     ],
     bankTransactions: [
-      { id: crypto.randomUUID(), date: "2026-04-08", description: "Inflow from Atlas Cargo", category: "Payment Received", transactionType: "Credit", amount: 3200 },
-      { id: crypto.randomUUID(), date: "2026-04-07", description: "Fuel station payment", category: "Expense", transactionType: "Debit", amount: 220 },
-      { id: crypto.randomUUID(), date: "2026-04-06", description: "Office rent payment", category: "Bill Payment", transactionType: "Debit", amount: 1200 }
+      { id: crypto.randomUUID(), date: "2026-04-08", description: "Inflow from Atlas Cargo", counterpartyName: "Atlas Cargo MMC", category: "Payment Received", transactionType: "Credit", amount: 3200 },
+      { id: crypto.randomUUID(), date: "2026-04-07", description: "Fuel station payment", counterpartyName: "FuelNet Services", category: "Expense", transactionType: "Debit", amount: 220 },
+      { id: crypto.randomUUID(), date: "2026-04-06", description: "Office rent payment", counterpartyName: "Baku Business Center", category: "Bill Payment", transactionType: "Debit", amount: 1200 }
     ],
     manualJournals: [
       { id: crypto.randomUUID(), journalNumber: "MJ-2026-001", reference: "Month-end accrual", date: "2026-04-01", debit: 900, credit: 900 },

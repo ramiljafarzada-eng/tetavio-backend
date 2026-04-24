@@ -2,6 +2,19 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createResetData, createSeedData, currency, today } from "./lib/data";
 import { clearAppState, loadAppState, normalizeAppState, saveAppState } from "./lib/storage";
 import I18N from './i18n';
+import {
+  apiCheckout,
+  apiGetCurrentSubscription,
+  apiGetMyOrders,
+  apiGetPlans,
+  apiLogin,
+  apiLogout,
+  apiMe,
+  apiMockWebhook,
+  apiRegister,
+  apiUpgradeSubscription,
+  setApiSession,
+} from "./lib/api";
 
 const NAV = [
   { id: "home", label: "İdarəetmə paneli" },
@@ -22,8 +35,8 @@ const MODULES_BASE = {
   },
   customers: {
     title: "Müştərilər", singular: "Müştəri", collection: "customers", summary: "Müştəri bazası və debitor borcları.",
-    columns: [["displayName", "Ad"], ["companyName", "Şirkət"], ["email", "E-poçt"], ["outstandingReceivables", "Debitor borcu", "currency"]],
-    form: [["displayName", "Ad"], ["companyName", "Şirkət"], ["email", "E-poçt", "email"], ["outstandingReceivables", "Debitor borcu", "number", "0"]]
+    columns: [["companyName", "Şirkət"], ["taxId", "VÖEN"], ["phone", "Telefon"]],
+    form: [["displayName", "Ad"], ["companyName", "Şirkət"], ["taxId", "VÖEN"], ["phone", "Telefon"], ["email", "E-poçt", "email"], ["outstandingReceivables", "Debitor borcu", "number", "0"]]
   },
   quotes: {
     title: "Təkliflər", singular: "Təklif", collection: "quotes", summary: "Satış təklifləri.",
@@ -136,8 +149,8 @@ function getModules(at) {
     },
     customers: {
       title: at.mod_customers, singular: at.mod_customersSingular, collection: "customers", summary: at.mod_customersSummary,
-      columns: [["displayName", "Ad"], ["companyName", at.col["Şirkət"]], ["email", at.col["E-poçt"]], ["outstandingReceivables", at.col["Debitor borcu"], "currency"]],
-      form: [["displayName", "Ad"], ["companyName", at.col["Şirkət"]], ["email", at.fld["E-poçt"], "email"], ["outstandingReceivables", at.col["Debitor borcu"], "number", "0"]]
+      columns: [["companyName", at.col["Şirkət"]], ["taxId", at.col["VÖEN"] || "VÖEN"], ["phone", at.col["Telefon"] || "Telefon"]],
+      form: [["displayName", "Ad"], ["companyName", at.col["Şirkət"]], ["taxId", at.col["VÖEN"] || "VÖEN"], ["phone", at.col["Telefon"] || "Telefon"], ["email", at.fld["E-poçt"], "email"], ["outstandingReceivables", at.col["Debitor borcu"], "number", "0"]]
     },
     quotes: {
       title: at.mod_quotes, singular: at.mod_quotesSingular, collection: "quotes", summary: at.mod_quotesSummary,
@@ -242,6 +255,7 @@ const AUTH_STORAGE_KEY = "finotam-auth-users-v1";
 const AUTH_SESSION_KEY = "finotam-auth-session-v1";
 const AUTH_REMEMBER_KEY = "finotam-auth-remember-v1";
 const AUTH_RESET_KEY = "finotam-auth-reset-v1";
+const BACKEND_SESSION_KEY = "finotam-backend-session-v1";
 const HUB_LANG_KEY = "finotam-hub-lang-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
@@ -275,6 +289,16 @@ const SUBSCRIPTION_PLANS = [
   { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 100, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
   { id: "ultimate", name: "Ultimate", monthlyPrice: 249, annualMonthlyPrice: 200, currency: "USD", operationLimit: 250000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
 ];
+
+const BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID = {
+  free: "FREE",
+  professional: "PRO_MONTHLY",
+  premium: "PREMIUM_MONTHLY",
+};
+
+const LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE = Object.fromEntries(
+  Object.entries(BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID).map(([legacyPlanId, backendPlanCode]) => [backendPlanCode, legacyPlanId]),
+);
 
 const STAFF_ROLE_CONFIG = {
   Admin: {
@@ -361,6 +385,29 @@ function normalizeSubscription(user) {
 
 function getPublicPlans() {
   return SUBSCRIPTION_PLANS.filter((plan) => !plan.signupOnly);
+}
+
+function mapBackendPlanCodeToLegacyPlanId(code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const matchedPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[normalizedCode];
+  if (!matchedPlanId) {
+    throw new Error(`Unknown backend plan code: ${code || "(empty)"}`);
+  }
+  return matchedPlanId;
+}
+
+function toBackendPlanCode(codeOrId) {
+  const normalizedValue = String(codeOrId || "").trim();
+  if (!normalizedValue) {
+    throw new Error("Plan code is required");
+  }
+  const upperValue = normalizedValue.toUpperCase();
+  if (/^[A-Z0-9_]+$/.test(upperValue)) return upperValue;
+  const mappedCode = BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID[normalizedValue];
+  if (!mappedCode) {
+    throw new Error(`Unknown plan mapping: ${codeOrId || "(empty)"}`);
+  }
+  return mappedCode;
 }
 
 function getAccountOwnerEmail(user) {
@@ -494,6 +541,10 @@ function createDefaultLineItem() {
   return { id: crypto.randomUUID(), itemName: "", accountCode: "205", quantity: "1", rate: "0", taxLabel: "ƏDV 18%", taxRate: 18, taxAmount: 0, amount: 0 };
 }
 
+function createDefaultSalesLineItem() {
+  return { id: crypto.randomUUID(), itemName: "", accountCode: "601", quantity: "1", rate: "0", taxLabel: "ƏDV 18%", taxRate: 18, taxAmount: 0, amount: 0 };
+}
+
 function buildDraft(id, record = null) {
   const draft = {};
   MODULES[id].form.forEach(([name, , , def]) => {
@@ -540,6 +591,51 @@ function createMovementDraft(items) {
     movementDate: today(),
     note: ""
   };
+}
+
+function createEmptyBankDraft() {
+  return {
+    bankName: "",
+    bankTaxId: "",
+    bankCode: "",
+    swift: "",
+    correspondentAccount: "",
+    settlementAccount: "",
+    accountName: "",
+    institution: "",
+    accountType: "Cari",
+    balance: "0",
+    iban: "",
+    coaCode: ""
+  };
+}
+
+function buildBankDraftFromRecord(record) {
+  const bankName = record?.bankName || record?.accountName || "";
+  const bankCode = record?.bankCode || record?.institution || "";
+  const settlementAccount = record?.settlementAccount || record?.iban || "";
+  return {
+    bankName,
+    bankTaxId: record?.bankTaxId || "",
+    bankCode,
+    swift: record?.swift || "",
+    correspondentAccount: record?.correspondentAccount || "",
+    settlementAccount,
+    accountName: bankName,
+    institution: bankCode,
+    accountType: record?.accountType || "Cari",
+    balance: String(record?.balance || 0),
+    iban: settlementAccount,
+    coaCode: record?.coaCode || ""
+  };
+}
+
+function getBankDisplayName(record) {
+  return record?.bankName || record?.accountName || "—";
+}
+
+function getBankDisplayCode(record) {
+  return record?.bankCode || record?.institution || "—";
 }
 
 function resolveMovementPrice(item, movementType) {
@@ -629,20 +725,23 @@ export default function App() {
   const [drafts, setDrafts] = useState({});
   const [editing, setEditing] = useState({});
   const [itemMovementDraft, setItemMovementDraft] = useState(() => createMovementDraft(normalizeAppState(createSeedData()).items));
-  const [bankDraft, setBankDraft] = useState({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" });
+  const [bankDraft, setBankDraft] = useState(() => createEmptyBankDraft());
   const [editingBank, setEditingBank] = useState(null);
-  const [bankTxDraft, setBankTxDraft] = useState({ date: "", amount: "", transactionType: "Mədaxil", description: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
+  const [bankFormOrigin, setBankFormOrigin] = useState("banks");
+  const [bankTxDraft, setBankTxDraft] = useState({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
   const [bankTxAccountSearch, setBankTxAccountSearch] = useState("");
   const [bankTxAccountOpen, setBankTxAccountOpen] = useState(false);
   const [bankTxEditId, setBankTxEditId] = useState(null);
   const [billView, setBillView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "bills" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
+  const [incomingLedgerRecordId, setIncomingLedgerRecordId] = useState(null);
+  const [invoiceLedgerRecordId, setInvoiceLedgerRecordId] = useState(null);
   const [journalView, setJournalView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "manualJournals" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [opJournalFilter, setOpJournalFilter] = useState({ type: "all", search: "", dateFrom: "", dateTo: "" });
   const [opJournalExpanded, setOpJournalExpanded] = useState(new Set());
   const [chartView, setChartView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "chartOfAccounts" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [vendorView, setVendorView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "vendors" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [goodsView, setGoodsView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "goods" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
-  const [bankView, setBankView] = useState(() => { const p = getInitialRouteParts(); return p[0] === "banking" && ["overview","journal","form","tx-form"].includes(p[1]) ? p[1] : "overview"; });
+  const [bankView, setBankView] = useState(() => { const p = getInitialRouteParts(); return p[0] === "banking" && ["overview","banks","journal","form","tx-form"].includes(p[1]) ? p[1] : "overview"; });
   const [invoiceView, setInvoiceView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "invoices" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [customerView, setCustomerView] = useState(() => { const p = getInitialRouteParts(); return p[1] === "customers" && ["overview","journal","form"].includes(p[2]) ? p[2] : "overview"; });
   const [documentView, setDocumentView] = useState(() => { const p = getInitialRouteParts(); return p[0] === "documents" && ["overview","journal","form"].includes(p[1]) ? p[1] : "overview"; });
@@ -700,6 +799,20 @@ export default function App() {
   const [hubNavOpen, setHubNavOpen] = useState(false);
   const [authUsers, setAuthUsers] = useState([normalizeAuthUser(SUPER_ADMIN)]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [backendSession, setBackendSession] = useState(() => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(BACKEND_SESSION_KEY) || "null");
+      return parsed && parsed.accessToken && parsed.refreshToken ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
+  const [backendPlans, setBackendPlans] = useState([]);
+  const [backendSubscription, setBackendSubscription] = useState(null);
+  const [backendOrders, setBackendOrders] = useState([]);
+  const [checkoutResult, setCheckoutResult] = useState(null);
+  const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [authHydrated, setAuthHydrated] = useState(false);
   const [storageEmail, setStorageEmail] = useState(() => {
     try {
@@ -736,12 +849,66 @@ export default function App() {
   const [hubBillingCycle, setHubBillingCycle] = useState("annual");
   const [adminPlanDrafts, setAdminPlanDrafts] = useState({});
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
-  const [paymentDraft, setPaymentDraft] = useState({ planId: "", billingCycle: "monthly" });
+  const [paymentDraft, setPaymentDraft] = useState({ planCode: "", billingCycle: "monthly" });
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
   const [animatedPreviewStats, setAnimatedPreviewStats] = useState(() => buildDemoPreviewStats(Date.now()));
   const [goodsTabIdx, setGoodsTabIdx] = useState(0); // 0=all, 1=goods, 2=services
+
+  function updateBackendSession(session) {
+    setBackendSession(session || null);
+    setApiSession(session || null);
+
+    if (session?.accessToken && session?.refreshToken) {
+      window.localStorage.setItem(BACKEND_SESSION_KEY, JSON.stringify(session));
+    } else {
+      window.localStorage.removeItem(BACKEND_SESSION_KEY);
+    }
+  }
+
+  async function syncBackendSubscription(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) return;
+
+    setApiSession(session);
+    const [me, plans, subscription, orders] = await Promise.all([
+      apiMe(updateBackendSession),
+      apiGetPlans(),
+      apiGetCurrentSubscription(updateBackendSession),
+      apiGetMyOrders(updateBackendSession),
+    ]);
+
+    setBackendPlans(Array.isArray(plans) ? plans : []);
+    setBackendSubscription(subscription || null);
+    setBackendOrders(Array.isArray(orders) ? orders : []);
+
+    const backendPlanCode = subscription?.plan?.code ? String(subscription.plan.code).toUpperCase() : "";
+    const mappedLegacyPlanId = backendPlanCode ? LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[backendPlanCode] : null;
+
+    const normalizedUser = normalizeAuthUser({
+      id: me.id,
+      fullName: me.fullName || me.email,
+      email: me.email,
+      password: authDraft.password || "********",
+      role: "trial_user",
+      profile: {
+        entityType: "Hüquqi şəxs",
+        companyName: me.fullName || me.email,
+        taxId: "",
+        mobilePhone: "",
+      },
+      subscription: {
+        planId: mappedLegacyPlanId || backendPlanCode || "free",
+        billingCycle: "monthly",
+        startedAt: today(),
+        endsAt: subscription?.currentPeriodEnd ? String(subscription.currentPeriodEnd).slice(0, 10) : null,
+        autoDowngraded: "Xeyr",
+      },
+    });
+
+    setCurrentUser(normalizedUser);
+  }
 
   function getModuleSubview(moduleId) {
     switch (moduleId) {
@@ -847,7 +1014,7 @@ export default function App() {
     }
 
     if (part1 === "banking") {
-      setBankView(["overview", "journal", "form", "tx-form"].includes(part2) ? part2 : "overview");
+      setBankView(["overview", "banks", "journal", "form", "tx-form"].includes(part2) ? part2 : "overview");
       return;
     }
 
@@ -936,6 +1103,20 @@ export default function App() {
       setAuthHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    setApiSession(backendSession);
+  }, [backendSession]);
+
+  useEffect(() => {
+    if (!backendSession?.accessToken) {
+      return;
+    }
+
+    syncBackendSubscription(backendSession).catch((error) => {
+      setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+    });
+  }, [backendSession?.accessToken]);
 
   useEffect(() => {
     const persistableUsers = authUsers.filter((user) => user.email !== SUPER_ADMIN.email);
@@ -1161,6 +1342,8 @@ export default function App() {
 
     const collected = Number(Math.max(cashFlow.inflow, sourcePaymentTotal + sourceReceiptTotal).toFixed(2));
 
+    const payablesFromLedger = sumAccountGroup(lookup, ["511", "521", "522", "531", "541"], "credit");
+
     return {
       invoice: Number(Math.max(invoiceFromLedger, sourceInvoiceTotal + sourceReceiptTotal).toFixed(2)),
       receipts: Number(sourceReceiptTotal.toFixed(2)),
@@ -1170,7 +1353,7 @@ export default function App() {
       expenses: Number(Math.max(sumAccountGroup(lookup, ["711", "712", "721", "731"], "debit"), sourceExpenseTotal).toFixed(2)),
       bills: Number(Math.max(sumAccountGroup(lookup, ["531"], "credit"), sourceBillTotal).toFixed(2)),
       receivables: Number(Math.max(sumAccountGroup(lookup, ["211", "231"], "debit"), sourceReceivables).toFixed(2)),
-      payables: Number(Math.max(sumAccountGroup(lookup, ["511", "521", "522", "531", "541"], "credit"), sourcePayables).toFixed(2)),
+      payables: Number((payablesFromLedger > 0 ? payablesFromLedger : sourcePayables).toFixed(2)),
       bank: Number(Math.max(sumAccountGroup(lookup, cashAccountCodes, "debit"), sourceBank).toFixed(2))
     };
   }, [state]);
@@ -1195,6 +1378,24 @@ export default function App() {
   }
 
   function getCurrentPlan(user = currentUser) {
+    if (backendSubscription?.plan?.code) {
+      const mappedLegacyPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[String(backendSubscription.plan.code).toUpperCase()];
+      if (mappedLegacyPlanId) {
+        return getPlanById(mappedLegacyPlanId);
+      }
+
+      return {
+        id: backendSubscription.plan.code,
+        name: backendSubscription.plan.name || backendSubscription.plan.code,
+        monthlyPrice: Number(backendSubscription.plan.priceMinor || 0) / 100,
+        annualMonthlyPrice: Number(backendSubscription.plan.priceMinor || 0) / 100,
+        currency: backendSubscription.plan.currency || "AZN",
+        operationLimit: Number.MAX_SAFE_INTEGER,
+        durationDays: 30,
+        summaryKey: "sub_freeSummary",
+        signupOnly: false,
+      };
+    }
     if (!user) return getPlanById("free");
     const ownerEmail = getAccountOwnerEmail(user);
     const ownerUser = ownerEmail === user.email ? user : authUsers.find((entry) => entry.email === ownerEmail);
@@ -1202,6 +1403,14 @@ export default function App() {
   }
 
   function getPlanStatusText(user = currentUser) {
+    if (backendSubscription?.plan?.code) {
+      const planLabel = backendSubscription.plan?.name || "Plan";
+      const status = String(backendSubscription.status || "ACTIVE");
+      const endsAt = backendSubscription.currentPeriodEnd
+        ? String(backendSubscription.currentPeriodEnd).slice(0, 10)
+        : null;
+      return `${planLabel} • ${status}${endsAt ? ` • ${endsAt}` : ""}`;
+    }
     if (!user) return "";
     if (user.role === "super_admin") return "Super admin girişi";
     const ownerEmail = getAccountOwnerEmail(user);
@@ -1314,27 +1523,78 @@ export default function App() {
     setBackupStatus({ tone: "success", message: "Daxili istifadəçi silindi." });
   }
 
-  function openPaymentPanel(planId, billingCycle) {
-    setPaymentDraft({ planId, billingCycle });
+  function openPaymentPanel(planCode, billingCycle) {
+    setPaymentDraft({ planCode, billingCycle });
+    setCheckoutResult(null);
+    setPaymentStatusDraft("SUCCESS");
     setAccountPanel("payment");
   }
 
-  function submitTestPayment() {
-    const plan = getPlanById(paymentDraft.planId || "free");
-    const unpaidTrialDays = getUnpaidTrialDurationDays(plan);
-    applySubscriptionToUser(
-      getAccountOwnerEmail(currentUser),
-      plan.id,
-      unpaidTrialDays ? "demo" : paymentDraft.billingCycle,
-      unpaidTrialDays ?? getPlanDurationDays(plan, paymentDraft.billingCycle) ?? 30
-    );
-    setAccountPanel("plans");
-    setBackupStatus({
-      tone: "info",
-      message: unpaidTrialDays
-        ? `${plan.name} planı ödənişsiz demo kimi ${unpaidTrialDays} gün aktiv edildi. Müddət bitəndə hesab avtomatik Free plana keçəcək.`
-        : "Ödəniş mərhələsi test rejimində tamamlandı. Real ödəniş inteqrasiyası sonradan əlavə olunacaq."
-    });
+  async function submitTestPayment() {
+    if (!currentUser || !paymentDraft.planCode) {
+      setBooksNotice("Plan seçimi tapılmadı.");
+      return;
+    }
+
+    try {
+      setSubscriptionLoading(true);
+      const selectedPlan = backendPlans.find((plan) => String(plan.code || "") === String(paymentDraft.planCode));
+      if (!selectedPlan) {
+        throw new Error(`Unknown plan code selected: ${paymentDraft.planCode}`);
+      }
+
+      const targetPlanCode = toBackendPlanCode(selectedPlan.code);
+      const upgrade = await apiUpgradeSubscription(targetPlanCode, updateBackendSession);
+      const checkout = await apiCheckout(upgrade.orderId, updateBackendSession);
+
+      setCheckoutResult({
+        orderId: upgrade.orderId,
+        paymentTransactionId: checkout.paymentTransactionId,
+        gatewayPaymentId: checkout.gatewayPaymentId,
+        checkoutUrl: checkout.checkoutUrl,
+      });
+
+      await syncBackendSubscription();
+      setBooksNotice("Upgrade order və checkout hazırlandı. Mock nəticəni seçib tamamlayın.");
+    } catch (error) {
+      setBooksNotice(error?.message || "Upgrade/checkout alınmadı.");
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  }
+
+  async function submitMockPaymentResult() {
+    if (!checkoutResult?.gatewayPaymentId) {
+      setBooksNotice("Əvvəlcə checkout yaradın.");
+      return;
+    }
+
+    try {
+      setSubscriptionLoading(true);
+      await apiMockWebhook({
+        eventId: crypto.randomUUID(),
+        gatewayPaymentId: checkoutResult.gatewayPaymentId,
+        status: paymentStatusDraft,
+        payload: {
+          source: "frontend-ui",
+          orderId: checkoutResult.orderId,
+        },
+      });
+
+      await syncBackendSubscription();
+      const updatedOrders = await apiGetMyOrders(updateBackendSession);
+      setBackendOrders(Array.isArray(updatedOrders) ? updatedOrders : []);
+
+      setBooksNotice(
+        paymentStatusDraft === "SUCCESS"
+          ? "Mock payment SUCCESS tətbiq edildi. Abunəlik yeniləndi."
+          : "Mock payment FAILED tətbiq edildi. Abunəlik dəyişmədən qaldı.",
+      );
+    } catch (error) {
+      setBooksNotice(error?.message || "Mock payment callback alınmadı.");
+    } finally {
+      setSubscriptionLoading(false);
+    }
   }
 
   function getAccessibleNavItems(user = currentUser) {
@@ -1619,6 +1879,21 @@ export default function App() {
           adjustment: String(record.adjustment ?? "0")
         };
       }
+      if (moduleId === "invoices") {
+        return {
+          ...baseDraft,
+          ...record,
+          lineItems: Array.isArray(record.lineItems) && record.lineItems.length > 0
+            ? record.lineItems.map((item) => ({
+                ...item,
+                accountCode: normalizeAccountCodeInput(item.accountCode || item.account || "", "601")
+              }))
+            : [createDefaultSalesLineItem()],
+          discount: String(record.discount ?? "0"),
+          adjustment: String(record.adjustment ?? "0"),
+          notes: record.notes || ""
+        };
+      }
       if (moduleId === "manualJournals") {
         return { ...baseDraft, ...record, accountTypeFilter: record.accountTypeFilter || "Hamısı", journalLines: createDefaultJournalLines(record) };
       }
@@ -1646,6 +1921,18 @@ export default function App() {
       nextDraft.subTotal = 0;
       nextDraft.discountAmount = 0;
       nextDraft.totalAmount = 0;
+    }
+    if (moduleId === "invoices") {
+      nextDraft.customerName = nextDraft.customerName || "";
+      nextDraft.status = nextDraft.status || "Qaralama";
+      nextDraft.notes = nextDraft.notes || "";
+      nextDraft.discount = nextDraft.discount || "0";
+      nextDraft.adjustment = nextDraft.adjustment || "0";
+      nextDraft.lineItems = [createDefaultSalesLineItem()];
+      nextDraft.subTotal = 0;
+      nextDraft.discountAmount = 0;
+      nextDraft.totalAmount = 0;
+      nextDraft.amount = 0;
     }
     const sequenceField = getSequenceField(moduleId);
     if (sequenceField && !nextDraft[sequenceField]) {
@@ -1936,6 +2223,35 @@ export default function App() {
       { key: `${entry.id}-incoming-main`, accountCode: "205", accountName: getAccountNameByCode("205"), debit: baseAmount, credit: 0 },
       { key: `${entry.id}-incoming-vat`, accountCode: "241", accountName: getAccountNameByCode("241"), debit: vatAmount, credit: 0 },
       { key: `${entry.id}-incoming-creditor`, accountCode: "531", accountName: getAccountNameByCode("531"), debit: 0, credit: totalAmount }
+    ].filter((line) => Number(line.debit || 0) > 0 || Number(line.credit || 0) > 0);
+  }
+
+  function getInvoiceLedgerEntries(invoice) {
+    if (Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0) {
+      const allEntries = [];
+      let totalDebit = 0;
+      invoice.lineItems.forEach((item, i) => {
+        const baseAmount = Number(item.baseAmount || (Number(item.quantity || 0) * Number(item.rate || 0)));
+        const taxAmount = Number(item.taxAmount || 0);
+        const accountCode = normalizeAccountCodeInput(item.accountCode || item.account || "", "601");
+        if (baseAmount > 0) {
+          allEntries.push({ key: `${invoice.id}-line${i}-income`, accountCode, accountName: getAccountNameByCode(accountCode), debit: 0, credit: baseAmount });
+          totalDebit += baseAmount;
+        }
+        if (taxAmount > 0) {
+          allEntries.push({ key: `${invoice.id}-line${i}-vat`, accountCode: "521", accountName: getAccountNameByCode("521"), debit: 0, credit: taxAmount });
+          totalDebit += taxAmount;
+        }
+      });
+      if (totalDebit > 0) {
+        allEntries.unshift({ key: `${invoice.id}-debtor`, accountCode: "211", accountName: getAccountNameByCode("211"), debit: Number(totalDebit.toFixed(2)), credit: 0 });
+      }
+      return allEntries;
+    }
+    const amount = Number(invoice.amount || 0);
+    return [
+      { key: `${invoice.id}-debtor`, accountCode: "211", accountName: getAccountNameByCode("211"), debit: amount, credit: 0 },
+      { key: `${invoice.id}-income`, accountCode: "601", accountName: getAccountNameByCode("601"), debit: 0, credit: amount }
     ].filter((line) => Number(line.debit || 0) > 0 || Number(line.credit || 0) > 0);
   }
 
@@ -3498,7 +3814,9 @@ export default function App() {
         id: crypto.randomUUID(),
         displayName: draftValue,
         companyName: "",
+        phone: "",
         email: "",
+        taxId: "",
         outstandingReceivables: 0
       };
       setState((current) => ({ ...current, customers: [nextRecord, ...current.customers] }));
@@ -3706,12 +4024,43 @@ export default function App() {
             ...totals
           };
         })()
+        : moduleId === "invoices"
+          ? (() => {
+            const parsed = { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
+            const lineItems = (activeDraft.lineItems || []).map((item) => {
+              const accountCode = normalizeAccountCodeInput(item.accountCode || item.account || "", "601");
+              const calc = calculateLineItem(item.quantity, item.rate, item.taxLabel);
+              return { ...item, accountCode, ...calc };
+            });
+            const totals = calculateBillTotals(lineItems, activeDraft.discount, activeDraft.adjustment);
+            return {
+              ...parsed,
+              invoiceNumber: String(activeDraft.invoiceNumber || parsed.invoiceNumber || "").trim(),
+              customerName: String(activeDraft.customerName || parsed.customerName || "").trim(),
+              dueDate: activeDraft.dueDate || parsed.dueDate || today(),
+              status: activeDraft.status || parsed.status || "Qaralama",
+              notes: activeDraft.notes || "",
+              discount: Number(activeDraft.discount || 0),
+              adjustment: Number(activeDraft.adjustment || 0),
+              lineItems,
+              ...totals,
+              amount: Number(totals.totalAmount || 0)
+            };
+          })()
         : moduleId === "vendors"
           ? (() => {
             const parsed = { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
             return {
               ...parsed,
               vendorName: String(parsed.vendorName || "").trim() || String(parsed.companyName || "").trim()
+            };
+          })()
+        : moduleId === "customers"
+          ? (() => {
+            const parsed = { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
+            return {
+              ...parsed,
+              displayName: String(parsed.displayName || "").trim() || String(parsed.companyName || "").trim()
             };
           })()
         : { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
@@ -3926,15 +4275,32 @@ export default function App() {
   function submitBank(event) {
     event.preventDefault();
     if (!editingBank && !guardOperationAccess()) return;
-    const payload = { accountName: bankDraft.accountName, institution: bankDraft.institution, accountType: bankDraft.accountType, balance: Number(bankDraft.balance || 0), iban: bankDraft.iban || "", coaCode: bankDraft.coaCode || "", lastSync: today() };
+    const bankName = String(bankDraft.bankName || bankDraft.accountName || "").trim();
+    const bankCode = String(bankDraft.bankCode || bankDraft.institution || "").trim();
+    const settlementAccount = String(bankDraft.settlementAccount || bankDraft.iban || "").trim();
+    const payload = {
+      bankName,
+      bankTaxId: String(bankDraft.bankTaxId || "").trim(),
+      bankCode,
+      swift: String(bankDraft.swift || "").trim(),
+      correspondentAccount: String(bankDraft.correspondentAccount || "").trim(),
+      settlementAccount,
+      accountName: bankName,
+      institution: bankCode,
+      accountType: bankDraft.accountType || "Cari",
+      balance: Number(bankDraft.balance || 0),
+      iban: settlementAccount,
+      coaCode: bankDraft.coaCode || "",
+      lastSync: today()
+    };
     setState((current) => ({
       ...current,
       bankingAccounts: editingBank ? current.bankingAccounts.map((item) => item.id === editingBank ? { ...item, ...payload } : item) : [{ id: crypto.randomUUID(), ...payload }, ...current.bankingAccounts]
     }));
     if (!editingBank) markOperationUsage();
-    setBankDraft({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" });
+    setBankDraft(createEmptyBankDraft());
     setEditingBank(null);
-    setBankView("journal");
+    setBankView(bankFormOrigin || "banks");
   }
 
   function submitBankTx(event) {
@@ -3943,6 +4309,7 @@ export default function App() {
     const payload = {
       date: bankTxDraft.date || today(),
       description: bankTxDraft.description,
+      counterpartyName: bankTxDraft.counterpartyName,
       category: bankTxDraft.category,
       transactionType: bankTxDraft.transactionType,
       amount: Number(bankTxDraft.amount || 0),
@@ -3957,7 +4324,7 @@ export default function App() {
         : [{ id: crypto.randomUUID(), ...payload }, ...current.bankTransactions]
     }));
     if (!bankTxEditId) markOperationUsage();
-    setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
+    setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
     setBankTxAccountSearch("");
     setBankTxEditId(null);
     setBankView("journal");
@@ -4361,7 +4728,7 @@ function renderItemsCatalog() {
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={(event) => submitModule("customers", event)}>
-              {config.form.map((field) => (
+              {config.form.filter((field) => field[0] !== "displayName" && field[0] !== "email" && field[0] !== "outstandingReceivables").map((field) => (
                 <label key={field[0]}>
                   <span>{fld(field[1])}</span>
                   <SmartField field={field} value={draft[field[0]] ?? ""} onChange={(e) => updateDraft("customers", field[0], e.target.value)} at={at} />
@@ -4383,6 +4750,72 @@ function renderItemsCatalog() {
     const query = searches[config.collection] || "";
     const draft = drafts.invoices || createModuleDraft("invoices");
     const rows = state.invoices.filter((item) => matchesSearch(item, query));
+    const lineItems = draft.lineItems || [createDefaultSalesLineItem()];
+    const invoiceTotals = calculateBillTotals(lineItems, draft.discount, draft.adjustment);
+    const invoiceCustomerOptions = Array.from(new Set(
+      state.customers
+        .map((item) => String(item.companyName || item.displayName || "").trim())
+        .filter(Boolean)
+    ));
+    const invoiceGoodsNameOptions = Array.from(
+      state.goods.reduce((map, item) => {
+        const name = String(item.name || "").trim();
+        if (!name) return map;
+        const key = name.toLowerCase();
+        if (!map.has(key)) map.set(key, name);
+        return map;
+      }, new Map()).values()
+    );
+    const invoiceIncomeAccountOptions = state.chartOfAccounts
+      .filter((account) => isVisibleAccount(account) && inferAccountTypeFromCode(account.accountCode, account.accountType) === "Gəlir")
+      .slice()
+      .sort((a, b) => Number(a.accountCode) - Number(b.accountCode));
+
+    const updateInvoiceLineItem = (lineId, field, value) => {
+      setDrafts((current) => {
+        const currentDraft = current.invoices || createModuleDraft("invoices");
+        return {
+          ...current,
+          invoices: {
+            ...currentDraft,
+            lineItems: (currentDraft.lineItems || [createDefaultSalesLineItem()]).map((item) => {
+              if (item.id !== lineId) return item;
+              const nextValue = field === "accountCode" ? normalizeAccountCodeInput(value, item.accountCode || "601") : value;
+              const nextItem = { ...item, [field]: nextValue };
+              return { ...nextItem, ...calculateLineItem(nextItem.quantity, nextItem.rate, nextItem.taxLabel) };
+            })
+          }
+        };
+      });
+    };
+
+    const addInvoiceLineItem = () => {
+      setDrafts((current) => {
+        const currentDraft = current.invoices || createModuleDraft("invoices");
+        return {
+          ...current,
+          invoices: {
+            ...currentDraft,
+            lineItems: [...(currentDraft.lineItems || [createDefaultSalesLineItem()]), createDefaultSalesLineItem()]
+          }
+        };
+      });
+    };
+
+    const removeInvoiceLineItem = (lineId) => {
+      setDrafts((current) => {
+        const currentDraft = current.invoices || createModuleDraft("invoices");
+        const currentItems = currentDraft.lineItems || [createDefaultSalesLineItem()];
+        const nextItems = currentItems.filter((item) => item.id !== lineId);
+        return {
+          ...current,
+          invoices: {
+            ...currentDraft,
+            lineItems: nextItems.length > 0 ? nextItems : [createDefaultSalesLineItem()]
+          }
+        };
+      });
+    };
 
     if (invoiceView === "overview") {
       return (
@@ -4417,6 +4850,20 @@ function renderItemsCatalog() {
     }
 
     if (invoiceView === "journal") {
+      const invoiceJournalColumns = [...config.columns, ["debitAmount", "Debet", "currency"], ["creditAmount", "Kredit", "currency"]];
+      const invoiceJournalRows = rows.map((record) => {
+        const ledgerLines = getInvoiceLedgerEntries(record);
+        const debitAmount = Number(ledgerLines.reduce((sum, line) => sum + Number(line.debit || 0), 0).toFixed(2));
+        const creditAmount = Number(ledgerLines.reduce((sum, line) => sum + Number(line.credit || 0), 0).toFixed(2));
+        return { ...record, debitAmount, creditAmount };
+      });
+      const activeInvoiceLedgerRecord = invoiceJournalRows.find((record) => record.id === invoiceLedgerRecordId) || null;
+      const activeInvoiceLedgerLines = activeInvoiceLedgerRecord ? getInvoiceLedgerEntries(activeInvoiceLedgerRecord) : [];
+      const activeInvoiceLedgerTotals = activeInvoiceLedgerLines.reduce((acc, line) => ({
+        debit: acc.debit + Number(line.debit || 0),
+        credit: acc.credit + Number(line.credit || 0)
+      }), { debit: 0, credit: 0 });
+      const formatInvoiceLedgerAmount = (value) => Number(value || 0) === 0 ? "" : currency(value, state.settings.currency);
       return (
         <section className="view active">
           <div className="bill-journal-header">
@@ -4431,18 +4878,44 @@ function renderItemsCatalog() {
               <input className="search-input" placeholder={at.searchInvoice} value={query} onChange={(e) => setSearches((current) => ({ ...current, [config.collection]: e.target.value }))} />
             </div>
             <Table
-              headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
+              headers={invoiceJournalColumns.map(([, label]) => col(label)).concat(at.action)}
               emptyMessage={at.noInvoice}
-              rows={rows.map((record) => (
+              rows={invoiceJournalRows.map((record) => (
                 <tr key={record.id}>
-                  {config.columns.map((col) => <td key={col[0]}>{renderCell(record, col)}</td>)}
+                  {invoiceJournalColumns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
                   <td><div className="row-actions">
                     <button className="table-btn" onClick={() => startEdit("invoices", record)}>{at.edit}</button>
                     <button className="table-btn danger-btn" onClick={() => removeModuleRecord("invoices", record.id)}>{at.delete}</button>
+                    <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId((current) => current === record.id ? null : record.id)}>Müxabirləşməyə bax</button>
                   </div></td>
                 </tr>
               ))}
             />
+            {activeInvoiceLedgerRecord ? (
+              <div className="incoming-ledger-panel">
+                <div className="incoming-ledger-panel-head">
+                  <strong>Müxabirləşmə: {activeInvoiceLedgerRecord.invoiceNumber || "Satış qaiməsi"}</strong>
+                  <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId(null)}>Bağla</button>
+                </div>
+                <Table
+                  headers={["Hesab", "Debet", "Kredit"]}
+                  emptyMessage={at.noItems}
+                  rows={activeInvoiceLedgerLines.map((line) => (
+                    <tr key={line.key}>
+                      <td>{line.accountCode} - {line.accountName}</td>
+                      <td>{formatInvoiceLedgerAmount(line.debit)}</td>
+                      <td>{formatInvoiceLedgerAmount(line.credit)}</td>
+                    </tr>
+                  )).concat([
+                    <tr key="invoice-ledger-total">
+                      <td><strong>Cəmi</strong></td>
+                      <td><strong>{formatInvoiceLedgerAmount(activeInvoiceLedgerTotals.debit)}</strong></td>
+                      <td><strong>{formatInvoiceLedgerAmount(activeInvoiceLedgerTotals.credit)}</strong></td>
+                    </tr>
+                  ])}
+                />
+              </div>
+            ) : null}
           </div>
         </section>
       );
@@ -4459,12 +4932,100 @@ function renderItemsCatalog() {
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={(event) => submitModule("invoices", event)}>
-              {config.form.map((field) => (
-                <label key={field[0]}>
-                  <span>{fld(field[1])}</span>
-                  <SmartField field={field} value={draft[field[0]] ?? ""} onChange={(e) => updateDraft("invoices", field[0], e.target.value)} at={at} />
+              <div className="bill-header-fields">
+                <label className="bill-header-field">
+                  <span>{col("Faktura #")}</span>
+                  <input value={draft.invoiceNumber ?? ""} onChange={(event) => updateDraft("invoices", "invoiceNumber", event.target.value)} required />
                 </label>
-              ))}
+                <label className="bill-header-field">
+                  <span>{col("Son tarix")}</span>
+                  <input type="date" value={draft.dueDate ?? today()} onChange={(event) => updateDraft("invoices", "dueDate", event.target.value)} required />
+                </label>
+                <label className="bill-header-field">
+                  <span>{col("Müştəri")}</span>
+                  <select value={draft.customerName ?? ""} onChange={(event) => updateDraft("invoices", "customerName", event.target.value)} required>
+                    <option value="">Müştəri seçin...</option>
+                    {invoiceCustomerOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <div className="bill-item-table-wrap">
+                <table className="bill-item-table">
+                  <thead>
+                    <tr>
+                      <th>{fld("Ad")}</th>
+                      <th>{col("Kod")}</th>
+                      <th>{at.inv_qty || "Miqdar"}</th>
+                      <th>{at.inv_unitPrice || "Qiymət"}</th>
+                      <th>{at.inv_taxRate || "Vergi"}</th>
+                      <th>{col("Cəmi")}</th>
+                      <th>{at.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.map((item) => (
+                      <tr key={item.id}>
+                        <td><input list="invoice-goods-list" value={item.itemName ?? ""} onChange={(event) => updateInvoiceLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} /></td>
+                        <td>
+                          <select value={item.accountCode ?? "601"} onChange={(event) => updateInvoiceLineItem(item.id, "accountCode", event.target.value)}>
+                            {(invoiceIncomeAccountOptions.length ? invoiceIncomeAccountOptions : [{ id: "default-sales", accountCode: "601", accountName: getAccountNameByCode("601") }]).map((account) => (
+                              <option key={`${item.id}-${account.id}`} value={account.accountCode}>{account.accountCode} - {account.accountName}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td><input type="number" step="0.01" min="0" value={item.quantity ?? "1"} onChange={(event) => updateInvoiceLineItem(item.id, "quantity", event.target.value)} /></td>
+                        <td><input type="number" step="0.01" min="0" value={item.rate ?? "0"} onChange={(event) => updateInvoiceLineItem(item.id, "rate", event.target.value)} /></td>
+                        <td>
+                          <select value={item.taxLabel ?? PURCHASE_TAX_OPTIONS[0]} onChange={(event) => updateInvoiceLineItem(item.id, "taxLabel", event.target.value)}>
+                            {PURCHASE_TAX_OPTIONS.map((option) => <option key={`${item.id}-${option}`} value={option}>{option}</option>)}
+                          </select>
+                        </td>
+                        <td>{currency(item.amount || 0, state.settings.currency)}</td>
+                        <td>
+                          <button className="table-btn danger-btn" type="button" onClick={() => removeInvoiceLineItem(item.id)}>{at.delete}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <datalist id="invoice-goods-list">
+                {invoiceGoodsNameOptions.map((name) => <option key={name} value={name} />)}
+              </datalist>
+
+              <div className="form-actions">
+                <button className="ghost-btn" type="button" onClick={addInvoiceLineItem}>{at.mj_addLine || "Sətir əlavə et"}</button>
+              </div>
+
+              <label>
+                <span>{at.opt_notes || "Qeydlər"}</span>
+                <textarea rows={3} value={draft.notes ?? ""} onChange={(event) => updateDraft("invoices", "notes", event.target.value)} />
+              </label>
+
+              <div className="bill-header-fields">
+                <label className="bill-header-field">
+                  <span>{at.col["Status"] || "Status"}</span>
+                  <select value={draft.status ?? "Qaralama"} onChange={(event) => updateDraft("invoices", "status", event.target.value)}>
+                    {["Qaralama", "Göndərilib", "Gecikib", "Ödənilib"].map((status) => <option key={status} value={status}>{status}</option>)}
+                  </select>
+                </label>
+                <label className="bill-header-field">
+                  <span>{at.opt_discountPct || "Endirim (%)"}</span>
+                  <input type="number" step="0.01" min="0" value={draft.discount ?? "0"} onChange={(event) => updateDraft("invoices", "discount", event.target.value)} />
+                </label>
+                <label className="bill-header-field">
+                  <span>{at.opt_adjustment || "Düzəliş"}</span>
+                  <input type="number" step="0.01" value={draft.adjustment ?? "0"} onChange={(event) => updateDraft("invoices", "adjustment", event.target.value)} />
+                </label>
+              </div>
+
+              <div className="ops-preview-strip">
+                <div><span>{at.opt_subTotal || "Alt cəmi"}</span><strong>{currency(invoiceTotals.subTotal || 0, state.settings.currency)}</strong></div>
+                <div><span>{at.inv_form_discount || "Endirim"}</span><strong>{currency(invoiceTotals.discountAmount || 0, state.settings.currency)}</strong></div>
+                <div><span>{at.fld["Cəmi məbləğ"] || "Cəmi məbləğ"}</span><strong>{currency(invoiceTotals.totalAmount || 0, state.settings.currency)}</strong></div>
+              </div>
+
               <div className="form-actions">
                 <button className="primary-btn" type="submit">{editing.invoices ? at.ic_updateBtn : at.save}</button>
                 <button className="ghost-btn" type="button" onClick={() => cancelEdit("invoices")}>{at.cancel}</button>
@@ -5576,6 +6137,20 @@ function renderItemsCatalog() {
       const lineItems = draft.lineItems || [createDefaultLineItem()];
       const rows = state.incomingGoodsServices.filter((item) => matchesSearch(item, query));
       const billTotals = calculateBillTotals(lineItems, draft.discount, draft.adjustment);
+      const incomingJournalColumns = [...config.columns, ["debitAmount", "Debet", "currency"], ["creditAmount", "Kredit", "currency"]];
+      const incomingJournalRows = rows.map((record) => {
+        const ledgerLines = getIncomingGoodsLedgerEntries(record);
+        const debitAmount = Number(ledgerLines.reduce((sum, line) => sum + Number(line.debit || 0), 0).toFixed(2));
+        const creditAmount = Number(ledgerLines.reduce((sum, line) => sum + Number(line.credit || 0), 0).toFixed(2));
+        return { ...record, debitAmount, creditAmount };
+      });
+      const activeIncomingLedgerRecord = incomingJournalRows.find((record) => record.id === incomingLedgerRecordId) || null;
+      const activeIncomingLedgerLines = activeIncomingLedgerRecord ? getIncomingGoodsLedgerEntries(activeIncomingLedgerRecord) : [];
+      const activeIncomingLedgerTotals = activeIncomingLedgerLines.reduce((acc, line) => ({
+        debit: acc.debit + Number(line.debit || 0),
+        credit: acc.credit + Number(line.credit || 0)
+      }), { debit: 0, credit: 0 });
+      const formatLedgerAmount = (value) => Number(value || 0) === 0 ? "" : currency(value, state.settings.currency);
       const incomingGoodsNameOptions = Array.from(
         state.goods.reduce((map, item) => {
           const name = String(item.name || "").trim();
@@ -5681,20 +6256,46 @@ function renderItemsCatalog() {
                 <input className="search-input" placeholder={at.search} value={query} onChange={(event) => setSearches((current) => ({ ...current, [config.collection]: event.target.value }))} />
               </div>
               <Table
-                headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
+                headers={incomingJournalColumns.map(([, label]) => col(label)).concat(at.action)}
                 emptyMessage={at.noItems}
-                rows={rows.map((record) => (
+                rows={incomingJournalRows.map((record) => (
                   <tr key={record.id}>
-                    {config.columns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
+                    {incomingJournalColumns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
                     <td>
                       <div className="row-actions">
                         <button className="table-btn" type="button" onClick={() => startEdit("incomingGoodsServices", record)}>{at.edit}</button>
                         <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("incomingGoodsServices", record.id)}>{at.delete}</button>
+                        <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId((current) => current === record.id ? null : record.id)}>Müxabirləşməyə bax</button>
                       </div>
                     </td>
                   </tr>
                 ))}
               />
+              {activeIncomingLedgerRecord ? (
+                <div className="incoming-ledger-panel">
+                  <div className="incoming-ledger-panel-head">
+                    <strong>Müxabirləşmə: {activeIncomingLedgerRecord.billNumber || "Mal qaiməsi"}</strong>
+                    <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId(null)}>Bağla</button>
+                  </div>
+                  <Table
+                    headers={["Hesab", "Debet", "Kredit"]}
+                    emptyMessage={at.noItems}
+                    rows={activeIncomingLedgerLines.map((line) => (
+                      <tr key={line.key}>
+                        <td>{line.accountCode} - {line.accountName}</td>
+                        <td>{formatLedgerAmount(line.debit)}</td>
+                        <td>{formatLedgerAmount(line.credit)}</td>
+                      </tr>
+                    )).concat([
+                      <tr key="incoming-ledger-total">
+                        <td><strong>Cəmi</strong></td>
+                        <td><strong>{formatLedgerAmount(activeIncomingLedgerTotals.debit)}</strong></td>
+                        <td><strong>{formatLedgerAmount(activeIncomingLedgerTotals.credit)}</strong></td>
+                      </tr>
+                    ])}
+                  />
+                </div>
+              ) : null}
             </div>
           </section>
         );
@@ -7504,112 +8105,65 @@ function renderItemsCatalog() {
     );
   }
 
-  function submitSignIn(event) {
+  async function submitSignIn(event) {
     event.preventDefault();
-    const matchedUser = authUsers.find((user) => user.email.toLowerCase() === String(authDraft.email || "").trim().toLowerCase() && user.password === authDraft.password);
-    if (!matchedUser) {
-      setBooksNotice("Giriş məlumatları düzgün deyil.");
-      return;
+    try {
+      const email = String(authDraft.email || "").trim().toLowerCase();
+      const response = await apiLogin(email, authDraft.password);
+      const session = {
+        accessToken: response?.tokens?.accessToken,
+        refreshToken: response?.tokens?.refreshToken,
+      };
+
+      updateBackendSession(session);
+      await syncBackendSubscription(session);
+
+      if (authDraft.rememberMe) {
+        window.localStorage.setItem(AUTH_REMEMBER_KEY, JSON.stringify({
+          email,
+          password: authDraft.password,
+        }));
+      } else {
+        window.localStorage.removeItem(AUTH_REMEMBER_KEY);
+      }
+
+      setBooksNotice("Uğurla daxil oldunuz.");
+      setActiveProduct("books");
+      setBooksView("home");
+    } catch (error) {
+      setBooksNotice(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
     }
-    if (authDraft.rememberMe) {
-      window.localStorage.setItem(AUTH_REMEMBER_KEY, JSON.stringify({
-        email: String(authDraft.email || "").trim().toLowerCase(),
-        password: authDraft.password
-      }));
-    } else {
-      window.localStorage.removeItem(AUTH_REMEMBER_KEY);
-    }
-    const loginUser = normalizeAuthUser(matchedUser);
-    suspendAutoSaveRef.current = true;
-    setStorageEmail(loginUser.email);
-    setCurrentUser(loginUser);
-    setBooksNotice(`Xoş gəldiniz, ${matchedUser.fullName}.`);
-    setActiveProduct("books");
-    setBooksView("home");
-    // Bu istifadəçinin öz məlumatlarını yüklə
-    loadAppState(loginUser.email)
-      .then((data) => {
-        let persistedHubLang = "en";
-        try {
-          persistedHubLang = window.localStorage.getItem(HUB_LANG_KEY) || "en";
-        } catch { /* ignore */ }
-        setState(data);
-        setHubLang(data.hubLang || persistedHubLang);
-        setActiveSection(data.activeSection || "home");
-        setActiveModule(data.activeModule || null);
-      })
-      .finally(() => {
-        suspendAutoSaveRef.current = false;
-      });
-    setAuthDraft((current) => current.rememberMe
-      ? { fullName: "", email: current.email, password: current.password, rememberMe: true, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" }
-      : { fullName: "", email: "", password: "", rememberMe: false, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" });
   }
 
-  function submitSignUp(event) {
+  async function submitSignUp(event) {
     event.preventDefault();
     const email = String(authDraft.email || "").trim().toLowerCase();
     if (!authDraft.fullName || !email || !authDraft.password) {
       setBooksNotice("Qeydiyyat üçün bütün sahələri doldurun.");
       return;
     }
-    if (!authDraft.companyName || !authDraft.taxId || !authDraft.mobilePhone) {
-      setBooksNotice("Qeydiyyat üçün şəxs və ya şirkət məlumatlarını da doldurun.");
-      return;
-    }
-    if (authUsers.some((user) => user.email.toLowerCase() === email)) {
-      setBooksNotice("Bu e-poçt ilə artıq hesab mövcuddur.");
-      return;
-    }
-    const signupPlan = authDraft.signupPlan === "demo" ? "demo" : "free";
-    const signupPlanConfig = getPlanById(signupPlan);
-    const nextUser = normalizeAuthUser({
-      id: crypto.randomUUID(),
-      fullName: authDraft.fullName,
-      email,
-      password: authDraft.password,
-      role: "trial_user",
-      profile: {
-        entityType: authDraft.entityType,
-        companyName: authDraft.companyName,
-        taxId: authDraft.taxId,
-        mobilePhone: authDraft.mobilePhone
-      },
-      subscription: {
-        planId: signupPlan,
-        billingCycle: signupPlan === "demo" ? "demo" : "free",
-        startedAt: today(),
-        endsAt: signupPlan === "demo" ? addDays(today(), getPlanDurationDays(signupPlanConfig, "demo") || 14) : null,
-        autoDowngraded: "Xeyr"
-      }
-    });
-    setAuthUsers((current) => [...current, nextUser]);
-    suspendAutoSaveRef.current = true;
-    setStorageEmail(nextUser.email);
-    setCurrentUser(nextUser);
-    setBooksNotice(signupPlan === "demo" ? "14 günlük Demo hesab yaradıldı və giriş edildi." : "Free hesab yaradıldı və giriş edildi.");
-    setActiveProduct("books");
-    setBooksView("home");
 
-    // Yeni istifadəçi üçün tamamilə təmiz (sıfır) state yarat
-    const cleanState = normalizeAppState(createResetData());
-    setState({
-      ...cleanState,
-      settings: {
-        ...cleanState.settings,
-        companyName: authDraft.companyName,
-        taxId: authDraft.taxId,
-        mobilePhone: authDraft.mobilePhone,
-        entityType: authDraft.entityType
-      }
-    });
-    suspendAutoSaveRef.current = false;
-    setDrafts({});
-    setEditing({});
-    setItemMovementDraft(createMovementDraft([]));
-    setAuthDraft((current) => current.rememberMe
-      ? { fullName: "", email: current.email, password: current.password, rememberMe: true, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" }
-      : { fullName: "", email: "", password: "", rememberMe: false, signupPlan: "free", entityType: "Hüquqi şəxs", companyName: "", taxId: "", mobilePhone: "" });
+    try {
+      const response = await apiRegister({
+        fullName: authDraft.fullName,
+        email,
+        password: authDraft.password,
+      });
+
+      const session = {
+        accessToken: response?.tokens?.accessToken,
+        refreshToken: response?.tokens?.refreshToken,
+      };
+
+      updateBackendSession(session);
+      await syncBackendSubscription(session);
+
+      setBooksNotice("Qeydiyyat tamamlandı və Free plan aktiv edildi.");
+      setActiveProduct("books");
+      setBooksView("home");
+    } catch (error) {
+      setBooksNotice(error?.message || "Qeydiyyat alınmadı. Yenidən yoxlayın.");
+    }
   }
 
   function submitDemoRequest(event) {
@@ -7644,8 +8198,20 @@ function renderItemsCatalog() {
     setPasswordDraft({ current: "", next: "", confirm: "", notice: "Parol uğurla dəyişdirildi.", tone: "success" });
   }
 
-  function logoutUser() {
+  async function logoutUser() {
     if (!window.confirm("Sistemdən çıxmaq istədiyinizə əminsiniz?")) return;
+    if (backendSession?.refreshToken) {
+      try {
+        await apiLogout(backendSession.refreshToken);
+      } catch {
+        // ignore logout errors on client side
+      }
+    }
+    updateBackendSession(null);
+    setBackendSubscription(null);
+    setBackendOrders([]);
+    setBackendPlans([]);
+    setCheckoutResult(null);
     setCurrentUser(null);
     setStorageEmail(null);
     setProfileMenuOpen(false);
@@ -8331,16 +8897,25 @@ function renderItemsCatalog() {
       return (
         <section className="view active">
           <div className="bill-hub">
-            <div className="bill-hub-card" onClick={() => setBankView("journal")}>
+            <div className="bill-hub-card" onClick={() => setBankView("banks")}>
               <div className="bill-hub-icon">🏦</div>
               <div className="bill-hub-info">
-                <h3>{at.hub_bankJournal}</h3>
-                <p>{at.hub_bankJournalDesc}</p>
+                <h3>Banklar</h3>
+                <p>Bankların siyahısı və rekvizitlərinin idarəsi.</p>
                 <span className="bill-hub-count">{state.bankingAccounts.length} {at.hub_bankCount}</span>
               </div>
               <span className="bill-hub-arrow">→</span>
             </div>
-            <div className="bill-hub-card" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxAccountSearch(""); setBankView("tx-form"); }}>
+            <div className="bill-hub-card" onClick={() => setBankView("journal")}>
+              <div className="bill-hub-icon">📒</div>
+              <div className="bill-hub-info">
+                <h3>{at.hub_bankJournal}</h3>
+                <p>{at.hub_bankJournalDesc}</p>
+                <span className="bill-hub-count">{state.bankTransactions.length} {at.unit_record}</span>
+              </div>
+              <span className="bill-hub-arrow">→</span>
+            </div>
+            <div className="bill-hub-card" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxAccountSearch(""); setBankView("tx-form"); }}>
               <div className="bill-hub-icon">➕</div>
               <div className="bill-hub-info">
                 <h3>{at.hub_bankNew}</h3>
@@ -8366,8 +8941,8 @@ function renderItemsCatalog() {
             <div className="bill-journal-title-row">
               <h2>{at.bankJournalTitle}</h2>
               <div style={{ display: "flex", gap: "0.6rem" }}>
-                <button className="ghost-btn" type="button" onClick={() => { setBankDraft({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" }); setEditingBank(null); setBankView("form"); }}>{at.journalNewAcc}</button>
-                <button className="primary-btn" type="button" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankTxAccountSearch(""); setBankView("tx-form"); }}>+ Yeni əməliyyat</button>
+                <button className="ghost-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankFormOrigin("journal"); setBankView("form"); }}>+ Yeni bank</button>
+                <button className="primary-btn" type="button" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankTxAccountSearch(""); setBankView("tx-form"); }}>+ Yeni əməliyyat</button>
               </div>
             </div>
           </div>
@@ -8379,16 +8954,16 @@ function renderItemsCatalog() {
                 <div className="bank-acc-chip-top">
                   <span className="bank-acc-chip-icon">🏦</span>
                   <div className="bank-acc-chip-info">
-                    <strong>{acc.accountName}</strong>
-                    <span>{acc.institution}</span>
+                    <strong>{getBankDisplayName(acc)}</strong>
+                    <span>{getBankDisplayCode(acc)}</span>
                     <span>{acc.accountType}</span>
                   </div>
                 </div>
                 <div className="bank-acc-chip-bottom">
                   <span className="bank-acc-chip-balance">{currency(acc.balance, state.settings.currency)}</span>
                   <div className="bank-acc-chip-actions">
-                    <button className="table-btn" onClick={() => { setBankDraft({ accountName: acc.accountName, institution: acc.institution, accountType: acc.accountType, balance: String(acc.balance), iban: acc.iban || "", coaCode: acc.coaCode || "" }); setEditingBank(acc.id); setBankView("form"); }}>{at.edit}</button>
-                    <button className="table-btn danger-btn" onClick={() => { setState((c) => ({ ...c, bankingAccounts: c.bankingAccounts.filter((a) => a.id !== acc.id) })); if (editingBank === acc.id) { setBankDraft({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" }); setEditingBank(null); } }}>{at.delete}</button>
+                    <button className="table-btn" onClick={() => { setBankDraft(buildBankDraftFromRecord(acc)); setEditingBank(acc.id); setBankFormOrigin("journal"); setBankView("form"); }}>{at.edit}</button>
+                    <button className="table-btn danger-btn" onClick={() => { setState((c) => ({ ...c, bankingAccounts: c.bankingAccounts.filter((a) => a.id !== acc.id) })); if (editingBank === acc.id) { setBankDraft(createEmptyBankDraft()); setEditingBank(null); } }}>{at.delete}</button>
                   </div>
                 </div>
               </div>
@@ -8420,7 +8995,7 @@ function renderItemsCatalog() {
               <div className="bank-tx-feed-empty">
                 <span>💳</span>
                 <p>Hələ heç bir əməliyyat yoxdur</p>
-                <button className="primary-btn" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView("tx-form"); }}>İlk əməliyyatı əlavə et</button>
+                <button className="primary-btn" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView("tx-form"); }}>İlk əməliyyatı əlavə et</button>
               </div>
             ) : (
               <div className="bank-tx-feed">
@@ -8429,7 +9004,7 @@ function renderItemsCatalog() {
                   const bankAcc = state.bankingAccounts.find(a => a.id === record.bankAccountId);
                   const counterAcc = state.chartOfAccounts.find(a => a.accountCode === record.accountCode);
                   const bankCoaAcc = bankAcc?.coaCode ? state.chartOfAccounts.find(a => a.accountCode === bankAcc.coaCode) : null;
-                  const bankLabel = bankCoaAcc ? `${bankCoaAcc.accountCode} – ${bankCoaAcc.accountName}` : (bankAcc ? bankAcc.accountName : "Bank hesabı");
+                  const bankLabel = bankCoaAcc ? `${bankCoaAcc.accountCode} – ${bankCoaAcc.accountName}` : (bankAcc ? getBankDisplayName(bankAcc) : "Bank hesabı");
                   const counterLabel = counterAcc ? `${counterAcc.accountCode} – ${counterAcc.accountName}` : (record.accountCode || "—");
                   const debitEntry  = isCredit ? bankLabel    : counterLabel;
                   const creditEntry = isCredit ? counterLabel : bankLabel;
@@ -8450,6 +9025,7 @@ function renderItemsCatalog() {
                           {record.reference && <span className="bank-tx-item-ref">#{record.reference}</span>}
                         </div>
                         {record.description && <div className="bank-tx-item-desc">{record.description}</div>}
+                        {record.counterpartyName && <div className="bank-tx-item-desc">Şirkət: {record.counterpartyName}</div>}
                         <div className="bank-tx-item-entries">
                           <div className="bank-tx-entry-row">
                             <span className="bank-tx-entry-side bank-tx-entry-side--debet">D</span>
@@ -8468,7 +9044,7 @@ function renderItemsCatalog() {
                           {isCredit ? "+" : "−"}{currency(record.amount, state.settings.currency)}
                         </span>
                         <div className="bank-tx-item-actions">
-                          <button className="table-btn" onClick={() => { setBankTxDraft({ date: record.date || "", amount: String(record.amount), transactionType: record.transactionType, description: record.description || "", bankAccountId: record.bankAccountId || "", accountCode: record.accountCode || "", reference: record.reference || "", category: record.category || "" }); setBankTxEditId(record.id); setBankTxAccountSearch(""); setBankView("tx-form"); }}>Düzəliş et</button>
+                          <button className="table-btn" onClick={() => { setBankTxDraft({ date: record.date || "", amount: String(record.amount), transactionType: record.transactionType, description: record.description || "", counterpartyName: record.counterpartyName || "", bankAccountId: record.bankAccountId || "", accountCode: record.accountCode || "", reference: record.reference || "", category: record.category || "" }); setBankTxEditId(record.id); setBankTxAccountSearch(""); setBankView("tx-form"); }}>Düzəliş et</button>
                           <button className="table-btn danger-btn" onClick={() => setState((c) => ({ ...c, bankTransactions: c.bankTransactions.filter(t => t.id !== record.id) }))}>Sil</button>
                         </div>
                       </div>
@@ -8482,11 +9058,88 @@ function renderItemsCatalog() {
       );
     }
 
+    if (bankView === "banks") {
+      return (
+        <section className="view active">
+          <div className="bill-journal-header">
+            <button className="bill-back-btn" type="button" onClick={() => setBankView("overview")}>{at.back}</button>
+            <div className="bill-journal-title-row">
+              <h2>Banklar</h2>
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={() => {
+                  setBankDraft(createEmptyBankDraft());
+                  setEditingBank(null);
+                  setBankFormOrigin("banks");
+                  setBankView("form");
+                }}
+              >
+                + Yeni bank
+              </button>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-toolbar">
+              <input className="search-input" placeholder={at.search} value={query} onChange={(event) => setSearches((current) => ({ ...current, bankingAccounts: event.target.value }))} />
+            </div>
+            <Table
+              headers={["Bankın adı", "Bankın VÖEN-i", "Bankın kodu", "SWIFT", "Müxbir hesab", "Hesablaşma hesabı", at.action]}
+              emptyMessage={at.noItems}
+              rows={accounts.map((record) => (
+                <tr key={record.id}>
+                  <td>{record.bankName || record.accountName || "-"}</td>
+                  <td>{record.bankTaxId || "-"}</td>
+                  <td>{record.bankCode || record.institution || "-"}</td>
+                  <td>{record.swift || "-"}</td>
+                  <td>{record.correspondentAccount || "-"}</td>
+                  <td>{record.settlementAccount || record.iban || "-"}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button
+                        className="table-btn"
+                        type="button"
+                        onClick={() => {
+                          setBankDraft(buildBankDraftFromRecord(record));
+                          setEditingBank(record.id);
+                          setBankFormOrigin("banks");
+                          setBankView("form");
+                        }}
+                      >
+                        {at.edit}
+                      </button>
+                      <button
+                        className="table-btn danger-btn"
+                        type="button"
+                        onClick={() => {
+                          setState((current) => ({ ...current, bankingAccounts: current.bankingAccounts.filter((entry) => entry.id !== record.id) }));
+                          if (editingBank === record.id) {
+                            setBankDraft(createEmptyBankDraft());
+                            setEditingBank(null);
+                          }
+                        }}
+                      >
+                        {at.delete}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            />
+          </div>
+        </section>
+      );
+    }
+
     if (bankView === "tx-form") {
       const accountOptions = state.chartOfAccounts.filter((a) => a.status !== "Passiv");
       const filteredAccOptions = bankTxAccountSearch
         ? accountOptions.filter((a) => (a.accountCode + " " + a.accountName).toLowerCase().includes(bankTxAccountSearch.toLowerCase()))
         : accountOptions;
+      const companyNameOptions = Array.from(new Set([
+        ...state.customers.map((item) => String(item.companyName || item.displayName || "").trim()),
+        ...state.vendors.map((item) => String(item.companyName || item.vendorName || "").trim())
+      ].filter(Boolean)));
       const selectedAcc = accountOptions.find((a) => a.accountCode === bankTxDraft.accountCode);
       const txCategories = ["Alınan ödəniş", "Verilən ödəniş", "Xərc", "Hesab ödənişi", "Bank komissiyası", "Əmək haqqı", "Vergi ödənişi", "Digər"];
 
@@ -8494,7 +9147,7 @@ function renderItemsCatalog() {
         <section className="view active">
           <div className="bill-form-page">
             <div className="bill-journal-header">
-              <button className="bill-back-btn" type="button" onClick={() => { setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", bankAccountId: "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView(bankTxEditId ? "journal" : "overview"); }}>{at.back}</button>
+              <button className="bill-back-btn" type="button" onClick={() => { setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView(bankTxEditId ? "journal" : "overview"); }}>{at.back}</button>
               <div className="bill-journal-title-row">
                 <h2>{bankTxEditId ? "Əməliyyatı düzəliş et" : "Yeni bank əməliyyatı"}</h2>
               </div>
@@ -8537,7 +9190,7 @@ function renderItemsCatalog() {
                     <select value={bankTxDraft.bankAccountId} onChange={(e) => setBankTxDraft((c) => ({ ...c, bankAccountId: e.target.value }))} required>
                       <option value="">Hesab seçin...</option>
                       {state.bankingAccounts.map((acc) => (
-                        <option key={acc.id} value={acc.id}>{acc.accountName} — {acc.institution}</option>
+                        <option key={acc.id} value={acc.id}>{getBankDisplayName(acc)} — {getBankDisplayCode(acc)}</option>
                       ))}
                     </select>
                   </label>
@@ -8577,6 +9230,20 @@ function renderItemsCatalog() {
                     </select>
                   </label>
 
+                  <label className="bank-tx-field">
+                    <span className="bank-tx-field-label">🏢 Şirkət adı</span>
+                    <input
+                      list="bank-tx-company-options"
+                      type="text"
+                      placeholder="Müştəri / şirkət adı"
+                      value={bankTxDraft.counterpartyName || ""}
+                      onChange={(e) => setBankTxDraft((c) => ({ ...c, counterpartyName: e.target.value }))}
+                    />
+                    <datalist id="bank-tx-company-options">
+                      {companyNameOptions.map((name) => <option key={name} value={name} />)}
+                    </datalist>
+                  </label>
+
                   {/* Reference */}
                   <label className="bank-tx-field">
                     <span className="bank-tx-field-label">🔖 Arayış / Sənəd №</span>
@@ -8594,7 +9261,7 @@ function renderItemsCatalog() {
                   <button className="primary-btn bank-tx-submit-btn" type="submit">
                     <span>{bankTxDraft.transactionType === "Mədaxil" ? "↓" : "↑"}</span> Yadda saxla
                   </button>
-                  <button className="ghost-btn" type="button" onClick={() => { setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", bankAccountId: "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView(bankTxEditId ? "journal" : "overview"); }}>{at.cancel}</button>
+                  <button className="ghost-btn" type="button" onClick={() => { setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView(bankTxEditId ? "journal" : "overview"); }}>{at.cancel}</button>
                 </div>
               </form>
             </div>
@@ -8607,48 +9274,22 @@ function renderItemsCatalog() {
       <section className="view active">
         <div className="bill-form-page">
           <div className="bill-journal-header">
-            <button className="bill-back-btn" type="button" onClick={() => { setBankDraft({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" }); setEditingBank(null); setBankView("journal"); }}>{at.back}</button>
+            <button className="bill-back-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankView(bankFormOrigin || "banks"); }}>{at.back}</button>
             <div className="bill-journal-title-row">
-              <h2>{editingBank ? at.formTitle_bankEdit : at.formTitle_bankNew}</h2>
+              <h2>{editingBank ? "Bankı düzəliş et" : "Yeni bank"}</h2>
             </div>
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={submitBank}>
-              <label><span>{at.formField_accountName}</span><input value={bankDraft.accountName} onChange={(event) => setBankDraft((current) => ({ ...current, accountName: event.target.value }))} required /></label>
-              <label><span>{at.formField_institution}</span><input value={bankDraft.institution} onChange={(event) => setBankDraft((current) => ({ ...current, institution: event.target.value }))} required /></label>
-              <label><span>{at.formField_accountType}</span><select value={bankDraft.accountType} onChange={(event) => setBankDraft((current) => ({ ...current, accountType: event.target.value }))}><option value="Cari">{at.accTypeCurrent}</option><option value="Yığım">{at.accTypeSavings}</option><option value="Kart">{at.accTypeCard}</option></select></label>
-              <label><span>{at.formField_balance}</span><input type="number" step="0.01" value={bankDraft.balance} onChange={(event) => setBankDraft((current) => ({ ...current, balance: event.target.value }))} required /></label>
-              <label style={{ gridColumn: "1 / -1" }}>
-                <span>H/H (IBAN)</span>
-                <input
-                  value={bankDraft.iban}
-                  onChange={(e) => setBankDraft((c) => ({ ...c, iban: e.target.value }))}
-                  placeholder="AZ00 XXXX 0000 0000 0000 0000 0000"
-                  style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}
-                />
-              </label>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div className="bank-form-coa-label">
-                  <span>Müxabirləşmə hesabı (3 rəqəmli)</span>
-                  {bankDraft.coaCode && (() => {
-                    const acc = state.chartOfAccounts.find(a => a.accountCode === bankDraft.coaCode);
-                    return acc ? <span className="bank-form-coa-preview">{acc.accountCode} — {acc.accountName}</span> : null;
-                  })()}
-                </div>
-                <select
-                  value={bankDraft.coaCode}
-                  onChange={(e) => setBankDraft((c) => ({ ...c, coaCode: e.target.value }))}
-                  className="bank-form-coa-select"
-                >
-                  <option value="">Hesab seçin...</option>
-                  {state.chartOfAccounts.filter(a => a.status !== "Passiv").map(a => (
-                    <option key={a.id} value={a.accountCode}>{a.accountCode} — {a.accountName}</option>
-                  ))}
-                </select>
-              </div>
+              <label><span>Bankın adı</span><input value={bankDraft.bankName} onChange={(event) => setBankDraft((current) => ({ ...current, bankName: event.target.value }))} required /></label>
+              <label><span>Bankın VÖEN-i</span><input value={bankDraft.bankTaxId} onChange={(event) => setBankDraft((current) => ({ ...current, bankTaxId: event.target.value }))} /></label>
+              <label><span>Bankın kodu</span><input value={bankDraft.bankCode} onChange={(event) => setBankDraft((current) => ({ ...current, bankCode: event.target.value }))} /></label>
+              <label><span>SWIFT</span><input value={bankDraft.swift} onChange={(event) => setBankDraft((current) => ({ ...current, swift: event.target.value }))} /></label>
+              <label><span>Müxbir hesab</span><input value={bankDraft.correspondentAccount} onChange={(event) => setBankDraft((current) => ({ ...current, correspondentAccount: event.target.value }))} /></label>
+              <label><span>Hesablaşma hesabı</span><input value={bankDraft.settlementAccount} onChange={(event) => setBankDraft((current) => ({ ...current, settlementAccount: event.target.value }))} /></label>
               <div className="form-actions">
                 <button className="primary-btn" type="submit">{editingBank ? at.ic_updateBtn : at.save}</button>
-                <button className="ghost-btn" type="button" onClick={() => { setBankDraft({ accountName: "", institution: "", accountType: "Cari", balance: "0", iban: "", coaCode: "" }); setEditingBank(null); setBankView("journal"); }}>{at.cancel}</button>
+                <button className="ghost-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankView(bankFormOrigin || "banks"); }}>{at.cancel}</button>
               </div>
             </form>
           </div>
@@ -9142,8 +9783,11 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const totalAssets = Number((currentAssets + nonCurrentAssets).toFixed(2));
 
     const currentLiabilities = getFinancialPositionLineValue(lookup, "shortLiabilities");
+    const resolvedCurrentLiabilities = currentLiabilities > 0
+      ? currentLiabilities
+      : Number(totals.payables || 0);
     const longTermLiabilities = getFinancialPositionLineValue(lookup, "longLiabilities");
-    const totalLiabilities = Number((Math.max(currentLiabilities, Number(totals.payables || 0)) + longTermLiabilities).toFixed(2));
+    const totalLiabilities = Number((resolvedCurrentLiabilities + longTermLiabilities).toFixed(2));
 
     const currentProfitLossRevenue = Math.max(lookupPlTotals.salesRevenue, manualPlFallback.salesRevenue, Number((reportInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0) + reportReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0)).toFixed(2)))
       + Math.max(lookupPlTotals.otherOperatingIncome, manualPlFallback.otherOperatingIncome)
@@ -9185,7 +9829,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
       [fpLabel("totalAssets"), totalAssets]
     ];
     const liabilityRows = [
-      [fpLabel("shortLiabilities"), Math.max(currentLiabilities, Number(totals.payables || 0))],
+      [fpLabel("shortLiabilities"), resolvedCurrentLiabilities],
       [fpLabel("longLiabilities"), longTermLiabilities],
       [fpLabel("totalLiabilities"), totalLiabilities],
       [fpLabel("shareCapital"), shareCapital],
@@ -9259,7 +9903,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
       { label: fpLabel("inventory"), value: inventory, icon: "📦" },
     ];
     const currentLiabItems = [
-      { label: fpLabel("shortLiabilities"), value: Math.max(currentLiabilities, Number(totals.payables || 0)), icon: "⏱️" },
+      { label: fpLabel("shortLiabilities"), value: resolvedCurrentLiabilities, icon: "⏱️" },
       { label: fpLabel("longLiabilities"), value: longTermLiabilities, icon: "📋" },
     ];
     const equityItems = [
@@ -10862,6 +11506,11 @@ function renderSettings() {
     const paidUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId !== "free");
     const freeUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId === "free");
     const teamUsers = authUsers.filter((user) => getAccountOwnerEmail(user) === ownerEmail && isInternalUser(user));
+    const effectivePlans = backendPlans
+      .filter((plan) => plan && plan.isActive !== false)
+      .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0));
+    const currentBackendPlanCode = backendSubscription?.plan?.code || "";
+    const selectedPaymentPlan = effectivePlans.find((plan) => plan.code === paymentDraft.planCode) || null;
 
     return (
       <div className="modal-backdrop" onClick={() => setAccountPanel(null)}>
@@ -10948,10 +11597,10 @@ function renderSettings() {
                   <span>{at.sub_paymentBadge}</span>
                 </div>
                 <div className="summary-grid compact">
-                  <article className="summary-card"><span>{at.sub_selectedPlan}</span><strong>{getPlanById(paymentDraft.planId || "free").name}</strong></article>
+                  <article className="summary-card"><span>{at.sub_selectedPlan}</span><strong>{selectedPaymentPlan?.name || "—"}</strong></article>
                   <article className="summary-card"><span>{at.sub_model}</span><strong>{at.sub_demoFree}</strong></article>
-                  <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(getPlanById(paymentDraft.planId || "free"), paymentDraft.billingCycle || "annual")}</strong></article>
-                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{getUnpaidTrialDurationDays(getPlanById(paymentDraft.planId || "free")) || getPlanDurationDays(getPlanById(paymentDraft.planId || "free"), paymentDraft.billingCycle || "annual")} {at.sub_days}</strong></article>
+                  <article className="summary-card"><span>{at.sub_price}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0 ? at.sub_free : `${(Number(selectedPaymentPlan.priceMinor || 0) / 100).toFixed(2)} ${selectedPaymentPlan.currency || "AZN"} / ay`) : "—"}</strong></article>
+                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : `30 ${at.sub_days}`) : "—"}</strong></article>
                 </div>
                 <div className="form-actions split-actions">
                   <button className="ghost-btn" type="button" onClick={() => setAccountPanel("plans")}>{at.sub_backToPlans}</button>
@@ -11036,21 +11685,39 @@ function renderSettings() {
                 <button className={subscriptionBillingCycle === "monthly" ? "primary-btn" : "ghost-btn"} type="button" onClick={() => setSubscriptionBillingCycle("monthly")}>1 aylıq</button>
               </div>
               <div className="subscription-plan-grid">
-                {getPublicPlans().map((plan) => (
-                  <article className={`subscription-plan-card ${currentPlan.id === plan.id ? "active" : ""}`} key={plan.id}>
-                    <span>{plan.name}</span>
-                    <strong>{getPlanPriceLabel(plan, subscriptionBillingCycle)}</strong>
-                    <p>{at[plan.summaryKey]}</p>
-                    <small>{plan.id === "free" ? at.sub_freeOps : `${Number(plan.operationLimit).toLocaleString("en-US")} ${at.sub_opUnit} • ${getPlanDurationLabel(plan, subscriptionBillingCycle)}`}</small>
-                    <button className={currentPlan.id === plan.id && (currentBillingCycle === subscriptionBillingCycle || currentBillingCycle === "demo") ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
-                      if (plan.id !== "free" && currentUser.role !== "super_admin") {
-                        openPaymentPanel(plan.id, subscriptionBillingCycle);
-                        return;
-                      }
-                      applySubscriptionToUser(ownerEmail, plan.id, subscriptionBillingCycle, getPlanDurationDays(plan, subscriptionBillingCycle) || 30);
-                    }}>{currentPlan.id === plan.id && currentBillingCycle === "demo" ? at.sub_demoActive : currentPlan.id === plan.id && currentBillingCycle === subscriptionBillingCycle ? at.sub_isPlan : at.sub_activate}</button>
+                {effectivePlans.length === 0 ? (
+                  <article className="subscription-plan-card active">
+                    <span>{at.sub_plan}</span>
+                    <strong>—</strong>
+                    <p>Plan siyahısı backend `/plans` endpoint-indən yüklənmədi.</p>
+                    <small>Ödəniş və upgrade üçün əvvəlcə backend planlarını sinxron edin.</small>
                   </article>
-                ))}
+                ) : effectivePlans.map((plan) => {
+                  const planIsFree = String(plan.code || "").toUpperCase() === "FREE" || Number(plan.priceMinor || 0) <= 0;
+                  const isCurrentBackendPlan = currentBackendPlanCode && String(currentBackendPlanCode) === String(plan.code);
+                  const priceLabel = planIsFree
+                    ? at.sub_free
+                    : `${(Number(plan.priceMinor || 0) / 100).toFixed(2)} ${plan.currency || "AZN"} / ay`;
+                  return (
+                    <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
+                      <span>{plan.name || plan.code}</span>
+                      <strong>{priceLabel}</strong>
+                      <p>{plan.code}</p>
+                      <small>{planIsFree ? at.sub_freeOps : `${plan.interval === "MONTH" ? `30 ${at.sub_days}` : plan.interval}`}</small>
+                      <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
+                        if (planIsFree) {
+                          setBooksNotice("FREE plana keçid backend downgrade axını ilə idarə olunur.");
+                          return;
+                        }
+                        if (currentUser.role !== "super_admin") {
+                          openPaymentPanel(plan.code, subscriptionBillingCycle);
+                          return;
+                        }
+                        setBooksNotice("Super admin üçün backend ödəniş axını tətbiq edilmir.");
+                      }}>{isCurrentBackendPlan ? at.sub_isPlan : at.sub_activate}</button>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           )}
