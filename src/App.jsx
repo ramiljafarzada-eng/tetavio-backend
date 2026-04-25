@@ -242,6 +242,869 @@ const COMPLIANCE_LEGAL_PAGE_MAP = Object.fromEntries(
 const LEGAL_STANDALONE_PAGES = Object.fromEntries(
   COMPLIANCE_LEGAL_PAGES.map((page) => [page.id, page]),
 );
+const LEGAL_STANDALONE_ALIASES = {
+  "company-info": "contact-info",
+  contact: "contact-info",
+};
+const LEGAL_STANDALONE_LANGS = ["az", "en", "ru", "tr", "de"];
+const LEGAL_STANDALONE_LANGUAGE_OPTIONS = [
+  { code: "az", label: "AZ" },
+  { code: "en", label: "EN" },
+  { code: "ru", label: "RU" },
+  { code: "tr", label: "TR" },
+  { code: "de", label: "DE" },
+];
+const PUBLIC_MARKETING_LANGS = [
+  { code: "az", label: "Azərbaycan dili", flag: "🇦🇿" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "ru", label: "Русский", flag: "🇷🇺" },
+  { code: "tr", label: "Türkçe", flag: "🇹🇷" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+];
+const PUBLIC_MARKETING_TOPBAR_T = {
+  az: {
+    platform: "Məhsul platforması",
+    nav: [
+      { id: "features", label: "Üstünlüklər" },
+      { id: "how", label: "Necə işləyir" },
+      { id: "about", label: "Haqqımızda" },
+      { id: "pricing", label: "Tariflər" },
+      { id: "faq", label: "FAQ" },
+    ],
+    navContact: "Əlaqə",
+    navMenu: "Menyu",
+    navSignup: "İndi qeydiyyatdan keç →",
+  },
+  en: {
+    platform: "Product platform",
+    nav: [
+      { id: "features", label: "Benefits" },
+      { id: "how", label: "How it works" },
+      { id: "about", label: "About us" },
+      { id: "pricing", label: "Pricing" },
+      { id: "faq", label: "FAQ" },
+    ],
+    navContact: "Contact",
+    navMenu: "Menu",
+    navSignup: "Register now →",
+  },
+  ru: {
+    platform: "Платформа продукта",
+    nav: [
+      { id: "features", label: "Преимущества" },
+      { id: "how", label: "Как это работает" },
+      { id: "about", label: "О нас" },
+      { id: "pricing", label: "Тарифы" },
+      { id: "faq", label: "FAQ" },
+    ],
+    navContact: "Контакты",
+    navMenu: "Меню",
+    navSignup: "Зарегистрироваться →",
+  },
+  tr: {
+    platform: "Ürün platformu",
+    nav: [
+      { id: "features", label: "Avantajlar" },
+      { id: "how", label: "Nasıl çalışır" },
+      { id: "about", label: "Hakkımızda" },
+      { id: "pricing", label: "Fiyatlar" },
+      { id: "faq", label: "SSS" },
+    ],
+    navContact: "İletişim",
+    navMenu: "Menü",
+    navSignup: "Hemen kayıt ol →",
+  },
+  de: {
+    platform: "Produktplattform",
+    nav: [
+      { id: "features", label: "Vorteile" },
+      { id: "how", label: "So funktioniert es" },
+      { id: "about", label: "Über uns" },
+      { id: "pricing", label: "Preise" },
+      { id: "faq", label: "FAQ" },
+    ],
+    navContact: "Kontakt",
+    navMenu: "Menü",
+    navSignup: "Jetzt registrieren →",
+  },
+};
+const LEGAL_CONTACT_SECTION_IDS = ["legal-info", "contact"];
+const LEGAL_NAV_LABEL_TRANSLATIONS = {
+  en: {
+    "terms-of-use": "Terms of Use",
+    "payment-terms": "Payment Terms",
+    "refund-policy": "Refund and Cancellation Policy",
+    "privacy-policy": "Privacy Policy",
+    "delivery-policy": "Service Delivery / Digital Activation Policy",
+    "company-info": "Legal Information",
+    contact: "Contact",
+  },
+  ru: {
+    "terms-of-use": "Условия использования",
+    "payment-terms": "Условия оплаты",
+    "refund-policy": "Политика возврата и отмены",
+    "privacy-policy": "Политика конфиденциальности",
+    "delivery-policy": "Политика предоставления услуги / цифровой активации",
+    "company-info": "Юридическая информация",
+    contact: "Контакты",
+  },
+  tr: {
+    "terms-of-use": "Kullanım Şartları",
+    "payment-terms": "Ödeme Şartları",
+    "refund-policy": "İade ve İptal Politikası",
+    "privacy-policy": "Gizlilik Politikası",
+    "delivery-policy": "Hizmet Sunumu / Dijital Aktivasyon Politikası",
+    "company-info": "Yasal Bilgiler",
+    contact: "İletişim",
+  },
+  de: {
+    "terms-of-use": "Nutzungsbedingungen",
+    "payment-terms": "Zahlungsbedingungen",
+    "refund-policy": "Rückerstattungs- und Kündigungsrichtlinie",
+    "privacy-policy": "Datenschutzerklärung",
+    "delivery-policy": "Richtlinie zur Leistungserbringung / digitalen Aktivierung",
+    "company-info": "Rechtliche Informationen",
+    contact: "Kontakt",
+  },
+};
+const LEGAL_PAGE_TRANSLATIONS = {
+  en: {
+    "terms-of-use": {
+      title: "Terms of Use",
+      summary: "These terms of use define the rules for using Tetavio accounting software, user obligations, and the principles under which the service is provided.",
+      sections: [
+        {
+          heading: "Purpose of the platform",
+          paragraphs: [
+            "Tetavio is a digital accounting SaaS platform that provides users with online accounting, bookkeeping, reporting, and subscription-based software features.",
+            "The platform is provided solely as a digital service, and the user agrees to use Tetavio for business, bookkeeping, and related lawful purposes.",
+          ],
+        },
+        {
+          heading: "User account and lawful use",
+          paragraphs: [
+            "The user is responsible for maintaining the confidentiality of the email address, password, and other authentication information used to access the account.",
+            "Using Tetavio for unlawful, fraudulent, deceptive, rights-infringing, or system-disruptive purposes is prohibited.",
+            "The user is responsible for the accuracy of the information entered through the account and for compliance with applicable law.",
+          ],
+        },
+        {
+          heading: "Subscription access and intellectual property",
+          paragraphs: [
+            "Access to paid plans is provided only after successful payment or while a subscription is active, and grants the user a limited right of use within the selected plan.",
+            "The software, design, content, logos, and all other platform elements belong exclusively to Tetavio LLC and are protected under the laws of the Republic of Azerbaijan.",
+          ],
+        },
+        {
+          heading: "Availability, liability, and updates",
+          paragraphs: [
+            "Tetavio seeks to keep the service available continuously, but temporary interruptions may occur due to maintenance, updates, integration issues, network failures, or force majeure events.",
+            "Except where required by law, Tetavio is not fully liable for indirect damages, lost income, data loss, or outcomes caused by third-party systems.",
+            "These terms are governed by the laws of the Republic of Azerbaijan.",
+            "Tetavio reserves the right to update these terms of use and service rules at any time.",
+          ],
+        },
+      ],
+    },
+    "payment-terms": {
+      title: "Payment Terms",
+      summary: "This page explains how Tetavio subscription payments work, the principles of payment security, and how plans are activated after payment.",
+      sections: [
+        {
+          heading: "Subject of payment and currency",
+          paragraphs: [
+            "Payments on Tetavio apply only to the purchase, renewal, or upgrade of digital SaaS subscription plans. No physical goods are sold or delivered.",
+            "All prices shown on the platform are expressed in Azerbaijani manat (AZN), unless explicitly stated otherwise.",
+          ],
+        },
+        {
+          heading: "Payment method and card data handling",
+          paragraphs: [
+            "Payments are processed by bank card through PASHA Bank E-commerce / Virtual POS or compatible payment provider infrastructure.",
+            "The user is responsible for the accuracy of the payment information they provide.",
+            "Tetavio does not store, process, or obtain card numbers, CVV/CVC codes, or card expiry dates on its servers.",
+            "Card payment data is processed only within the secure payment infrastructure of the bank or payment provider.",
+          ],
+        },
+        {
+          heading: "Payment confirmation and plan activation",
+          paragraphs: [
+            "After successful payment confirmation, the selected paid plan is activated digitally in the user account and the relevant plan status is updated in the system.",
+            "Tetavio LLC relies on confirmation from the bank or payment provider, and the service is not activated before payment is confirmed.",
+            "If payment fails, remains incomplete, or is not confirmed by the bank, paid access is not activated and the user remains on the current plan.",
+            "Before continuing the checkout process, the user must confirm that they have reviewed and accepted the payment terms.",
+          ],
+        },
+      ],
+    },
+    "refund-policy": {
+      title: "Refund and Cancellation Policy",
+      summary: "This policy defines the main rules that apply to subscription cancellation, downgrade requests, and possible refund cases on Tetavio.",
+      sections: [
+        {
+          heading: "Cancellation and downgrade rules",
+          paragraphs: [
+            "The user may submit a request to cancel a subscription or downgrade to a lower plan through support or the contact channel.",
+            "Unless stated otherwise, cancellation or downgrade takes effect from the next billing period.",
+            "Digital access already activated for the current period may remain valid until the end of that period.",
+          ],
+        },
+        {
+          heading: "Refund principles",
+          paragraphs: [
+            "Because Tetavio provides a digital service, activated subscription periods are generally non-refundable.",
+            "However, refund requests may be reviewed separately in cases of duplicate payment, failure to activate the plan for technical reasons, or confirmed unauthorized transactions.",
+            "Refunds are issued only in justified cases confirmed by Tetavio.",
+            "If a refund is approved, the amount is returned to the same payment method where possible.",
+          ],
+        },
+        {
+          heading: "Requests and review period",
+          paragraphs: [
+            "A refund request must include the user's email address, the transaction date, the amount, and the reason for the request.",
+            "Requests are reviewed within 5-10 business days and the outcome is communicated through the user's contact details.",
+          ],
+        },
+      ],
+    },
+    "privacy-policy": {
+      title: "Privacy Policy",
+      summary: "This policy explains what information Tetavio collects, how it is used, and the main principles applied to payment security.",
+      sections: [
+        {
+          heading: "Information collected",
+          paragraphs: [
+            "Tetavio may collect and process information such as name, email address, phone number, company details, tax ID when provided, login and session data, subscription status, and payment status from the user or the user account.",
+            "This information is used to manage the account, activate subscriptions, provide support, ensure security, and meet accounting and legal obligations.",
+          ],
+        },
+        {
+          heading: "Card data and sharing principles",
+          paragraphs: [
+            "Tetavio does not store card numbers, CVV/CVC codes, expiry dates, or other sensitive card data on its servers.",
+            "Card payment information is processed by the bank or payment provider.",
+            "Information is shared only when necessary with payment providers, hosting and security service providers, or with authorized public authorities when required by law.",
+          ],
+        },
+        {
+          heading: "User rights and security measures",
+          paragraphs: [
+            "To the extent permitted by law, the user may request correction, updating, or deletion of their information.",
+            "Tetavio uses HTTPS/TLS connections, access controls, password hashing, and other organizational and technical security measures to protect information.",
+            "Cookies or local storage mechanisms may be used on the platform for session management and to preserve user preferences.",
+          ],
+        },
+      ],
+    },
+    "delivery-policy": {
+      title: "Service Delivery / Digital Activation Policy",
+      summary: "Tetavio does not deliver physical goods; after payment, the service is activated digitally in the user's account.",
+      sections: [
+        {
+          heading: "Delivery of the digital service",
+          paragraphs: [
+            "Tetavio provides a digital accounting SaaS service, and after payment the user receives access to the relevant plan through the web account.",
+            "After successful payment confirmation, the paid plan is typically activated immediately or within a short technical processing period in the user account.",
+          ],
+        },
+        {
+          heading: "No physical delivery",
+          paragraphs: [
+            "Tetavio does not send any physical product and does not provide any physical delivery service.",
+            "Service delivery takes place only in the form of activating a digital access right.",
+          ],
+        },
+        {
+          heading: "Activation, support, and electronic documents",
+          paragraphs: [
+            "The user accesses the service through the web account and uses the functionality available within the active plan.",
+            "If activation does not occur after payment, the user may contact the support team.",
+            "When necessary, payment, receipt, or invoice information may be provided electronically.",
+          ],
+        },
+      ],
+    },
+    "contact-info": {
+      title: "Legal Information and Contact Details",
+      summary: "This page provides Tetavio LLC legal details and the official contact channels available to users.",
+      sections: [
+        {
+          id: "legal-info",
+          heading: "Legal information",
+          paragraphs: [
+            "Legal entity: Tetavio LLC",
+            "Brand / platform: Tetavio",
+            "Tax ID: 2009752131",
+            "Legal address: Baku city, Khatai district, Khudu Mammadov str., building 6, apartment 185",
+          ],
+        },
+        {
+          id: "contact",
+          heading: "Contact channels",
+          paragraphs: [
+            "General email: info@tetavio.com",
+            "Support email: support@tetavio.com",
+            "Phone: +994 10 311 91 87",
+            "Business hours: Monday - Friday, 09:00 - 18:00",
+            "Users may use these contact channels for payment, refunds, cancellation, account access, and technical issues.",
+          ],
+        },
+      ],
+    },
+  },
+  ru: {
+    "terms-of-use": {
+      title: "Условия использования",
+      summary: "Эти условия использования определяют правила работы с бухгалтерским программным обеспечением Tetavio, обязанности пользователя и принципы предоставления сервиса.",
+      sections: [
+        {
+          heading: "Назначение платформы",
+          paragraphs: [
+            "Tetavio — это цифровая SaaS-платформа для бухгалтерии, предоставляющая пользователям онлайн-инструменты для учета, отчетности и подписочного программного обеспечения.",
+            "Платформа предоставляется исключительно как цифровой сервис, и пользователь соглашается использовать Tetavio только для бизнеса, учета и иных законных целей.",
+          ],
+        },
+        {
+          heading: "Учетная запись и законное использование",
+          paragraphs: [
+            "Пользователь несет ответственность за сохранение конфиденциальности электронной почты, пароля и иных данных аутентификации, используемых для входа в аккаунт.",
+            "Запрещается использовать Tetavio в незаконных, мошеннических, вводящих в заблуждение целях, а также способами, нарушающими права третьих лиц или подрывающими безопасность системы.",
+            "Пользователь отвечает за достоверность данных, вводимых через аккаунт, и за соблюдение применимого законодательства.",
+          ],
+        },
+        {
+          heading: "Доступ по подписке и интеллектуальная собственность",
+          paragraphs: [
+            "Доступ к платным планам предоставляется только после успешной оплаты или при наличии активной подписки и дает пользователю ограниченное право использования в рамках выбранного плана.",
+            "Программное обеспечение, дизайн, контент, логотипы и все иные элементы платформы принадлежат исключительно Tetavio LLC и защищаются законодательством Азербайджанской Республики.",
+          ],
+        },
+        {
+          heading: "Доступность сервиса, ответственность и обновления",
+          paragraphs: [
+            "Tetavio стремится обеспечивать непрерывную работу сервиса, однако возможны временные перебои из-за технического обслуживания, обновлений, проблем интеграции, сетевых сбоев или форс-мажора.",
+            "За исключением случаев, когда это требуется законом, Tetavio не несет полной ответственности за косвенные убытки, упущенную выгоду, потерю данных или последствия, вызванные системами третьих лиц.",
+            "Настоящие условия регулируются законодательством Азербайджанской Республики.",
+            "Tetavio оставляет за собой право обновлять настоящие условия использования и правила сервиса в любое время.",
+          ],
+        },
+      ],
+    },
+    "payment-terms": {
+      title: "Условия оплаты",
+      summary: "На этой странице описан порядок подписочных платежей Tetavio, принципы безопасности оплаты и механизм активации плана после оплаты.",
+      sections: [
+        {
+          heading: "Предмет оплаты и валюта",
+          paragraphs: [
+            "Платежи в Tetavio применяются только к покупке, продлению или повышению цифровых SaaS-подписок. Физические товары не продаются и не доставляются.",
+            "Все цены на платформе указываются в азербайджанских манатах (AZN), если явно не указано иное.",
+          ],
+        },
+        {
+          heading: "Способ оплаты и обработка данных карты",
+          paragraphs: [
+            "Оплата осуществляется банковской картой через PASHA Bank E-commerce / Virtual POS или совместимую инфраструктуру платежного провайдера.",
+            "Пользователь несет ответственность за корректность предоставленных платежных данных.",
+            "Tetavio не хранит, не обрабатывает и не получает на своих серверах номер карты, CVV/CVC или срок действия карты.",
+            "Данные карточного платежа обрабатываются только в защищенной платежной инфраструктуре банка или платежного провайдера.",
+          ],
+        },
+        {
+          heading: "Подтверждение оплаты и активация плана",
+          paragraphs: [
+            "После успешного подтверждения оплаты выбранный платный план цифровым образом активируется в аккаунте пользователя, а статус плана в системе обновляется.",
+            "Tetavio LLC полагается на подтверждение от банка или платежного провайдера и не активирует сервис до подтверждения оплаты.",
+            "Если платеж неудачен, не завершен или не подтвержден банком, платный доступ не активируется, и пользователь остается на текущем плане.",
+            "Перед продолжением оформления заказа пользователь должен подтвердить, что ознакомился и согласен с условиями оплаты.",
+          ],
+        },
+      ],
+    },
+    "refund-policy": {
+      title: "Политика возврата и отмены",
+      summary: "Эта политика определяет основные правила, применимые к отмене подписки, переходу на более низкий тариф и возможным случаям возврата средств в Tetavio.",
+      sections: [
+        {
+          heading: "Правила отмены и перехода на более низкий тариф",
+          paragraphs: [
+            "Пользователь может подать запрос на отмену подписки или переход на более низкий тариф через поддержку или контактный канал.",
+            "Если не указано иное, отмена или переход на более низкий тариф вступают в силу со следующего платежного периода.",
+            "Цифровой доступ, уже активированный на текущий период, может сохраняться до конца этого периода.",
+          ],
+        },
+        {
+          heading: "Принципы возврата средств",
+          paragraphs: [
+            "Поскольку Tetavio предоставляет цифровой сервис, активированные периоды подписки, как правило, не подлежат возврату.",
+            "Однако запросы на возврат могут рассматриваться отдельно в случаях двойной оплаты, неактивации плана по техническим причинам или подтвержденных несанкционированных транзакций.",
+            "Возврат средств производится только в обоснованных случаях, подтвержденных Tetavio.",
+            "Если возврат одобрен, сумма по возможности возвращается тем же способом оплаты.",
+          ],
+        },
+        {
+          heading: "Запрос и срок рассмотрения",
+          paragraphs: [
+            "В запросе на возврат должны быть указаны электронная почта пользователя, дата операции, сумма и причина обращения.",
+            "Запросы рассматриваются в течение 5-10 рабочих дней, а результат сообщается пользователю по контактным данным.",
+          ],
+        },
+      ],
+    },
+    "privacy-policy": {
+      title: "Политика конфиденциальности",
+      summary: "Эта политика объясняет, какие данные собирает Tetavio, как они используются и какие основные принципы применяются к безопасности платежей.",
+      sections: [
+        {
+          heading: "Собираемая информация",
+          paragraphs: [
+            "Tetavio может собирать и обрабатывать такие данные, как имя, адрес электронной почты, номер телефона, данные компании, налоговый идентификатор при его предоставлении, данные входа и сессии, статус подписки и статус оплаты.",
+            "Эти данные используются для управления аккаунтом, активации подписки, предоставления поддержки, обеспечения безопасности и выполнения бухгалтерских и юридических обязательств.",
+          ],
+        },
+        {
+          heading: "Данные карты и принципы передачи",
+          paragraphs: [
+            "Tetavio не хранит на своих серверах номера карт, CVV/CVC, сроки действия или другие конфиденциальные карточные данные.",
+            "Информация о карточном платеже обрабатывается банком или платежным провайдером.",
+            "Информация передается только при необходимости платежным провайдерам, поставщикам хостинга и безопасности либо уполномоченным государственным органам, если этого требует закон.",
+          ],
+        },
+        {
+          heading: "Права пользователя и меры безопасности",
+          paragraphs: [
+            "В пределах, разрешенных законодательством, пользователь может запросить исправление, обновление или удаление своих данных.",
+            "Tetavio использует HTTPS/TLS-соединения, контроль доступа, хеширование паролей и другие организационные и технические меры для защиты информации.",
+            "На платформе могут использоваться cookie или local storage для управления сессией и сохранения пользовательских предпочтений.",
+          ],
+        },
+      ],
+    },
+    "delivery-policy": {
+      title: "Политика предоставления услуги / цифровой активации",
+      summary: "Tetavio не поставляет физические товары; после оплаты сервис активируется в аккаунте пользователя в цифровом виде.",
+      sections: [
+        {
+          heading: "Предоставление цифровой услуги",
+          paragraphs: [
+            "Tetavio предоставляет цифровой бухгалтерский SaaS-сервис, и после оплаты пользователь получает доступ к соответствующему плану через веб-аккаунт.",
+            "После успешного подтверждения оплаты платный план обычно активируется сразу либо в течение короткого технического периода обработки в аккаунте пользователя.",
+          ],
+        },
+        {
+          heading: "Отсутствие физической доставки",
+          paragraphs: [
+            "Tetavio не отправляет никакие физические товары и не оказывает услуги физической доставки.",
+            "Предоставление сервиса происходит только в форме активации цифрового права доступа.",
+          ],
+        },
+        {
+          heading: "Активация, поддержка и электронные документы",
+          paragraphs: [
+            "Пользователь получает доступ к сервису через веб-аккаунт и использует функциональность, доступную в рамках активного плана.",
+            "Если после оплаты активация не произошла, пользователь может связаться со службой поддержки.",
+            "При необходимости сведения об оплате, чеке или счете могут быть предоставлены в электронном виде.",
+          ],
+        },
+      ],
+    },
+    "contact-info": {
+      title: "Юридическая информация и контактные данные",
+      summary: "На этой странице представлены юридические данные Tetavio LLC и официальные каналы связи для пользователей.",
+      sections: [
+        {
+          id: "legal-info",
+          heading: "Юридическая информация",
+          paragraphs: [
+            "Юридическое лицо: Tetavio LLC",
+            "Бренд / платформа: Tetavio",
+            "Налоговый номер: 2009752131",
+            "Юридический адрес: город Баку, Хатаинский район, ул. Худу Мамедова, дом 6, квартира 185",
+          ],
+        },
+        {
+          id: "contact",
+          heading: "Контактные каналы",
+          paragraphs: [
+            "Общая электронная почта: info@tetavio.com",
+            "Электронная почта поддержки: support@tetavio.com",
+            "Телефон: +994 10 311 91 87",
+            "Часы работы: понедельник - пятница, 09:00 - 18:00",
+            "Пользователи могут обращаться по этим контактам по вопросам оплаты, возврата средств, отмены, доступа к аккаунту и технических проблем.",
+          ],
+        },
+      ],
+    },
+  },
+  tr: {
+    "terms-of-use": {
+      title: "Kullanım Şartları",
+      summary: "Bu kullanım şartları, Tetavio muhasebe yazılımının kullanım kurallarını, kullanıcı yükümlülüklerini ve hizmetin sunulma esaslarını belirler.",
+      sections: [
+        {
+          heading: "Platformun amacı",
+          paragraphs: [
+            "Tetavio, kullanıcılara çevrim içi muhasebe, kayıt, raporlama ve abonelik tabanlı yazılım özellikleri sunan dijital bir muhasebe SaaS platformudur.",
+            "Platform yalnızca dijital bir hizmet olarak sunulur ve kullanıcı Tetavio'yu iş, muhasebe ve ilgili yasal amaçlarla kullanmayı kabul eder.",
+          ],
+        },
+        {
+          heading: "Kullanıcı hesabı ve yasal kullanım",
+          paragraphs: [
+            "Kullanıcı, hesabına girişte kullandığı e-posta, parola ve diğer kimlik doğrulama bilgilerinin gizliliğini korumaktan sorumludur.",
+            "Tetavio'nun hukuka aykırı, sahte, aldatıcı, üçüncü kişilerin haklarını ihlal eden veya sistem güvenliğini bozan amaçlarla kullanılması yasaktır.",
+            "Hesap üzerinden girilen bilgilerin doğruluğu ve mevzuata uygunluğu kullanıcının sorumluluğundadır.",
+          ],
+        },
+        {
+          heading: "Abonelik erişimi ve fikri mülkiyet",
+          paragraphs: [
+            "Ücretli planlara erişim yalnızca başarılı ödeme veya aktif abonelik sonrasında sağlanır ve kullanıcıya seçilen plan kapsamında sınırlı bir kullanım hakkı verir.",
+            "Tetavio platformuna ait yazılım, tasarım, içerik, logolar ve diğer tüm unsurlar münhasıran Tetavio LLC'ye aittir ve Azerbaycan Cumhuriyeti mevzuatı ile korunur.",
+          ],
+        },
+        {
+          heading: "Hizmetin erişilebilirliği, sorumluluk ve güncellemeler",
+          paragraphs: [
+            "Tetavio hizmetin kesintisiz çalışması için çaba gösterse de bakım, güncelleme, entegrasyon sorunları, ağ arızaları veya mücbir sebepler nedeniyle geçici erişim sorunları oluşabilir.",
+            "Kanunen zorunlu haller dışında Tetavio, dolaylı zararlar, gelir kaybı, veri kaybı veya üçüncü taraf sistemlerden kaynaklanan sonuçlar için tam sorumluluk üstlenmez.",
+            "Bu şartlar Azerbaycan Cumhuriyeti mevzuatına tabidir.",
+            "Tetavio, bu kullanım şartlarını ve hizmet kurallarını istediği zaman güncelleme hakkını saklı tutar.",
+          ],
+        },
+      ],
+    },
+    "payment-terms": {
+      title: "Ödeme Şartları",
+      summary: "Bu sayfa Tetavio abonelik ödemelerinin işleyişini, ödeme güvenliği ilkelerini ve ödeme sonrası plan aktivasyon mekanizmasını açıklar.",
+      sections: [
+        {
+          heading: "Ödemenin konusu ve para birimi",
+          paragraphs: [
+            "Tetavio üzerindeki ödemeler yalnızca dijital SaaS abonelik planlarının satın alınması, yenilenmesi veya yükseltilmesi içindir. Fiziksel ürün satışı ve teslimatı yapılmaz.",
+            "Platformda gösterilen tüm fiyatlar aksi açıkça belirtilmedikçe Azerbaycan manatı (AZN) cinsindendir.",
+          ],
+        },
+        {
+          heading: "Ödeme yöntemi ve kart verilerinin işlenmesi",
+          paragraphs: [
+            "Ödemeler banka kartı ile PASHA Bank E-commerce / Virtual POS veya uyumlu ödeme sağlayıcısı altyapısı üzerinden işlenir.",
+            "Kullanıcı sağladığı ödeme bilgilerinin doğruluğundan sorumludur.",
+            "Tetavio kart numarası, CVV/CVC kodu veya son kullanma tarihini sunucularında saklamaz, işlemez veya elde etmez.",
+            "Kart ödeme verileri yalnızca banka veya ödeme sağlayıcısının güvenli ödeme altyapısında işlenir.",
+          ],
+        },
+        {
+          heading: "Ödeme onayı ve plan aktivasyonu",
+          paragraphs: [
+            "Ödeme başarıyla onaylandıktan sonra seçilen ücretli plan kullanıcı hesabında dijital olarak etkinleştirilir ve sistemde ilgili plan durumu güncellenir.",
+            "Tetavio LLC, bankadan veya ödeme sağlayıcısından gelen onaya dayanır ve ödeme onaylanmadan hizmeti etkinleştirmez.",
+            "Ödeme başarısız olursa, yarım kalırsa veya banka tarafından onaylanmazsa ücretli erişim açılmaz ve kullanıcı mevcut planda kalır.",
+            "Kullanıcı ödeme sürecine devam etmeden önce ödeme şartlarını incelediğini ve kabul ettiğini onaylamalıdır.",
+          ],
+        },
+      ],
+    },
+    "refund-policy": {
+      title: "İade ve İptal Politikası",
+      summary: "Bu politika, Tetavio üzerindeki abonelik iptali, alt plana geçiş ve olası iade durumlarına uygulanan temel kuralları belirler.",
+      sections: [
+        {
+          heading: "İptal ve alt plana geçiş kuralları",
+          paragraphs: [
+            "Kullanıcı aboneliğin iptali veya daha düşük bir plana geçiş talebini destek veya iletişim kanalı üzerinden iletebilir.",
+            "Aksi belirtilmedikçe iptal veya alt plana geçiş bir sonraki ödeme döneminden itibaren uygulanır.",
+            "Mevcut dönem için zaten etkinleştirilmiş dijital erişim hakkı dönem sonuna kadar geçerli kalabilir.",
+          ],
+        },
+        {
+          heading: "İade ilkeleri",
+          paragraphs: [
+            "Tetavio dijital hizmet sunduğu için etkinleştirilmiş abonelik dönemleri genel olarak iade edilmez.",
+            "Ancak mükerrer ödeme, teknik nedenlerle planın etkinleşmemesi veya doğrulanmış yetkisiz işlemler durumunda iade talepleri ayrıca incelenebilir.",
+            "İadeler yalnızca Tetavio tarafından doğrulanmış haklı durumlarda yapılır.",
+            "İade onaylandığında tutar mümkünse aynı ödeme yöntemiyle geri gönderilir.",
+          ],
+        },
+        {
+          heading: "Başvuru ve inceleme süresi",
+          paragraphs: [
+            "İade başvurusu kullanıcının e-posta adresini, işlem tarihini, tutarı ve başvuru nedenini içermelidir.",
+            "Başvurular 5-10 iş günü içinde incelenir ve sonuç kullanıcıya iletişim bilgileri üzerinden bildirilir.",
+          ],
+        },
+      ],
+    },
+    "privacy-policy": {
+      title: "Gizlilik Politikası",
+      summary: "Bu politika, Tetavio'nun hangi bilgileri topladığını, bunları nasıl kullandığını ve ödeme güvenliği için hangi temel ilkeleri uyguladığını açıklar.",
+      sections: [
+        {
+          heading: "Toplanan bilgiler",
+          paragraphs: [
+            "Tetavio kullanıcıdan veya kullanıcı hesabından ad, e-posta adresi, telefon numarası, şirket bilgileri, sağlandığında vergi numarası, giriş ve oturum bilgileri, abonelik durumu ve ödeme durumu gibi bilgileri toplayabilir ve işleyebilir.",
+            "Bu bilgiler hesabın yönetimi, aboneliğin etkinleştirilmesi, destek sağlanması, güvenliğin temini ve muhasebe ile yasal yükümlülüklerin yerine getirilmesi için kullanılır.",
+          ],
+        },
+        {
+          heading: "Kart verileri ve paylaşım ilkeleri",
+          paragraphs: [
+            "Tetavio sunucularında kart numarası, CVV/CVC kodu, son kullanma tarihi veya diğer hassas kart verilerini saklamaz.",
+            "Kart ödeme bilgileri banka veya ödeme sağlayıcısı tarafından işlenir.",
+            "Bilgiler yalnızca gerekli olduğunda ödeme sağlayıcıları, barındırma ve güvenlik hizmet sağlayıcıları ile veya yasaların gerektirdiği durumlarda yetkili kamu kurumlarıyla paylaşılır.",
+          ],
+        },
+        {
+          heading: "Kullanıcı hakları ve güvenlik önlemleri",
+          paragraphs: [
+            "Kullanıcı, mevzuatın izin verdiği ölçüde bilgilerini düzeltme, güncelleme veya silme talebinde bulunabilir.",
+            "Tetavio bilgileri korumak için HTTPS/TLS bağlantıları, erişim kontrolleri, parola hashleme ve diğer kurumsal ve teknik güvenlik önlemlerini kullanır.",
+            "Platformda oturum yönetimi ve kullanıcı tercihlerinin korunması için çerezler veya local storage mekanizmaları kullanılabilir.",
+          ],
+        },
+      ],
+    },
+    "delivery-policy": {
+      title: "Hizmet Sunumu / Dijital Aktivasyon Politikası",
+      summary: "Tetavio fiziksel ürün teslim etmez; ödeme sonrasında hizmet kullanıcı hesabında dijital olarak etkinleştirilir.",
+      sections: [
+        {
+          heading: "Dijital hizmetin sunulması",
+          paragraphs: [
+            "Tetavio dijital bir muhasebe SaaS hizmeti sunar ve kullanıcı ödeme yaptıktan sonra ilgili plana web hesabı üzerinden erişim elde eder.",
+            "Başarılı ödeme onayından sonra ücretli plan genellikle hemen veya kısa bir teknik işlem süresi içinde kullanıcı hesabında etkinleştirilir.",
+          ],
+        },
+        {
+          heading: "Fiziksel teslimatın olmaması",
+          paragraphs: [
+            "Tetavio herhangi bir fiziksel ürün göndermez ve herhangi bir fiziksel teslimat hizmeti sunmaz.",
+            "Hizmet sunumu yalnızca dijital erişim hakkının etkinleştirilmesi şeklinde gerçekleşir.",
+          ],
+        },
+        {
+          heading: "Aktivasyon, destek ve elektronik belgeler",
+          paragraphs: [
+            "Kullanıcı hizmete web hesabı üzerinden erişir ve aktif plan kapsamında sunulan işlevleri kullanır.",
+            "Ödemeden sonra aktivasyon gerçekleşmezse kullanıcı destek ekibiyle iletişime geçebilir.",
+            "Gerekli olduğunda ödeme, makbuz veya fatura bilgileri elektronik ortamda sağlanabilir.",
+          ],
+        },
+      ],
+    },
+    "contact-info": {
+      title: "Yasal Bilgiler ve İletişim Kanalları",
+      summary: "Bu sayfada Tetavio LLC'nin yasal bilgileri ve kullanıcılar için resmi iletişim kanalları yer almaktadır.",
+      sections: [
+        {
+          id: "legal-info",
+          heading: "Yasal bilgiler",
+          paragraphs: [
+            "Tüzel kişi: Tetavio LLC",
+            "Marka / platform: Tetavio",
+            "Vergi numarası: 2009752131",
+            "Yasal adres: Bakü şehri, Hatai ilçesi, Khudu Mammadov caddesi, bina 6, daire 185",
+          ],
+        },
+        {
+          id: "contact",
+          heading: "İletişim kanalları",
+          paragraphs: [
+            "Genel e-posta: info@tetavio.com",
+            "Destek e-postası: support@tetavio.com",
+            "Telefon: +994 10 311 91 87",
+            "Çalışma saatleri: Pazartesi - Cuma, 09:00 - 18:00",
+            "Kullanıcılar ödeme, iade, iptal, hesap erişimi ve teknik sorunlar için bu iletişim kanallarını kullanabilir.",
+          ],
+        },
+      ],
+    },
+  },
+  de: {
+    "terms-of-use": {
+      title: "Nutzungsbedingungen",
+      summary: "Diese Nutzungsbedingungen legen die Regeln für die Nutzung der Tetavio-Buchhaltungssoftware, die Pflichten der Nutzer und die Grundsätze der Leistungserbringung fest.",
+      sections: [
+        {
+          heading: "Zweck der Plattform",
+          paragraphs: [
+            "Tetavio ist eine digitale Accounting-SaaS-Plattform, die Nutzern Online-Funktionen für Buchhaltung, Aufzeichnungen, Berichte und abonnementsbasierte Software bereitstellt.",
+            "Die Plattform wird ausschließlich als digitaler Dienst angeboten, und der Nutzer stimmt zu, Tetavio für geschäftliche, buchhalterische und andere rechtmäßige Zwecke zu verwenden.",
+          ],
+        },
+        {
+          heading: "Benutzerkonto und rechtmäßige Nutzung",
+          paragraphs: [
+            "Der Nutzer ist für die Vertraulichkeit der E-Mail-Adresse, des Passworts und anderer Authentifizierungsdaten verantwortlich, die für den Kontozugang verwendet werden.",
+            "Die Nutzung von Tetavio für rechtswidrige, betrügerische, irreführende, rechteverletzende oder sicherheitsgefährdende Zwecke ist untersagt.",
+            "Der Nutzer ist für die Richtigkeit der über das Konto eingegebenen Informationen und für die Einhaltung der geltenden Gesetze verantwortlich.",
+          ],
+        },
+        {
+          heading: "Abonnementzugang und geistiges Eigentum",
+          paragraphs: [
+            "Der Zugang zu kostenpflichtigen Plänen wird nur nach erfolgreicher Zahlung oder bei aktiver Subscription gewährt und gibt dem Nutzer ein begrenztes Nutzungsrecht im Rahmen des gewählten Plans.",
+            "Die Software, das Design, die Inhalte, Logos und alle anderen Elemente der Plattform gehören ausschließlich der Tetavio LLC und sind nach dem Recht der Republik Aserbaidschan geschützt.",
+          ],
+        },
+        {
+          heading: "Verfügbarkeit, Haftung und Aktualisierungen",
+          paragraphs: [
+            "Tetavio bemüht sich um eine kontinuierliche Verfügbarkeit des Dienstes, jedoch können vorübergehende Unterbrechungen aufgrund von Wartung, Updates, Integrationsproblemen, Netzwerkausfällen oder höherer Gewalt auftreten.",
+            "Soweit gesetzlich nicht anders vorgeschrieben, haftet Tetavio nicht vollständig für indirekte Schäden, entgangene Einnahmen, Datenverluste oder Folgen, die durch Systeme Dritter verursacht werden.",
+            "Diese Bedingungen unterliegen dem Recht der Republik Aserbaidschan.",
+            "Tetavio behält sich das Recht vor, diese Nutzungsbedingungen und Serviceregeln jederzeit zu aktualisieren.",
+          ],
+        },
+      ],
+    },
+    "payment-terms": {
+      title: "Zahlungsbedingungen",
+      summary: "Diese Seite erläutert, wie Tetavio-Abonnementzahlungen funktionieren, welche Grundsätze für Zahlungssicherheit gelten und wie Pläne nach der Zahlung aktiviert werden.",
+      sections: [
+        {
+          heading: "Gegenstand der Zahlung und Währung",
+          paragraphs: [
+            "Zahlungen bei Tetavio gelten ausschließlich für den Kauf, die Verlängerung oder das Upgrade digitaler SaaS-Abonnementpläne. Es werden keine physischen Produkte verkauft oder geliefert.",
+            "Alle auf der Plattform angezeigten Preise sind in Aserbaidschan-Manat (AZN) angegeben, sofern nicht ausdrücklich etwas anderes vermerkt ist.",
+          ],
+        },
+        {
+          heading: "Zahlungsmethode und Verarbeitung von Kartendaten",
+          paragraphs: [
+            "Zahlungen werden per Bankkarte über PASHA Bank E-commerce / Virtual POS oder eine kompatible Zahlungsinfrastruktur abgewickelt.",
+            "Der Nutzer ist für die Richtigkeit der von ihm angegebenen Zahlungsdaten verantwortlich.",
+            "Tetavio speichert, verarbeitet oder erhält auf seinen Servern keine Kartennummern, CVV/CVC-Codes oder Ablaufdaten.",
+            "Kartenzahlungsdaten werden ausschließlich in der sicheren Zahlungsinfrastruktur der Bank oder des Zahlungsanbieters verarbeitet.",
+          ],
+        },
+        {
+          heading: "Zahlungsbestätigung und Aktivierung des Plans",
+          paragraphs: [
+            "Nach erfolgreicher Zahlungsbestätigung wird der gewählte kostenpflichtige Plan digital im Benutzerkonto aktiviert und der entsprechende Planstatus im System aktualisiert.",
+            "Tetavio LLC stützt sich auf die Bestätigung der Bank oder des Zahlungsanbieters und aktiviert den Dienst nicht vor bestätigter Zahlung.",
+            "Wenn die Zahlung fehlschlägt, unvollständig bleibt oder von der Bank nicht bestätigt wird, wird der kostenpflichtige Zugang nicht aktiviert und der Nutzer verbleibt im aktuellen Plan.",
+            "Vor dem Fortsetzen des Checkout-Prozesses muss der Nutzer bestätigen, dass er die Zahlungsbedingungen gelesen und akzeptiert hat.",
+          ],
+        },
+      ],
+    },
+    "refund-policy": {
+      title: "Rückerstattungs- und Kündigungsrichtlinie",
+      summary: "Diese Richtlinie legt die wichtigsten Regeln fest, die für Kündigungen, Downgrades und mögliche Rückerstattungsfälle bei Tetavio gelten.",
+      sections: [
+        {
+          heading: "Regeln für Kündigung und Downgrade",
+          paragraphs: [
+            "Der Nutzer kann eine Anfrage zur Kündigung der Subscription oder zum Wechsel in einen niedrigeren Plan über den Support oder den Kontaktkanal stellen.",
+            "Sofern nicht anders angegeben, wird eine Kündigung oder ein Downgrade ab der nächsten Abrechnungsperiode wirksam.",
+            "Bereits aktivierte digitale Zugriffsrechte für den aktuellen Zeitraum können bis zum Ende dieses Zeitraums gültig bleiben.",
+          ],
+        },
+        {
+          heading: "Grundsätze der Rückerstattung",
+          paragraphs: [
+            "Da Tetavio einen digitalen Dienst bereitstellt, sind aktivierte Abonnementzeiträume grundsätzlich nicht erstattungsfähig.",
+            "Rückerstattungsanfragen können jedoch gesondert geprüft werden, wenn es zu Doppelzahlungen, einer aus technischen Gründen fehlgeschlagenen Planaktivierung oder bestätigten unbefugten Transaktionen kommt.",
+            "Rückerstattungen werden nur in begründeten und von Tetavio bestätigten Fällen vorgenommen.",
+            "Wenn eine Rückerstattung genehmigt wird, erfolgt die Erstattung nach Möglichkeit auf dieselbe Zahlungsmethode.",
+          ],
+        },
+        {
+          heading: "Antrag und Prüfungsfrist",
+          paragraphs: [
+            "Ein Rückerstattungsantrag muss die E-Mail-Adresse des Nutzers, das Transaktionsdatum, den Betrag und den Grund des Antrags enthalten.",
+            "Anträge werden innerhalb von 5-10 Arbeitstagen geprüft, und das Ergebnis wird dem Nutzer über die hinterlegten Kontaktdaten mitgeteilt.",
+          ],
+        },
+      ],
+    },
+    "privacy-policy": {
+      title: "Datenschutzerklärung",
+      summary: "Diese Richtlinie erläutert, welche Informationen Tetavio erhebt, wie sie verwendet werden und welche grundlegenden Prinzipien für die Zahlungssicherheit gelten.",
+      sections: [
+        {
+          heading: "Erhobene Informationen",
+          paragraphs: [
+            "Tetavio kann Informationen wie Name, E-Mail-Adresse, Telefonnummer, Unternehmensdaten, Steuer-ID bei Angabe, Login- und Sitzungsdaten, Abonnementstatus und Zahlungsstatus vom Nutzer oder aus dem Benutzerkonto erheben und verarbeiten.",
+            "Diese Informationen werden zur Kontoverwaltung, Aktivierung der Subscription, Bereitstellung von Support, Gewährleistung der Sicherheit sowie zur Erfüllung buchhalterischer und rechtlicher Pflichten verwendet.",
+          ],
+        },
+        {
+          heading: "Kartendaten und Weitergaberegeln",
+          paragraphs: [
+            "Tetavio speichert auf seinen Servern keine Kartennummern, CVV/CVC-Codes, Ablaufdaten oder andere sensible Kartendaten.",
+            "Kartenbezogene Zahlungsinformationen werden von der Bank oder dem Zahlungsanbieter verarbeitet.",
+            "Informationen werden nur bei Bedarf an Zahlungsanbieter, Hosting- und Sicherheitsdienstleister oder an befugte staatliche Stellen weitergegeben, wenn dies gesetzlich vorgeschrieben ist.",
+          ],
+        },
+        {
+          heading: "Benutzerrechte und Sicherheitsmaßnahmen",
+          paragraphs: [
+            "Soweit gesetzlich zulässig, kann der Nutzer die Berichtigung, Aktualisierung oder Löschung seiner Daten verlangen.",
+            "Tetavio verwendet HTTPS/TLS-Verbindungen, Zugriffskontrollen, Passwort-Hashing und andere organisatorische und technische Sicherheitsmaßnahmen zum Schutz der Daten.",
+            "Auf der Plattform können Cookies oder Local-Storage-Mechanismen zur Sitzungsverwaltung und zur Speicherung von Nutzereinstellungen verwendet werden.",
+          ],
+        },
+      ],
+    },
+    "delivery-policy": {
+      title: "Richtlinie zur Leistungserbringung / digitalen Aktivierung",
+      summary: "Tetavio liefert keine physischen Produkte; nach der Zahlung wird der Dienst digital im Benutzerkonto aktiviert.",
+      sections: [
+        {
+          heading: "Erbringung des digitalen Dienstes",
+          paragraphs: [
+            "Tetavio stellt einen digitalen Buchhaltungs-SaaS-Dienst bereit, und nach der Zahlung erhält der Nutzer über das Webkonto Zugriff auf den entsprechenden Plan.",
+            "Nach erfolgreicher Zahlungsbestätigung wird der kostenpflichtige Plan in der Regel sofort oder innerhalb einer kurzen technischen Verarbeitungszeit im Benutzerkonto aktiviert.",
+          ],
+        },
+        {
+          heading: "Keine physische Lieferung",
+          paragraphs: [
+            "Tetavio versendet keine physischen Produkte und bietet keinen physischen Lieferservice an.",
+            "Die Leistungserbringung erfolgt ausschließlich durch die Aktivierung eines digitalen Zugriffsrechts.",
+          ],
+        },
+        {
+          heading: "Aktivierung, Support und elektronische Dokumente",
+          paragraphs: [
+            "Der Nutzer greift über das Webkonto auf den Dienst zu und verwendet die im aktiven Plan bereitgestellten Funktionen.",
+            "Wenn die Aktivierung nach der Zahlung nicht erfolgt, kann der Nutzer das Support-Team kontaktieren.",
+            "Falls erforderlich, können Zahlungs-, Beleg- oder Rechnungsinformationen elektronisch bereitgestellt werden.",
+          ],
+        },
+      ],
+    },
+    "contact-info": {
+      title: "Rechtliche Informationen und Kontaktangaben",
+      summary: "Diese Seite enthält die rechtlichen Angaben der Tetavio LLC und die offiziellen Kontaktkanäle für Nutzer.",
+      sections: [
+        {
+          id: "legal-info",
+          heading: "Rechtliche Informationen",
+          paragraphs: [
+            "Rechtsträger: Tetavio LLC",
+            "Marke / Plattform: Tetavio",
+            "Steuernummer: 2009752131",
+            "Rechtliche Anschrift: Stadt Baku, Bezirk Khatai, Straße Khudu Mammadov, Gebäude 6, Wohnung 185",
+          ],
+        },
+        {
+          id: "contact",
+          heading: "Kontaktkanäle",
+          paragraphs: [
+            "Allgemeine E-Mail: info@tetavio.com",
+            "Support-E-Mail: support@tetavio.com",
+            "Telefon: +994 10 311 91 87",
+            "Geschäftszeiten: Montag - Freitag, 09:00 - 18:00",
+            "Nutzer können diese Kontaktkanäle für Zahlungen, Rückerstattungen, Kündigungen, Kontozugang und technische Probleme verwenden.",
+          ],
+        },
+      ],
+    },
+  },
+};
 const LEGAL_NAV_ITEMS = [
   { id: "terms-of-use", label: "İstifadə şərtləri", href: "/accounting/terms-of-use", pageId: "terms-of-use" },
   { id: "payment-terms", label: "Ödəniş şərtləri", href: "/accounting/payment-terms", pageId: "payment-terms" },
@@ -255,6 +1118,57 @@ const LEGACY_STORAGE_PREFIXES = ["tetavio-erp-data-v4", "finotam-auth-users-v1",
 
 function getContactInfoHash() {
   return String(window.location.hash || "").replace(/^#/, "").trim();
+}
+
+function resolveStandaloneLegalSlug(slug) {
+  const normalizedSlug = String(slug || "").trim();
+  if (!normalizedSlug) return "";
+  return LEGAL_STANDALONE_ALIASES[normalizedSlug] || normalizedSlug;
+}
+
+function normalizeStandaloneLegalLang(lang) {
+  return LEGAL_STANDALONE_LANGS.includes(lang) ? lang : "az";
+}
+
+function getLegalPageTranslation(pageId, lang) {
+  const resolvedPageId = resolveStandaloneLegalSlug(pageId);
+  const normalizedLang = normalizeStandaloneLegalLang(lang);
+  return LEGAL_PAGE_TRANSLATIONS[normalizedLang]?.[resolvedPageId] || null;
+}
+
+function getLegalPageTitle(pageId, lang) {
+  const resolvedPageId = resolveStandaloneLegalSlug(pageId);
+  const fallbackPage = COMPLIANCE_LEGAL_PAGE_MAP[resolvedPageId];
+  return getLegalPageTranslation(resolvedPageId, lang)?.title || fallbackPage?.title || "";
+}
+
+function getLegalPageSummary(pageId, lang) {
+  const resolvedPageId = resolveStandaloneLegalSlug(pageId);
+  const fallbackPage = COMPLIANCE_LEGAL_PAGE_MAP[resolvedPageId];
+  return getLegalPageTranslation(resolvedPageId, lang)?.summary || fallbackPage?.summary || "";
+}
+
+function getLegalPageSections(pageId, lang) {
+  const resolvedPageId = resolveStandaloneLegalSlug(pageId);
+  const fallbackPage = COMPLIANCE_LEGAL_PAGE_MAP[resolvedPageId];
+  const translatedSections = getLegalPageTranslation(resolvedPageId, lang)?.sections;
+  return Array.isArray(translatedSections)
+    ? translatedSections
+    : Array.isArray(fallbackPage?.sections)
+      ? fallbackPage.sections
+      : [];
+}
+
+function getLegalNavLabel(pageId, lang) {
+  const normalizedLang = normalizeStandaloneLegalLang(lang);
+  const fallbackItem = LEGAL_NAV_ITEMS.find((item) => item.id === pageId);
+  return LEGAL_NAV_LABEL_TRANSLATIONS[normalizedLang]?.[pageId] || fallbackItem?.label || "";
+}
+
+function getLegalSectionId(pageId, section, index) {
+  if (resolveStandaloneLegalSlug(pageId) !== "contact-info") return undefined;
+  if (section?.id) return section.id;
+  return LEGAL_CONTACT_SECTION_IDS[index];
 }
 
 function getActiveLegalNavId(pageId) {
@@ -272,6 +1186,19 @@ function getVisibleLegalSections(page) {
     return page.sections.filter((section) => section.heading === "Əlaqə vasitələri");
   }
   return page.sections || [];
+}
+
+function getVisibleStandaloneLegalSections(pageId, sections) {
+  if (resolveStandaloneLegalSlug(pageId) !== "contact-info") return sections || [];
+  const currentHash = getContactInfoHash();
+  const normalizedSections = Array.isArray(sections) ? sections : [];
+  if (currentHash === "legal-info") {
+    return normalizedSections.filter((section, index) => getLegalSectionId(pageId, section, index) === "legal-info");
+  }
+  if (currentHash === "contact") {
+    return normalizedSections.filter((section, index) => getLegalSectionId(pageId, section, index) === "contact");
+  }
+  return normalizedSections;
 }
 
 const MODULES_BASE = {
@@ -934,38 +1861,147 @@ function ModuleOverviewCard({ moduleId, state, onOpen, MODULES, at }) {
   return <article className="summary-card interactive-card"><span>{config.collection}</span><strong>{config.title}</strong><p className="card-note">{state[config.collection].length} {at.unit_record}</p><button className="ghost-btn compact-btn" onClick={() => onOpen(moduleId)}>{at.hub_reports}</button></article>;
 }
 
-function StandaloneLegalPage({ page }) {
-  const activeLegalNavId = getActiveLegalNavId(page.id);
-  const visibleSections = getVisibleLegalSections(page);
+function PublicMarketingTopbar({
+  lang,
+  onLangChange,
+  langOpen,
+  setLangOpen,
+  navOpen,
+  setNavOpen,
+  navItems,
+  navMenuLabel,
+  navContactLabel,
+  companyName,
+  ctaLabel,
+  onCtaClick,
+  onNavigateSection,
+}) {
+  const activeLang = PUBLIC_MARKETING_LANGS.find((item) => item.code === lang) || PUBLIC_MARKETING_LANGS[0];
+  const navigateHome = () => {
+    window.location.href = "/homepage";
+  };
+  const handleNavItem = (itemId) => {
+    onNavigateSection?.(itemId);
+    setNavOpen(false);
+    setLangOpen(false);
+  };
+  const handleContactItem = () => {
+    onNavigateSection?.("contact");
+    setNavOpen(false);
+    setLangOpen(false);
+  };
+
   return (
-    <div className="lp-shell">
-      <header className="lp-topbar">
-        <div className="lp-topbar-inner">
-          <div className="lp-brand">
-            <div className="lp-brand-icon">
-              <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-                <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-              </svg>
-            </div>
-            <div className="lp-brand-copy">
-              <strong>Tetavio</strong>
-              <span>Accounting Software</span>
-            </div>
+    <header className="ph-topbar">
+      <div className="ph-topbar-inner">
+        <button className="lp-brand ph-brand-button" type="button" onClick={navigateHome}>
+          <div className="lp-brand-icon">
+            <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
+              <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
+            </svg>
           </div>
-          <div className="lp-nav">
-            <a className="lp-nav-ghost" href="/accounting">Accounting</a>
+          <div>
+            <strong>Tetavio</strong>
+            <span>{PUBLIC_MARKETING_TOPBAR_T[lang]?.platform || PUBLIC_MARKETING_TOPBAR_T.az.platform}</span>
           </div>
+        </button>
+        <div className="ph-topbar-right">
+          <nav className="ph-nav-links" aria-label="Ana səhifə bölmələri">
+            {navItems.map((item) => (
+              <button key={item.id} type="button" className="ph-nav-link" onClick={() => handleNavItem(item.id)}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <button className="ph-mobile-menu-btn" type="button" aria-expanded={navOpen} aria-controls="ph-mobile-nav" onClick={(e) => { e.stopPropagation(); setNavOpen((current) => !current); }}>
+            <span>{navMenuLabel}</span>
+            <span className="ph-mobile-menu-icon" aria-hidden="true">{navOpen ? "✕" : "☰"}</span>
+          </button>
+          <div className="ph-lang-wrap" onClick={(e) => e.stopPropagation()}>
+            <button className="ph-lang-btn" type="button" onClick={() => setLangOpen((current) => !current)}>
+              <span>{activeLang.flag}</span>
+              <span>{activeLang.code.toUpperCase()}</span>
+              <span className="ph-lang-chevron">{langOpen ? "▲" : "▼"}</span>
+            </button>
+            {langOpen && (
+              <div className="ph-lang-dropdown">
+                {PUBLIC_MARKETING_LANGS.map((item) => (
+                  <button
+                    key={item.code}
+                    type="button"
+                    className={`ph-lang-option${item.code === lang ? " ph-lang-option-active" : ""}`}
+                    onClick={() => { onLangChange?.(item.code); setLangOpen(false); }}
+                  >
+                    <span>{item.flag}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="ph-company-pill ph-company-pill-button" type="button" onClick={navigateHome}>
+            <span className="ph-company-dot" />
+            <span>{companyName}</span>
+          </button>
+          <button className="ph-btn-topbar" type="button" onClick={onCtaClick}>
+            {ctaLabel}
+          </button>
         </div>
-      </header>
+      </div>
+      <div className={`ph-mobile-nav ${navOpen ? "open" : ""}`} id="ph-mobile-nav" onClick={(e) => e.stopPropagation()}>
+        <div className="ph-mobile-nav-links">
+          {navItems.map((item) => (
+            <button key={item.id} type="button" onClick={() => handleNavItem(item.id)}>{item.label}</button>
+          ))}
+          <button type="button" onClick={handleContactItem}>{navContactLabel}</button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function StandaloneLegalPage({ page, lang, onLangChange }) {
+  const activeLegalNavId = getActiveLegalNavId(page.id);
+  const pageTitle = getLegalPageTitle(page.id, lang);
+  const pageSummary = getLegalPageSummary(page.id, lang);
+  const pageSections = getLegalPageSections(page.id, lang);
+  const visibleSections = getVisibleStandaloneLegalSections(page.id, pageSections);
+  const [hubLangOpen, setHubLangOpen] = useState(false);
+  const [hubNavOpen, setHubNavOpen] = useState(false);
+  const topbarT = PUBLIC_MARKETING_TOPBAR_T[normalizeStandaloneLegalLang(lang)] || PUBLIC_MARKETING_TOPBAR_T.az;
+  const navigateHomepageSection = (sectionId) => {
+    window.location.href = `/homepage#${sectionId}`;
+  };
+  const openSignup = () => {
+    window.location.href = "/accounting/signup";
+  };
+
+  return (
+    <div className="lp-shell" onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (hubNavOpen) setHubNavOpen(false); }}>
+      <PublicMarketingTopbar
+        lang={normalizeStandaloneLegalLang(lang)}
+        onLangChange={onLangChange}
+        langOpen={hubLangOpen}
+        setLangOpen={setHubLangOpen}
+        navOpen={hubNavOpen}
+        setNavOpen={setHubNavOpen}
+        navItems={topbarT.nav}
+        navMenuLabel={topbarT.navMenu}
+        navContactLabel={topbarT.navContact}
+        companyName="Tetavio LLC"
+        ctaLabel={topbarT.navSignup}
+        onCtaClick={openSignup}
+        onNavigateSection={navigateHomepageSection}
+      />
 
       <section className="lp-legal-shell">
         <div className="lp-legal-card">
           <div className="lp-legal-head">
             <div>
               <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
-              <h2>{page.title}</h2>
-              <p>{page.summary}</p>
+              <h2>{pageTitle}</h2>
+              <p>{pageSummary}</p>
             </div>
             <a className="lp-btn-ghost lp-legal-back" href="/accounting">
               Ana səhifəyə qayıt
@@ -979,7 +2015,7 @@ function StandaloneLegalPage({ page }) {
                 className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
                 href={item.href}
               >
-                {item.label}
+                {getLegalNavLabel(item.id, lang)}
               </a>
             ))}
           </div>
@@ -1011,7 +2047,7 @@ function StandaloneLegalPage({ page }) {
               className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
               href={item.href}
             >
-              {item.label}
+              {getLegalNavLabel(item.id, lang)}
             </a>
           ))}
         </div>
@@ -1023,6 +2059,13 @@ function StandaloneLegalPage({ page }) {
 
 export default function App() {
   const [hash, setHash] = useState(() => window.location.hash);
+  const [hubLang, setHubLang] = useState(() => {
+    try {
+      return normalizeStandaloneLegalLang(window.localStorage.getItem(HUB_LANG_KEY) || "az");
+    } catch {
+      return "az";
+    }
+  });
   const pathname = window.location.pathname;
 
   useEffect(() => {
@@ -1031,13 +2074,37 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key !== HUB_LANG_KEY) return;
+      setHubLang(normalizeStandaloneLegalLang(event.newValue || "az"));
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HUB_LANG_KEY, normalizeStandaloneLegalLang(hubLang));
+    } catch {
+      // Ignore storage write failures for standalone legal pages.
+    }
+  }, [hubLang]);
+
   const slug = pathname.startsWith("/accounting/")
     ? pathname.replace("/accounting/", "").split("/")[0]
     : null;
-  const legalPage = slug ? COMPLIANCE_LEGAL_PAGE_MAP[slug] : null;
+  const legalPage = slug ? COMPLIANCE_LEGAL_PAGE_MAP[resolveStandaloneLegalSlug(slug)] : null;
 
   if (legalPage) {
-    return <StandaloneLegalPage key={hash} page={legalPage} />;
+    return (
+      <StandaloneLegalPage
+        key={`${hubLang}-${hash}`}
+        page={legalPage}
+        lang={hubLang}
+        onLangChange={setHubLang}
+      />
+    );
   }
 
   return <MainApp />;
@@ -1073,8 +2140,9 @@ function MainApp() {
   function getStandaloneLegalRouteInfo() {
     const path = String(window.location.pathname || "").replace(/^\/+|\/+$/g, "");
     const [part1, part2] = path.split("/");
+    const resolvedSlug = resolveStandaloneLegalSlug(part2);
     const legalPage = part1 === "accounting"
-      ? COMPLIANCE_LEGAL_PAGES.find((page) => page.id === part2) || null
+      ? COMPLIANCE_LEGAL_PAGES.find((page) => page.id === resolvedSlug) || null
       : null;
 
     return {
@@ -12928,7 +13996,7 @@ function renderSettings() {
   ];
   const pathname = window.location.pathname;
   const legalSlug = pathname.startsWith("/accounting/") ? pathname.replace("/accounting/", "").split("/")[0] : null;
-  const standaloneLegalPage = legalSlug ? COMPLIANCE_LEGAL_PAGE_MAP[legalSlug] : null;
+  const standaloneLegalPage = legalSlug ? COMPLIANCE_LEGAL_PAGE_MAP[resolveStandaloneLegalSlug(legalSlug)] : null;
   const visibleNav = getAccessibleNavItems(currentUser);
   const pageTitle = activeModule ? MODULES[activeModule].title : (at.nav[activeSection] || visibleNav.find((item) => item.id === activeSection)?.label || at.nav.home);
   const activeCompanyName = state.settings.companyName || (currentUser ? getProfileDisplayName(currentUser) : "");
@@ -13064,7 +14132,7 @@ function renderSettings() {
   }
 
   if (standaloneLegalPage) {
-    return <StandaloneLegalPage page={standaloneLegalPage} />;
+    return <StandaloneLegalPage page={standaloneLegalPage} lang={hubLang} onLangChange={setHubLang} />;
   }
 
   if (standaloneLegalSlugMatched) {
