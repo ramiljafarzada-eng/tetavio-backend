@@ -1999,13 +1999,9 @@ function StandaloneLegalPage({ page, lang, onLangChange }) {
         <div className="lp-legal-card">
           <div className="lp-legal-head">
             <div>
-              <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
               <h2>{pageTitle}</h2>
               <p>{pageSummary}</p>
             </div>
-            <a className="lp-btn-ghost lp-legal-back" href="/accounting">
-              Ana səhifəyə qayıt
-            </a>
           </div>
 
           <div className="lp-legal-links">
@@ -10628,7 +10624,6 @@ function renderItemsCatalog() {
           <div className="lp-legal-card">
             <div className="lp-legal-head">
               <div>
-                <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
                 <h2>{legalPage.title}</h2>
                 <p>{legalPage.summary}</p>
               </div>
@@ -14033,13 +14028,9 @@ function renderSettings() {
             <div className="lp-legal-card">
               <div className="lp-legal-head">
                 <div>
-                  <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
                   <h2>Page not found</h2>
                   <p>İstədiyiniz hüquqi səhifə tapılmadı.</p>
                 </div>
-                <a className="lp-btn-ghost lp-legal-back" href="/accounting">
-                  Ana səhifəyə qayıt
-                </a>
               </div>
             </div>
           </section>
@@ -14073,13 +14064,9 @@ function renderSettings() {
           <div className="lp-legal-card">
             <div className="lp-legal-head">
               <div>
-                <span className="lp-legal-kicker">Tetavio hüquqi məlumatlar</span>
                 <h2>{legalPage.title}</h2>
                 <p>{legalPage.summary}</p>
               </div>
-              <a className="lp-btn-ghost lp-legal-back" href="/accounting">
-                Ana səhifəyə qayıt
-              </a>
             </div>
 
             <div className="lp-legal-links">
