@@ -1,17 +1,31 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { createResetData, createSeedData, currency, today } from "./lib/data";
-import { clearAppState, loadAppState, normalizeAppState, saveAppState } from "./lib/storage";
+import { createResetData, currency, today } from "./lib/data";
+import { normalizeAppState } from "./lib/storage";
 import I18N from './i18n';
 import {
   apiCheckout,
+  apiCreateCustomer,
+  apiCreateVendor,
+  apiDeleteCustomer,
+  apiDeleteVendor,
+  apiGetCompanySettings,
   apiGetCurrentSubscription,
   apiGetMyOrders,
   apiGetPlans,
+  apiListCustomers,
+  apiListInvoices,
+  apiListVendors,
+  apiCreateInvoice,
+  apiDeleteInvoice,
   apiLogin,
   apiLogout,
   apiMe,
   apiMockWebhook,
   apiRegister,
+  apiUpdateCompanySettings,
+  apiUpdateCustomer,
+  apiUpdateInvoice,
+  apiUpdateVendor,
   apiUpgradeSubscription,
   setApiSession,
 } from "./lib/api";
@@ -237,6 +251,7 @@ const LEGAL_NAV_ITEMS = [
   { id: "company-info", label: "Hüquqi məlumatlar", href: "/accounting/contact-info#legal-info", pageId: "contact-info", hash: "legal-info" },
   { id: "contact", label: "Əlaqə", href: "/accounting/contact-info#contact", pageId: "contact-info", hash: "contact" },
 ];
+const LEGACY_STORAGE_PREFIXES = ["tetavio-erp-data-v4", "finotam-auth-users-v1", "finotam-auth-remember-v1", "finotam-auth-reset-v1"];
 
 function getContactInfoHash() {
   return String(window.location.hash || "").replace(/^#/, "").trim();
@@ -483,17 +498,11 @@ const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "go
 const STATUS = { Ödənilib: "status-paid", Göndərilib: "status-sent", Qaralama: "status-draft", "Qəbul edilib": "status-paid", Gecikib: "status-overdue", Açıq: "status-draft", Bağlanıb: "status-paid", "Tətbiq edilib": "status-sent", Aktiv: "status-paid", Passiv: "status-draft", "Qismən ödənilib": "status-sent" };
 const ITEM_MOVEMENT_TYPES = ["Alış", "Satış"];
 const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
-const AUTH_STORAGE_KEY = "finotam-auth-users-v1";
-const AUTH_SESSION_KEY = "finotam-auth-session-v1";
-const AUTH_REMEMBER_KEY = "finotam-auth-remember-v1";
-const AUTH_RESET_KEY = "finotam-auth-reset-v1";
-const BACKEND_SESSION_KEY = "finotam-backend-session-v1";
 const HUB_LANG_KEY = "finotam-hub-lang-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
   fullName: "Tetavio Super Admin",
   email: "admin@finotam.local",
-  password: "Tetavio@2026",
   role: "super_admin"
 };
 
@@ -1078,7 +1087,7 @@ function MainApp() {
     return getLocationRoute().split("/").filter(Boolean);
   }
 
-  const [state, setState] = useState(() => normalizeAppState(createSeedData()));
+  const [state, setState] = useState(() => normalizeAppState(createResetData()));
   const [isReady, setIsReady] = useState(false);
   const [timeTick, setTimeTick] = useState(() => Date.now());
   const [activeSection, setActiveSection] = useState(() => {
@@ -1096,7 +1105,7 @@ function MainApp() {
   const [searches, setSearches] = useState({});
   const [drafts, setDrafts] = useState({});
   const [editing, setEditing] = useState({});
-  const [itemMovementDraft, setItemMovementDraft] = useState(() => createMovementDraft(normalizeAppState(createSeedData()).items));
+  const [itemMovementDraft, setItemMovementDraft] = useState(() => createMovementDraft(normalizeAppState(createResetData()).items));
   const [bankDraft, setBankDraft] = useState(() => createEmptyBankDraft());
   const [editingBank, setEditingBank] = useState(null);
   const [bankFormOrigin, setBankFormOrigin] = useState("banks");
@@ -1172,29 +1181,24 @@ function MainApp() {
   const [hubNavOpen, setHubNavOpen] = useState(false);
   const [authUsers, setAuthUsers] = useState([normalizeAuthUser(SUPER_ADMIN)]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [backendSession, setBackendSession] = useState(() => {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(BACKEND_SESSION_KEY) || "null");
-      return parsed && parsed.accessToken && parsed.refreshToken ? parsed : null;
-    } catch {
-      return null;
-    }
-  });
+  const [backendSession, setBackendSession] = useState(null);
   const [backendPlans, setBackendPlans] = useState([]);
   const [backendSubscription, setBackendSubscription] = useState(null);
   const [backendOrders, setBackendOrders] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
+  const [customersError, setCustomersError] = useState("");
+  const [customersMeta, setCustomersMeta] = useState(null);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorsError, setVendorsError] = useState("");
+  const [vendorsMeta, setVendorsMeta] = useState(null);
+  const [companySettingsLoading, setCompanySettingsLoading] = useState(false);
+  const [companySettingsError, setCompanySettingsError] = useState("");
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [invoicesError, setInvoicesError] = useState("");
+  const [invoicesMeta, setInvoicesMeta] = useState(null);
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [authHydrated, setAuthHydrated] = useState(false);
-  const [storageEmail, setStorageEmail] = useState(() => {
-    try {
-      const storedSession = JSON.parse(window.localStorage.getItem(AUTH_SESSION_KEY) || "null");
-      return storedSession?.email || null;
-    } catch {
-      return null;
-    }
-  });
   const [booksView, setBooksView] = useState(() => {
     return getBooksLandingRouteDetails().initialBooksView;
   });
@@ -1235,12 +1239,6 @@ function MainApp() {
   function updateBackendSession(session) {
     setBackendSession(session || null);
     setApiSession(session || null);
-
-    if (session?.accessToken && session?.refreshToken) {
-      window.localStorage.setItem(BACKEND_SESSION_KEY, JSON.stringify(session));
-    } else {
-      window.localStorage.removeItem(BACKEND_SESSION_KEY);
-    }
   }
 
   async function syncBackendSubscription(sessionOverride = null) {
@@ -1266,7 +1264,6 @@ function MainApp() {
       id: me.id,
       fullName: me.fullName || me.email,
       email: me.email,
-      password: authDraft.password || "********",
       role: "trial_user",
       profile: {
         entityType: "Hüquqi şəxs",
@@ -1284,6 +1281,515 @@ function MainApp() {
     });
 
     setCurrentUser(normalizedUser);
+  }
+
+  function normalizeBackendCustomer(record) {
+    return {
+      id: record?.id || crypto.randomUUID(),
+      displayName: String(record?.displayName || "").trim(),
+      companyName: String(record?.companyName || record?.displayName || "").trim(),
+      email: String(record?.email || "").trim(),
+      phone: String(record?.phone || "").trim(),
+      taxId: String(record?.taxId || "").trim(),
+      status: String(record?.status || "ACTIVE").trim() || "ACTIVE",
+      outstandingReceivables: 0,
+      createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
+    };
+  }
+
+  async function syncCustomersFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setCustomersLoading(false);
+      setCustomersError("");
+      setCustomersMeta(null);
+      setState((current) => (
+        current.customers.length
+          ? { ...current, customers: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setCustomersLoading(true);
+    setCustomersError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      let lastMeta = null;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListCustomers({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendCustomer));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        lastMeta = {
+          page: Number(meta.page || page),
+          limit: Number(meta.limit || 100),
+          total: Number(meta.total || collected.length),
+          totalPages,
+        };
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, customers: collected }));
+      setCustomersMeta(lastMeta || {
+        page: 1,
+        limit: collected.length || 100,
+        total: collected.length,
+        totalPages: 1,
+      });
+
+      return collected;
+    } catch (error) {
+      setCustomersError(error?.message || "Müştəri məlumatları backend-dən alınmadı.");
+      setCustomersMeta(null);
+      setState((current) => ({ ...current, customers: [] }));
+      return [];
+    } finally {
+      setCustomersLoading(false);
+    }
+  }
+
+  function buildCustomerApiPayload(activeDraft) {
+    const parsed = { ...parseDraft("customers", activeDraft), ...buildOperationalPayload("customers", activeDraft) };
+    const displayName = String(parsed.displayName || "").trim() || String(parsed.companyName || "").trim();
+
+    return {
+      displayName,
+      companyName: String(parsed.companyName || "").trim() || undefined,
+      email: String(parsed.email || "").trim() || undefined,
+      phone: String(parsed.phone || "").trim() || undefined,
+      taxId: String(parsed.taxId || "").trim() || undefined,
+      status: String(parsed.status || "").trim() || undefined,
+    };
+  }
+
+  async function submitCustomerModule(activeDraft, editingId) {
+    const payload = buildCustomerApiPayload(activeDraft);
+
+    if (!payload.displayName) {
+      setCustomersError("Müştəri adı boş ola bilməz.");
+      return;
+    }
+
+    setCustomersLoading(true);
+    setCustomersError("");
+
+    try {
+      if (editingId) {
+        await apiUpdateCustomer(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateCustomer(payload, updateBackendSession);
+        markOperationUsage();
+      }
+
+      await syncCustomersFromBackend();
+      cancelEdit("customers");
+    } catch (error) {
+      setCustomersError(error?.message || "Müştəri yadda saxlanmadı.");
+    } finally {
+      setCustomersLoading(false);
+    }
+  }
+
+  async function deleteCustomerRecord(recordId) {
+    setCustomersLoading(true);
+    setCustomersError("");
+
+    try {
+      await apiDeleteCustomer(recordId, updateBackendSession);
+      await syncCustomersFromBackend();
+      if (editing.customers === recordId) {
+        cancelEdit("customers");
+      }
+    } catch (error) {
+      setCustomersError(error?.message || "Müştəri silinmədi.");
+    } finally {
+      setCustomersLoading(false);
+    }
+  }
+
+  function normalizeBackendVendor(record) {
+    return {
+      id: record?.id || crypto.randomUUID(),
+      vendorName: String(record?.vendorName || "").trim(),
+      companyName: String(record?.companyName || record?.vendorName || "").trim(),
+      email: String(record?.email || "").trim(),
+      phone: String(record?.phone || "").trim(),
+      taxId: String(record?.taxId || "").trim(),
+      status: String(record?.status || "ACTIVE").trim() || "ACTIVE",
+      createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
+    };
+  }
+
+  async function syncVendorsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setVendorsLoading(false);
+      setVendorsError("");
+      setVendorsMeta(null);
+      setState((current) => (
+        current.vendors.length
+          ? { ...current, vendors: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setVendorsLoading(true);
+    setVendorsError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      let lastMeta = null;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListVendors({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendVendor));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        lastMeta = {
+          page: Number(meta.page || page),
+          limit: Number(meta.limit || 100),
+          total: Number(meta.total || collected.length),
+          totalPages,
+        };
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, vendors: collected }));
+      setVendorsMeta(lastMeta || {
+        page: 1,
+        limit: collected.length || 100,
+        total: collected.length,
+        totalPages: 1,
+      });
+
+      return collected;
+    } catch (error) {
+      setVendorsError(error?.message || "Təchizatçı məlumatları backend-dən alınmadı.");
+      setVendorsMeta(null);
+      setState((current) => ({ ...current, vendors: [] }));
+      return [];
+    } finally {
+      setVendorsLoading(false);
+    }
+  }
+
+  function buildVendorApiPayload(activeDraft) {
+    const parsed = { ...parseDraft("vendors", activeDraft), ...buildOperationalPayload("vendors", activeDraft) };
+    const vendorName = String(parsed.vendorName || "").trim() || String(parsed.companyName || "").trim();
+
+    return {
+      vendorName,
+      companyName: String(parsed.companyName || "").trim() || undefined,
+      email: String(parsed.email || "").trim() || undefined,
+      phone: String(parsed.phone || "").trim() || undefined,
+      taxId: String(parsed.taxId || "").trim() || undefined,
+      status: String(parsed.status || "").trim() || undefined,
+    };
+  }
+
+  async function submitVendorModule(activeDraft, editingId) {
+    const payload = buildVendorApiPayload(activeDraft);
+
+    if (!payload.vendorName) {
+      setVendorsError("Təchizatçı adı boş ola bilməz.");
+      return;
+    }
+
+    setVendorsLoading(true);
+    setVendorsError("");
+
+    try {
+      if (editingId) {
+        await apiUpdateVendor(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateVendor(payload, updateBackendSession);
+        markOperationUsage();
+      }
+
+      await syncVendorsFromBackend();
+      cancelEdit("vendors");
+    } catch (error) {
+      setVendorsError(error?.message || "Təchizatçı yadda saxlanmadı.");
+    } finally {
+      setVendorsLoading(false);
+    }
+  }
+
+  async function deleteVendorRecord(recordId) {
+    setVendorsLoading(true);
+    setVendorsError("");
+
+    try {
+      await apiDeleteVendor(recordId, updateBackendSession);
+      await syncVendorsFromBackend();
+      if (editing.vendors === recordId) {
+        cancelEdit("vendors");
+      }
+    } catch (error) {
+      setVendorsError(error?.message || "Təchizatçı silinmədi.");
+    } finally {
+      setVendorsLoading(false);
+    }
+  }
+
+  function normalizeBackendCompanySettings(record) {
+    return {
+      companyName: String(record?.companyName || "").trim(),
+      taxId: String(record?.taxId || "").trim(),
+      mobilePhone: String(record?.mobilePhone || "").trim(),
+      entityType: String(record?.entityType || "").trim() || "Hüquqi şəxs",
+      currency: String(record?.currency || "").trim().toUpperCase() || "AZN",
+      fiscalYear: String(record?.fiscalYear || "").trim(),
+    };
+  }
+
+  async function syncCompanySettingsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setCompanySettingsLoading(false);
+      setCompanySettingsError("");
+      return null;
+    }
+
+    setCompanySettingsLoading(true);
+    setCompanySettingsError("");
+
+    try {
+      const response = await apiGetCompanySettings(updateBackendSession);
+      const nextSettings = normalizeBackendCompanySettings(response);
+
+      setState((current) => ({
+        ...current,
+        settings: {
+          ...current.settings,
+          ...nextSettings,
+        },
+      }));
+
+      return nextSettings;
+    } catch (error) {
+      setCompanySettingsError(error?.message || "Şirkət məlumatları backend-dən alınmadı.");
+      return null;
+    } finally {
+      setCompanySettingsLoading(false);
+    }
+  }
+
+  function formatBackendTaxLabel(taxRate) {
+    const rate = Number(taxRate || 0);
+    if (rate <= 0) return "ƏDV 0%";
+    return `ƏDV ${rate}%`;
+  }
+
+  function normalizeBackendInvoice(record) {
+    const customerName = String(
+      record?.customer?.companyName || record?.customer?.displayName || record?.customerName || ""
+    ).trim();
+    const lines = Array.isArray(record?.lines) ? record.lines : [];
+
+    return {
+      id: record?.id || crypto.randomUUID(),
+      customerId: String(record?.customerId || record?.customer?.id || "").trim(),
+      customerName,
+      invoiceNumber: String(record?.invoiceNumber || "").trim(),
+      status: String(record?.status || "Qaralama").trim() || "Qaralama",
+      issueDate: record?.issueDate ? String(record.issueDate).slice(0, 10) : today(),
+      dueDate: record?.dueDate ? String(record.dueDate).slice(0, 10) : today(),
+      currency: String(record?.currency || state.settings.currency || "AZN").trim().toUpperCase(),
+      notes: String(record?.notes || "").trim(),
+      subTotal: Number(record?.subTotalMinor || 0) / 100,
+      discount: "0",
+      discountAmount: 0,
+      adjustment: "0",
+      amount: Number(record?.totalMinor || 0) / 100,
+      createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
+      lineItems: lines.length > 0
+        ? lines.map((line) => {
+            const quantity = Number(line?.quantity || 0);
+            const unitPriceMinor = Number(line?.unitPriceMinor || 0);
+            const baseMinor = Math.round(quantity * unitPriceMinor);
+            const lineTotalMinor = Number(line?.lineTotalMinor || 0);
+            const taxMinor = Math.max(0, lineTotalMinor - baseMinor);
+
+            return {
+              id: line?.id || crypto.randomUUID(),
+              itemName: String(line?.itemName || "").trim(),
+              description: String(line?.description || "").trim(),
+              accountCode: "601",
+              quantity: String(quantity || 1),
+              rate: (unitPriceMinor / 100).toFixed(2),
+              taxLabel: formatBackendTaxLabel(line?.taxRate),
+              taxRate: Number(line?.taxRate || 0),
+              baseAmount: baseMinor / 100,
+              taxAmount: taxMinor / 100,
+              amount: lineTotalMinor / 100,
+            };
+          })
+        : [createDefaultSalesLineItem()],
+    };
+  }
+
+  async function syncInvoicesFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setInvoicesLoading(false);
+      setInvoicesError("");
+      setInvoicesMeta(null);
+      setState((current) => (
+        current.invoices.length
+          ? { ...current, invoices: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setInvoicesLoading(true);
+    setInvoicesError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      let lastMeta = null;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListInvoices({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendInvoice));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        lastMeta = {
+          page: Number(meta.page || page),
+          limit: Number(meta.limit || 100),
+          total: Number(meta.total || collected.length),
+          totalPages,
+        };
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, invoices: collected }));
+      setInvoicesMeta(lastMeta || {
+        page: 1,
+        limit: collected.length || 100,
+        total: collected.length,
+        totalPages: 1,
+      });
+
+      return collected;
+    } catch (error) {
+      setInvoicesError(error?.message || "Fakturalar backend-dən alınmadı.");
+      setInvoicesMeta(null);
+      setState((current) => ({ ...current, invoices: [] }));
+      return [];
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }
+
+  function resolveInvoiceCustomer(activeDraft) {
+    const customerId = String(activeDraft.customerId || "").trim();
+    if (customerId) {
+      return state.customers.find((item) => item.id === customerId) || null;
+    }
+
+    const customerName = String(activeDraft.customerName || "").trim();
+    if (!customerName) return null;
+    return state.customers.find((item) => {
+      const label = String(item.companyName || item.displayName || "").trim();
+      return label === customerName;
+    }) || null;
+  }
+
+  function buildInvoiceApiPayload(activeDraft) {
+    const parsed = { ...parseDraft("invoices", activeDraft), ...buildOperationalPayload("invoices", activeDraft) };
+    const customer = resolveInvoiceCustomer(activeDraft);
+
+    if (!customer?.id) {
+      throw new Error("Faktura üçün mövcud müştəri seçilməlidir.");
+    }
+
+    const lines = (activeDraft.lineItems || [createDefaultSalesLineItem()]).map((item) => ({
+      itemName: String(item.itemName || "").trim(),
+      description: String(item.description || "").trim() || undefined,
+      quantity: Number(item.quantity || 0),
+      unitPriceMinor: Math.round(Number(item.rate || 0) * 100),
+      taxCode: String(item.taxLabel || "").trim() || undefined,
+      taxRate: Number(item.taxRate ?? extractTaxRateFromLabel(item.taxLabel)),
+    }));
+
+    return {
+      customerId: customer.id,
+      invoiceNumber: String(parsed.invoiceNumber || "").trim() || undefined,
+      status: String(parsed.status || "").trim() || undefined,
+      issueDate: String(activeDraft.issueDate || parsed.issueDate || today()),
+      dueDate: String(activeDraft.dueDate || parsed.dueDate || today()),
+      currency: String(state.settings.currency || "AZN").trim().toUpperCase(),
+      notes: String(activeDraft.notes || parsed.notes || "").trim() || undefined,
+      lines,
+    };
+  }
+
+  async function submitInvoiceModule(activeDraft, editingId) {
+    let payload;
+
+    try {
+      payload = buildInvoiceApiPayload(activeDraft);
+    } catch (error) {
+      setInvoicesError(error?.message || "Faktura payload qurulmadı.");
+      return;
+    }
+
+    setInvoicesLoading(true);
+    setInvoicesError("");
+
+    try {
+      if (editingId) {
+        await apiUpdateInvoice(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateInvoice(payload, updateBackendSession);
+        markOperationUsage();
+      }
+
+      await syncInvoicesFromBackend();
+      cancelEdit("invoices");
+    } catch (error) {
+      setInvoicesError(error?.message || "Faktura yadda saxlanmadı.");
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }
+
+  async function deleteInvoiceRecord(recordId) {
+    setInvoicesLoading(true);
+    setInvoicesError("");
+
+    try {
+      await apiDeleteInvoice(recordId, updateBackendSession);
+      await syncInvoicesFromBackend();
+      if (editing.invoices === recordId) {
+        cancelEdit("invoices");
+      }
+      if (invoiceLedgerRecordId === recordId) {
+        setInvoiceLedgerRecordId(null);
+      }
+    } catch (error) {
+      setInvoicesError(error?.message || "Faktura silinmədi.");
+    } finally {
+      setInvoicesLoading(false);
+    }
   }
 
   function getModuleSubview(moduleId) {
@@ -1407,79 +1913,27 @@ function MainApp() {
   }
 
   useEffect(() => {
-    let mounted = true;
-    suspendAutoSaveRef.current = true;
-    // Sessiya emailini sinxron oxu ki, doğru istifadəçi açarından yüklənsin
-    const sessionEmail = storageEmail;
-    loadAppState(sessionEmail)
-      .then((data) => {
-        if (mounted) {
-          let persistedHubLang = "en";
-          try {
-            persistedHubLang = window.localStorage.getItem(HUB_LANG_KEY) || "en";
-          } catch { /* ignore */ }
-          setState(data);
-          setHubLang(sessionEmail ? (data.hubLang || persistedHubLang || "en") : persistedHubLang);
-          if (data.activeSection) setActiveSection(data.activeSection);
-          if (data.activeModule) setActiveModule(data.activeModule);
-          setIsReady(true);
+    try {
+      const keysToRemove = [];
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (!key) continue;
+        if (LEGACY_STORAGE_PREFIXES.some((prefix) => key === prefix || key.startsWith(`${prefix}-`))) {
+          keysToRemove.push(key);
         }
-      })
-      .finally(() => {
-        suspendAutoSaveRef.current = false;
-      });
-    return () => {
-      mounted = false;
-      suspendAutoSaveRef.current = false;
-    };
+      }
+      keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+    } catch {
+      // ignore storage cleanup failures
+    }
+    setIsReady(true);
   }, []);
-
-  useEffect(() => {
-    if (!isReady || suspendAutoSaveRef.current) return;
-    saveAppState({ ...state, hubLang, activeSection, activeModule }, storageEmail);
-  }, [isReady, state, hubLang, activeSection, activeModule, storageEmail]);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(HUB_LANG_KEY, hubLang || "en");
     } catch { /* ignore */ }
   }, [hubLang]);
-
-  useEffect(() => {
-    try {
-      const storedUsers = JSON.parse(window.localStorage.getItem(AUTH_STORAGE_KEY) || "[]");
-      const nextUsers = Array.isArray(storedUsers)
-        ? [normalizeAuthUser(SUPER_ADMIN), ...storedUsers.filter((user) => user?.email && user.email !== SUPER_ADMIN.email).map(normalizeAuthUser)]
-        : [normalizeAuthUser(SUPER_ADMIN)];
-      setAuthUsers(nextUsers);
-      const storedSession = JSON.parse(window.localStorage.getItem(AUTH_SESSION_KEY) || "null");
-      if (storedSession?.email) {
-        const matchedUser = nextUsers.find((user) => user.email === storedSession.email);
-        if (matchedUser) {
-          setCurrentUser(matchedUser);
-          setStorageEmail(matchedUser.email);
-          setActiveProduct("books");
-        }
-      }
-      const storedRemember = JSON.parse(window.localStorage.getItem(AUTH_REMEMBER_KEY) || "null");
-      if (storedRemember?.email && storedRemember?.password) {
-        setAuthDraft((current) => ({
-          ...current,
-          email: storedRemember.email,
-          password: storedRemember.password,
-          rememberMe: true
-        }));
-      }
-      const storedResetRequests = JSON.parse(window.localStorage.getItem(AUTH_RESET_KEY) || "[]");
-      if (Array.isArray(storedResetRequests)) {
-        setResetRequests(storedResetRequests);
-      }
-    } catch {
-      setAuthUsers([normalizeAuthUser(SUPER_ADMIN)]);
-    } finally {
-      setAuthHydrated(true);
-    }
-  }, []);
 
   useEffect(() => {
     setApiSession(backendSession);
@@ -1496,9 +1950,28 @@ function MainApp() {
   }, [backendSession?.accessToken]);
 
   useEffect(() => {
-    const persistableUsers = authUsers.filter((user) => user.email !== SUPER_ADMIN.email);
-    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(persistableUsers));
-  }, [authUsers]);
+    syncCustomersFromBackend(backendSession).catch(() => {
+      // syncCustomersFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    syncVendorsFromBackend(backendSession).catch(() => {
+      // syncVendorsFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    syncCompanySettingsFromBackend(backendSession).catch(() => {
+      // syncCompanySettingsFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    syncInvoicesFromBackend(backendSession).catch(() => {
+      // syncInvoicesFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
 
   useEffect(() => {
     if (!currentUser?.email) return;
@@ -1673,21 +2146,6 @@ function MainApp() {
       });
     }
   }, [authUsers, currentUser, timeTick]);
-
-  useEffect(() => {
-    if (!authHydrated) return;
-    if (currentUser?.email) {
-      window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ email: currentUser.email }));
-      setStorageEmail(currentUser.email);
-    } else {
-      window.localStorage.removeItem(AUTH_SESSION_KEY);
-      setStorageEmail(null);
-    }
-  }, [authHydrated, currentUser]);
-
-  useEffect(() => {
-    window.localStorage.setItem(AUTH_RESET_KEY, JSON.stringify(resetRequests));
-  }, [resetRequests]);
 
   useEffect(() => {
     if (!state.items.length) return;
@@ -1894,7 +2352,6 @@ function MainApp() {
       id: crypto.randomUUID(),
       fullName: teamMemberDraft.fullName,
       email,
-      password: teamMemberDraft.password,
       role: "internal_user",
       accountType: "internal",
       accountOwnerEmail: ownerEmail,
@@ -2281,6 +2738,7 @@ function MainApp() {
         return {
           ...baseDraft,
           ...record,
+          customerId: record.customerId || "",
           lineItems: Array.isArray(record.lineItems) && record.lineItems.length > 0
             ? record.lineItems.map((item) => ({
                 ...item,
@@ -2321,7 +2779,9 @@ function MainApp() {
       nextDraft.totalAmount = 0;
     }
     if (moduleId === "invoices") {
+      nextDraft.customerId = nextDraft.customerId || "";
       nextDraft.customerName = nextDraft.customerName || "";
+      nextDraft.issueDate = nextDraft.issueDate || today();
       nextDraft.status = nextDraft.status || "Qaralama";
       nextDraft.notes = nextDraft.notes || "";
       nextDraft.discount = nextDraft.discount || "0";
@@ -3982,9 +4442,6 @@ function MainApp() {
   function resetDemoData() {
     if (!window.confirm("Proqramdakı bütün mövcud məlumatlar sıfırlanacaq. Davam etmək istəyirsiniz?")) return;
     const seed = normalizeAppState(createResetData());
-    // Əvvəlcə bütün köhnə açarları sil, sonra sıfır state yaz
-    clearAppState(currentUser?.email);
-    saveAppState(seed, currentUser?.email);
     setState(seed);
     setDrafts({});
     setEditing({});
@@ -4371,12 +4828,24 @@ function MainApp() {
     if (moduleId === "customers") setCustomerView("journal");
   }
 
-  function submitModule(moduleId, event) {
+  async function submitModule(moduleId, event) {
     event.preventDefault();
     const config = MODULES[moduleId];
     const activeDraft = drafts[moduleId] || createModuleDraft(moduleId);
     const editingId = editing[moduleId];
     if (!editingId && !guardOperationAccess()) return;
+    if (moduleId === "customers") {
+      await submitCustomerModule(activeDraft, editingId);
+      return;
+    }
+    if (moduleId === "vendors") {
+      await submitVendorModule(activeDraft, editingId);
+      return;
+    }
+    if (moduleId === "invoices") {
+      await submitInvoiceModule(activeDraft, editingId);
+      return;
+    }
     if (moduleId === "manualJournals") {
       const analysis = getManualJournalAnalysis(activeDraft);
       if (!analysis.isBalanced) {
@@ -4528,7 +4997,20 @@ function MainApp() {
     cancelEdit(moduleId);
   }
 
-  function removeModuleRecord(moduleId, recordId) {
+  async function removeModuleRecord(moduleId, recordId) {
+    if (moduleId === "customers") {
+      await deleteCustomerRecord(recordId);
+      return;
+    }
+    if (moduleId === "vendors") {
+      await deleteVendorRecord(recordId);
+      return;
+    }
+    if (moduleId === "invoices") {
+      await deleteInvoiceRecord(recordId);
+      return;
+    }
+
     const config = MODULES[moduleId];
     setState((current) => {
       let nextState = { ...current, [config.collection]: current[config.collection].filter((item) => item.id !== recordId) };
@@ -4548,7 +5030,7 @@ function MainApp() {
     if (editing[moduleId] === recordId) cancelEdit(moduleId);
   }
 
-  function saveSettings(event) {
+  async function saveSettings(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const checkboxValue = (name) => form.querySelector(`[name="${name}"]`)?.checked ? "Bəli" : "Xeyr";
@@ -4593,6 +5075,74 @@ function MainApp() {
           entityType: form.entityType?.value
         }
       }) : user));
+    }
+  }
+
+  async function saveSettingsToBackend(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const checkboxValue = (name) => form.querySelector(`[name="${name}"]`)?.checked ? "Bəli" : "Xeyr";
+    const profilePayload = {
+      companyName: String(form.companyName?.value || "").trim(),
+      taxId: String(form.taxId?.value || "").trim(),
+      mobilePhone: String(form.mobilePhone?.value || "").trim(),
+      entityType: String(form.entityType?.value || "").trim(),
+      currency: String(form.currency?.value || "").trim().toUpperCase(),
+      fiscalYear: String(form.fiscalYear?.value || "").trim(),
+    };
+
+    setCompanySettingsLoading(true);
+    setCompanySettingsError("");
+
+    try {
+      const response = await apiUpdateCompanySettings(profilePayload, updateBackendSession);
+      const nextProfileSettings = normalizeBackendCompanySettings(response);
+
+      setState((current) => ({
+        ...current,
+        settings: {
+          ...current.settings,
+          ...nextProfileSettings,
+          invoicePrefix: form.invoicePrefix?.value,
+          quotePrefix: form.quotePrefix?.value,
+          defaultPaymentTerm: form.defaultPaymentTerm?.value,
+          defaultTaxLabel: form.defaultTaxLabel?.value,
+          numberingMode: form.numberingMode?.value,
+          stockWarning: form.stockWarning?.value,
+          negativeStock: form.negativeStock?.value,
+          autoBackup: form.autoBackup?.value,
+          discountMode: form.discountMode?.value,
+          discountTiming: form.discountTiming?.value,
+          additionalAdjustment: checkboxValue("additionalAdjustment"),
+          shippingCharge: checkboxValue("shippingCharge"),
+          shippingTaxAutomation: checkboxValue("shippingTaxAutomation"),
+          taxMode: form.taxMode?.value,
+          roundOffTaxMode: form.roundOffTaxMode?.value,
+          salesRoundingMode: form.salesRoundingMode?.value,
+          salespersonField: checkboxValue("salespersonField"),
+          uiScale: form.uiScale?.value,
+        }
+      }));
+
+      if (currentUser) {
+        setAuthUsers((current) => current.map((user) => user.email === currentUser.email ? normalizeAuthUser({
+          ...user,
+          profile: {
+            ...user.profile,
+            companyName: nextProfileSettings.companyName,
+            taxId: nextProfileSettings.taxId,
+            mobilePhone: nextProfileSettings.mobilePhone,
+            entityType: nextProfileSettings.entityType
+          }
+        }) : user));
+      }
+
+      setProfileSaved(true);
+    } catch (error) {
+      setCompanySettingsError(error?.message || "Şirkət məlumatları yadda saxlanmadı.");
+      setProfileSaved(false);
+    } finally {
+      setCompanySettingsLoading(false);
     }
   }
 
@@ -5050,6 +5600,9 @@ function renderItemsCatalog() {
     const query = searches[config.collection] || "";
     const draft = drafts.customers || createModuleDraft("customers");
     const rows = state.customers.filter((item) => matchesSearch(item, query));
+    const customerCount = customersMeta?.total ?? state.customers.length;
+    const customerStatusNotice = customersLoading ? "Müştərilər backend-dən yüklənir..." : customersError;
+    const customerEmptyMessage = customersLoading ? "Müştərilər yüklənir..." : at.noCust;
 
     if (customerView === "overview") {
       return (
@@ -5059,13 +5612,18 @@ function renderItemsCatalog() {
               <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
             </div>
           )}
+          {customerStatusNotice ? (
+            <div className="panel">
+              <p className="panel-copy">{customerStatusNotice}</p>
+            </div>
+          ) : null}
           <div className="bill-hub">
             <div className="bill-hub-card" onClick={() => setCustomerView("journal")}>
               <div className="bill-hub-icon">👥</div>
               <div className="bill-hub-info">
                 <h3>{at.hub_customersJournal}</h3>
                 <p>{at.hub_customersJournalDesc}</p>
-                <span className="bill-hub-count">{state.customers.length} {at.hub_customersCount}</span>
+                <span className="bill-hub-count">{customerCount} {at.hub_customersCount}</span>
               </div>
               <span className="bill-hub-arrow">→</span>
             </div>
@@ -5094,18 +5652,19 @@ function renderItemsCatalog() {
             </div>
           </div>
           <div className="panel">
+            {customerStatusNotice ? <p className="panel-copy">{customerStatusNotice}</p> : null}
             <div className="panel-toolbar">
               <input className="search-input" placeholder={at.searchCust} value={query} onChange={(e) => setSearches((current) => ({ ...current, [config.collection]: e.target.value }))} />
             </div>
             <Table
               headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
-              emptyMessage={at.noCust}
+              emptyMessage={customerEmptyMessage}
               rows={rows.map((record) => (
                 <tr key={record.id}>
                   {config.columns.map((col) => <td key={col[0]}>{renderCell(record, col)}</td>)}
                   <td><div className="row-actions">
-                    <button className="table-btn" onClick={() => startEdit("customers", record)}>{at.edit}</button>
-                    <button className="table-btn danger-btn" onClick={() => removeModuleRecord("customers", record.id)}>{at.delete}</button>
+                    <button className="table-btn" onClick={() => startEdit("customers", record)} disabled={customersLoading}>{at.edit}</button>
+                    <button className="table-btn danger-btn" onClick={() => removeModuleRecord("customers", record.id)} disabled={customersLoading}>{at.delete}</button>
                   </div></td>
                 </tr>
               ))}
@@ -5126,6 +5685,7 @@ function renderItemsCatalog() {
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={(event) => submitModule("customers", event)}>
+              {customerStatusNotice ? <p className="panel-copy">{customerStatusNotice}</p> : null}
               {config.form.filter((field) => field[0] !== "displayName" && field[0] !== "email" && field[0] !== "outstandingReceivables").map((field) => (
                 <label key={field[0]}>
                   <span>{fld(field[1])}</span>
@@ -5133,8 +5693,8 @@ function renderItemsCatalog() {
                 </label>
               ))}
               <div className="form-actions">
-                <button className="primary-btn" type="submit">{editing.customers ? at.ic_updateBtn : at.save}</button>
-                <button className="ghost-btn" type="button" onClick={() => cancelEdit("customers")}>{at.cancel}</button>
+                <button className="primary-btn" type="submit" disabled={customersLoading}>{editing.customers ? at.ic_updateBtn : at.save}</button>
+                <button className="ghost-btn" type="button" onClick={() => cancelEdit("customers")} disabled={customersLoading}>{at.cancel}</button>
               </div>
             </form>
           </div>
@@ -5150,11 +5710,15 @@ function renderItemsCatalog() {
     const rows = state.invoices.filter((item) => matchesSearch(item, query));
     const lineItems = draft.lineItems || [createDefaultSalesLineItem()];
     const invoiceTotals = calculateBillTotals(lineItems, draft.discount, draft.adjustment);
-    const invoiceCustomerOptions = Array.from(new Set(
-      state.customers
-        .map((item) => String(item.companyName || item.displayName || "").trim())
-        .filter(Boolean)
-    ));
+    const invoiceCount = invoicesMeta?.total ?? state.invoices.length;
+    const invoiceStatusNotice = invoicesLoading ? "Fakturalar backend-dən yüklənir..." : invoicesError;
+    const invoiceEmptyMessage = invoicesLoading ? "Fakturalar yüklənir..." : at.noInvoice;
+    const invoiceCustomerOptions = state.customers
+      .map((item) => ({
+        id: item.id,
+        label: String(item.companyName || item.displayName || "").trim(),
+      }))
+      .filter((item) => item.id && item.label);
     const invoiceGoodsNameOptions = Array.from(
       state.goods.reduce((map, item) => {
         const name = String(item.name || "").trim();
@@ -5223,13 +5787,18 @@ function renderItemsCatalog() {
               <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
             </div>
           )}
+          {invoiceStatusNotice ? (
+            <div className="panel">
+              <p className="panel-copy">{invoiceStatusNotice}</p>
+            </div>
+          ) : null}
           <div className="bill-hub">
             <div className="bill-hub-card" onClick={() => setInvoiceView("journal")}>
               <div className="bill-hub-icon">🧾</div>
               <div className="bill-hub-info">
                 <h3>{at.hub_invoicesJournal}</h3>
                 <p>{at.hub_invoicesJournalDesc}</p>
-                <span className="bill-hub-count">{state.invoices.length} {at.unit_record}</span>
+                <span className="bill-hub-count">{invoiceCount} {at.unit_record}</span>
               </div>
               <span className="bill-hub-arrow">→</span>
             </div>
@@ -5272,19 +5841,20 @@ function renderItemsCatalog() {
             </div>
           </div>
           <div className="panel">
+            {invoiceStatusNotice ? <p className="panel-copy">{invoiceStatusNotice}</p> : null}
             <div className="panel-toolbar">
               <input className="search-input" placeholder={at.searchInvoice} value={query} onChange={(e) => setSearches((current) => ({ ...current, [config.collection]: e.target.value }))} />
             </div>
             <Table
               headers={invoiceJournalColumns.map(([, label]) => col(label)).concat(at.action)}
-              emptyMessage={at.noInvoice}
+              emptyMessage={invoiceEmptyMessage}
               rows={invoiceJournalRows.map((record) => (
                 <tr key={record.id}>
                   {invoiceJournalColumns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
                   <td><div className="row-actions">
-                    <button className="table-btn" onClick={() => startEdit("invoices", record)}>{at.edit}</button>
-                    <button className="table-btn danger-btn" onClick={() => removeModuleRecord("invoices", record.id)}>{at.delete}</button>
-                    <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId((current) => current === record.id ? null : record.id)}>Müxabirləşməyə bax</button>
+                    <button className="table-btn" onClick={() => startEdit("invoices", record)} disabled={invoicesLoading}>{at.edit}</button>
+                    <button className="table-btn danger-btn" onClick={() => removeModuleRecord("invoices", record.id)} disabled={invoicesLoading}>{at.delete}</button>
+                    <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId((current) => current === record.id ? null : record.id)} disabled={invoicesLoading}>Müxabirləşməyə bax</button>
                   </div></td>
                 </tr>
               ))}
@@ -5330,20 +5900,26 @@ function renderItemsCatalog() {
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={(event) => submitModule("invoices", event)}>
+              {invoiceStatusNotice ? <p className="panel-copy">{invoiceStatusNotice}</p> : null}
               <div className="bill-header-fields">
                 <label className="bill-header-field">
                   <span>{col("Faktura #")}</span>
-                  <input value={draft.invoiceNumber ?? ""} onChange={(event) => updateDraft("invoices", "invoiceNumber", event.target.value)} required />
+                  <input value={draft.invoiceNumber ?? ""} onChange={(event) => updateDraft("invoices", "invoiceNumber", event.target.value)} required disabled={invoicesLoading} />
                 </label>
                 <label className="bill-header-field">
                   <span>{col("Son tarix")}</span>
-                  <input type="date" value={draft.dueDate ?? today()} onChange={(event) => updateDraft("invoices", "dueDate", event.target.value)} required />
+                  <input type="date" value={draft.dueDate ?? today()} onChange={(event) => updateDraft("invoices", "dueDate", event.target.value)} required disabled={invoicesLoading} />
                 </label>
                 <label className="bill-header-field">
                   <span>{col("Müştəri")}</span>
-                  <select value={draft.customerName ?? ""} onChange={(event) => updateDraft("invoices", "customerName", event.target.value)} required>
+                  <select value={draft.customerId ?? ""} onChange={(event) => {
+                    const selectedId = event.target.value;
+                    const selectedCustomer = state.customers.find((item) => item.id === selectedId);
+                    updateDraft("invoices", "customerId", selectedId);
+                    updateDraft("invoices", "customerName", selectedCustomer ? String(selectedCustomer.companyName || selectedCustomer.displayName || "").trim() : "");
+                  }} required disabled={invoicesLoading}>
                     <option value="">Müştəri seçin...</option>
-                    {invoiceCustomerOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                    {invoiceCustomerOptions.map((customer) => <option key={customer.id} value={customer.id}>{customer.label}</option>)}
                   </select>
                 </label>
               </div>
@@ -5364,24 +5940,24 @@ function renderItemsCatalog() {
                   <tbody>
                     {lineItems.map((item) => (
                       <tr key={item.id}>
-                        <td><input list="invoice-goods-list" value={item.itemName ?? ""} onChange={(event) => updateInvoiceLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} /></td>
+                        <td><input list="invoice-goods-list" value={item.itemName ?? ""} onChange={(event) => updateInvoiceLineItem(item.id, "itemName", event.target.value)} placeholder={fld("Ad")} disabled={invoicesLoading} /></td>
                         <td>
-                          <select value={item.accountCode ?? "601"} onChange={(event) => updateInvoiceLineItem(item.id, "accountCode", event.target.value)}>
+                          <select value={item.accountCode ?? "601"} onChange={(event) => updateInvoiceLineItem(item.id, "accountCode", event.target.value)} disabled={invoicesLoading}>
                             {(invoiceIncomeAccountOptions.length ? invoiceIncomeAccountOptions : [{ id: "default-sales", accountCode: "601", accountName: getAccountNameByCode("601") }]).map((account) => (
                               <option key={`${item.id}-${account.id}`} value={account.accountCode}>{account.accountCode} - {account.accountName}</option>
                             ))}
                           </select>
                         </td>
-                        <td><input type="number" step="0.01" min="0" value={item.quantity ?? "1"} onChange={(event) => updateInvoiceLineItem(item.id, "quantity", event.target.value)} /></td>
-                        <td><input type="number" step="0.01" min="0" value={item.rate ?? "0"} onChange={(event) => updateInvoiceLineItem(item.id, "rate", event.target.value)} /></td>
+                        <td><input type="number" step="0.01" min="0" value={item.quantity ?? "1"} onChange={(event) => updateInvoiceLineItem(item.id, "quantity", event.target.value)} disabled={invoicesLoading} /></td>
+                        <td><input type="number" step="0.01" min="0" value={item.rate ?? "0"} onChange={(event) => updateInvoiceLineItem(item.id, "rate", event.target.value)} disabled={invoicesLoading} /></td>
                         <td>
-                          <select value={item.taxLabel ?? PURCHASE_TAX_OPTIONS[0]} onChange={(event) => updateInvoiceLineItem(item.id, "taxLabel", event.target.value)}>
+                          <select value={item.taxLabel ?? PURCHASE_TAX_OPTIONS[0]} onChange={(event) => updateInvoiceLineItem(item.id, "taxLabel", event.target.value)} disabled={invoicesLoading}>
                             {PURCHASE_TAX_OPTIONS.map((option) => <option key={`${item.id}-${option}`} value={option}>{option}</option>)}
                           </select>
                         </td>
                         <td>{currency(item.amount || 0, state.settings.currency)}</td>
                         <td>
-                          <button className="table-btn danger-btn" type="button" onClick={() => removeInvoiceLineItem(item.id)}>{at.delete}</button>
+                          <button className="table-btn danger-btn" type="button" onClick={() => removeInvoiceLineItem(item.id)} disabled={invoicesLoading}>{at.delete}</button>
                         </td>
                       </tr>
                     ))}
@@ -5393,28 +5969,28 @@ function renderItemsCatalog() {
               </datalist>
 
               <div className="form-actions">
-                <button className="ghost-btn" type="button" onClick={addInvoiceLineItem}>{at.mj_addLine || "Sətir əlavə et"}</button>
+                <button className="ghost-btn" type="button" onClick={addInvoiceLineItem} disabled={invoicesLoading}>{at.mj_addLine || "Sətir əlavə et"}</button>
               </div>
 
               <label>
                 <span>{at.opt_notes || "Qeydlər"}</span>
-                <textarea rows={3} value={draft.notes ?? ""} onChange={(event) => updateDraft("invoices", "notes", event.target.value)} />
+                <textarea rows={3} value={draft.notes ?? ""} onChange={(event) => updateDraft("invoices", "notes", event.target.value)} disabled={invoicesLoading} />
               </label>
 
               <div className="bill-header-fields">
                 <label className="bill-header-field">
                   <span>{at.col["Status"] || "Status"}</span>
-                  <select value={draft.status ?? "Qaralama"} onChange={(event) => updateDraft("invoices", "status", event.target.value)}>
+                  <select value={draft.status ?? "Qaralama"} onChange={(event) => updateDraft("invoices", "status", event.target.value)} disabled={invoicesLoading}>
                     {["Qaralama", "Göndərilib", "Gecikib", "Ödənilib"].map((status) => <option key={status} value={status}>{status}</option>)}
                   </select>
                 </label>
                 <label className="bill-header-field">
                   <span>{at.opt_discountPct || "Endirim (%)"}</span>
-                  <input type="number" step="0.01" min="0" value={draft.discount ?? "0"} onChange={(event) => updateDraft("invoices", "discount", event.target.value)} />
+                  <input type="number" step="0.01" min="0" value={draft.discount ?? "0"} onChange={(event) => updateDraft("invoices", "discount", event.target.value)} disabled={invoicesLoading} />
                 </label>
                 <label className="bill-header-field">
                   <span>{at.opt_adjustment || "Düzəliş"}</span>
-                  <input type="number" step="0.01" value={draft.adjustment ?? "0"} onChange={(event) => updateDraft("invoices", "adjustment", event.target.value)} />
+                  <input type="number" step="0.01" value={draft.adjustment ?? "0"} onChange={(event) => updateDraft("invoices", "adjustment", event.target.value)} disabled={invoicesLoading} />
                 </label>
               </div>
 
@@ -5425,8 +6001,8 @@ function renderItemsCatalog() {
               </div>
 
               <div className="form-actions">
-                <button className="primary-btn" type="submit">{editing.invoices ? at.ic_updateBtn : at.save}</button>
-                <button className="ghost-btn" type="button" onClick={() => cancelEdit("invoices")}>{at.cancel}</button>
+                <button className="primary-btn" type="submit" disabled={invoicesLoading}>{editing.invoices ? at.ic_updateBtn : at.save}</button>
+                <button className="ghost-btn" type="button" onClick={() => cancelEdit("invoices")} disabled={invoicesLoading}>{at.cancel}</button>
               </div>
             </form>
           </div>
@@ -6817,6 +7393,9 @@ function renderItemsCatalog() {
       const query = searches[config.collection] || "";
       const draft = drafts.vendors || createModuleDraft("vendors");
       const rows = state.vendors.filter((item) => matchesSearch(item, query));
+      const vendorCount = vendorsMeta?.total ?? state.vendors.length;
+      const vendorStatusNotice = vendorsLoading ? "Təchizatçılar backend-dən yüklənir..." : vendorsError;
+      const vendorEmptyMessage = vendorsLoading ? "Təchizatçılar yüklənir..." : at.noVendor;
 
       if (vendorView === "overview") {
         return (
@@ -6826,13 +7405,18 @@ function renderItemsCatalog() {
                 <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
               </div>
             )}
+            {vendorStatusNotice ? (
+              <div className="panel">
+                <p className="panel-copy">{vendorStatusNotice}</p>
+              </div>
+            ) : null}
             <div className="bill-hub">
               <div className="bill-hub-card" onClick={() => setVendorView("journal")}>
                 <div className="bill-hub-icon">🏢</div>
                 <div className="bill-hub-info">
                   <h3>{at.hub_vendorsJournal}</h3>
                   <p>{at.hub_vendorsJournalDesc}</p>
-                  <span className="bill-hub-count">{state.vendors.length} {at.hub_vendorsCount}</span>
+                  <span className="bill-hub-count">{vendorCount} {at.hub_vendorsCount}</span>
                 </div>
                 <span className="bill-hub-arrow">→</span>
               </div>
@@ -6861,19 +7445,20 @@ function renderItemsCatalog() {
               </div>
             </div>
             <div className="panel">
+              {vendorStatusNotice ? <p className="panel-copy">{vendorStatusNotice}</p> : null}
               <div className="panel-toolbar">
                 <input className="search-input" placeholder={at.searchVendor} value={query} onChange={(e) => setSearches((current) => ({ ...current, [config.collection]: e.target.value }))} />
               </div>
               <Table
                 headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
-                emptyMessage={at.noVendor}
+                emptyMessage={vendorEmptyMessage}
                 rows={rows.map((record) => (
                   <tr key={record.id}>
                     {config.columns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
                     <td>
                       <div className="row-actions">
-                        <button className="table-btn" onClick={() => startEdit("vendors", record)}>{at.edit}</button>
-                        <button className="table-btn danger-btn" onClick={() => removeModuleRecord("vendors", record.id)}>{at.delete}</button>
+                        <button className="table-btn" onClick={() => startEdit("vendors", record)} disabled={vendorsLoading}>{at.edit}</button>
+                        <button className="table-btn danger-btn" onClick={() => removeModuleRecord("vendors", record.id)} disabled={vendorsLoading}>{at.delete}</button>
                       </div>
                     </td>
                   </tr>
@@ -6895,6 +7480,7 @@ function renderItemsCatalog() {
             </div>
             <div className="bill-form-panel">
               <form className="form-grid" onSubmit={(event) => submitModule("vendors", event)}>
+                {vendorStatusNotice ? <p className="panel-copy">{vendorStatusNotice}</p> : null}
                 {config.form.filter((field) => field[0] !== "vendorName").map((field) => (
                   <label key={field[0]}>
                     <span>{fld(field[1])}</span>
@@ -6902,8 +7488,8 @@ function renderItemsCatalog() {
                   </label>
                 ))}
                 <div className="form-actions">
-                  <button className="primary-btn" type="submit">{editing.vendors ? at.ic_updateBtn : at.save}</button>
-                  <button className="ghost-btn" type="button" onClick={() => cancelEdit("vendors")}>{at.cancel}</button>
+                  <button className="primary-btn" type="submit" disabled={vendorsLoading}>{editing.vendors ? at.ic_updateBtn : at.save}</button>
+                  <button className="ghost-btn" type="button" onClick={() => cancelEdit("vendors")} disabled={vendorsLoading}>{at.cancel}</button>
                 </div>
               </form>
             </div>
@@ -6929,6 +7515,11 @@ function renderItemsCatalog() {
                 <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
               </div>
             )}
+            {vendorStatusNotice ? (
+              <div className="panel">
+                <p className="panel-copy">{vendorStatusNotice}</p>
+              </div>
+            ) : null}
             <div className="bill-hub">
               <div className="bill-hub-card" onClick={() => setChartView("journal")}>
                 <div className="bill-hub-icon">📊</div>
@@ -8519,15 +9110,6 @@ function renderItemsCatalog() {
       updateBackendSession(session);
       await syncBackendSubscription(session);
 
-      if (authDraft.rememberMe) {
-        window.localStorage.setItem(AUTH_REMEMBER_KEY, JSON.stringify({
-          email,
-          password: authDraft.password,
-        }));
-      } else {
-        window.localStorage.removeItem(AUTH_REMEMBER_KEY);
-      }
-
       setBooksNotice("Uğurla daxil oldunuz.");
       setActiveProduct("books");
       setBooksView("home");
@@ -8580,23 +9162,14 @@ function renderItemsCatalog() {
 
   function submitPasswordChange(event) {
     event.preventDefault();
-    const { current, next, confirm } = passwordDraft;
-    const userRecord = authUsers.find((u) => u.email === currentUser.email);
-    if (!userRecord || userRecord.password !== current) {
-      setPasswordDraft((d) => ({ ...d, notice: "Mövcud parol yanlışdır.", tone: "error" }));
-      return;
-    }
-    if (next.length < 6) {
-      setPasswordDraft((d) => ({ ...d, notice: "Yeni parol ən azı 6 simvol olmalıdır.", tone: "error" }));
-      return;
-    }
-    if (next !== confirm) {
-      setPasswordDraft((d) => ({ ...d, notice: "Yeni parol və təkrar parol eyni deyil.", tone: "error" }));
-      return;
-    }
-    setAuthUsers((users) => users.map((u) => u.email === currentUser.email ? { ...u, password: next } : u));
-    setCurrentUser((u) => ({ ...u, password: next }));
-    setPasswordDraft({ current: "", next: "", confirm: "", notice: "Parol uğurla dəyişdirildi.", tone: "success" });
+    setPasswordDraft((draft) => ({
+      ...draft,
+      current: "",
+      next: "",
+      confirm: "",
+      notice: "Parol dəyişikliyi yalnız backend endpoint-i əlavə edildikdən sonra aktiv ediləcək.",
+      tone: "warning",
+    }));
   }
 
   async function logoutUser() {
@@ -8614,9 +9187,7 @@ function renderItemsCatalog() {
     setBackendPlans([]);
     setCheckoutResult(null);
     setCurrentUser(null);
-    setStorageEmail(null);
     setProfileMenuOpen(false);
-    // Cari istifadəçinin məlumatlarını təmizlə ki, növbəti istifadəçiyə görünməsin
     setState(normalizeAppState(createResetData()));
     setActiveSection("home");
     setActiveModule(null);
@@ -8632,117 +9203,19 @@ function renderItemsCatalog() {
 
   function legacySubmitForgotPassword(event) {
     event.preventDefault();
-    const email = String(forgotDraft.email || "").trim().toLowerCase();
-    if (!email) {
-      setBooksNotice("Parol bərpası üçün e-poçt daxil edin.");
-      return;
-    }
-
-    const matchedUser = authUsers.find((user) => user.email.toLowerCase() === email);
-    if (!matchedUser) {
-      setBooksNotice("Bu e-poçt üzrə hesab tapılmadı.");
-      return;
-    }
-
-    const subject = encodeURIComponent("Tetavio Mühasibat Proqramı giriş məlumatları");
-    const body = encodeURIComponent(
-      `Salam, ${matchedUser.fullName}.\n\nTetavio Mühasibat Proqramı hesabınız üzrə qeydiyyatda olan şifrəniz:\n${matchedUser.password}\n\nE-poçt: ${matchedUser.email}\n\nTəhlükəsizlik məqsədilə şifrəni dəyişməyiniz tövsiyə olunur.`
-    );
-
-    try {
-      window.location.href = `mailto:${matchedUser.email}?subject=${subject}&body=${body}`;
-      setBooksNotice("Bərpa məktubu hazırlandı və e-poçt tətbiqinə göndərildi.");
-    } catch {
-      setBooksNotice(`Bu lokal versiyada məktub avtomatik göndərilmədi. Qeydiyyatlı e-poçt: ${matchedUser.email}`);
-    }
-
-    setBooksView("signin");
-    setForgotDraft({ email: matchedUser.email });
-    setAuthDraft((current) => ({ ...current, email: matchedUser.email }));
+    setBooksNotice("Parol bərpası lokal olaraq saxlanılmır. Bu funksiya backend üzərindən ayrıca aktiv edilməlidir.");
   }
 
   function submitForgotPassword(event) {
     event.preventDefault();
-    const email = String(forgotDraft.email || "").trim().toLowerCase();
-    if (!email) {
-      setBooksNotice("Parol bərpası üçün e-poçt daxil edin.");
-      return;
-    }
-
-    const matchedUser = authUsers.find((user) => user.email.toLowerCase() === email);
-    if (!matchedUser) {
-      setBooksNotice("Bu e-poçt üzrə hesab tapılmadı.");
-      return;
-    }
-
-    const token = crypto.randomUUID();
-    const expiresAt = Date.now() + 1000 * 60 * 30;
-    const resetLink = `finotam://books-reset?token=${token}`;
-
-    setResetRequests((current) => [
-      {
-        token,
-        email,
-        expiresAt,
-        usedAt: null,
-        createdAt: Date.now()
-      },
-      ...current.filter((request) => request.email !== email || request.usedAt)
-    ]);
-
-    const subject = encodeURIComponent("Tetavio Mühasibat Proqramı parol yeniləmə linki");
-    const body = encodeURIComponent(
-      `Salam, ${matchedUser.fullName}.\n\nTetavio Mühasibat Proqramı hesabınız üçün şifrə yeniləmə linki yaradıldı.\n\nŞifrə yeniləmə linki:\n${resetLink}\n\nBu link 30 dəqiqə ərzində keçərlidir.\n\nƏgər bu sorğunu siz etməmisinizsə, məktubu nəzərə almayın.`
-    );
-
-    try {
-      window.location.href = `mailto:${matchedUser.email}?subject=${subject}&body=${body}`;
-      setBooksNotice("Şifrə yeniləmə linki həmin e-poçt ünvanı üçün hazırlandı və e-poçt tətbiqinə ötürüldü.");
-    } catch {
-      setBooksNotice(`Bu lokal versiyada məktub avtomatik göndərilmədi. Qeydiyyatlı e-poçt: ${matchedUser.email}`);
-    }
-
-    setActiveResetToken(token);
-    setResetDraft({ password: "", confirmPassword: "" });
-    setBooksView("reset");
-    setForgotDraft({ email: matchedUser.email });
-    setAuthDraft((current) => ({ ...current, email: matchedUser.email }));
+    setBooksNotice("Parol bərpası backend üzərindən aktiv edilməlidir. Local reset token saxlanması söndürülüb.");
   }
 
   function submitResetPassword(event) {
     event.preventDefault();
-    const activeRequest = getValidResetRequest(activeResetToken);
-    if (!activeRequest) {
-      setBooksNotice("Şifrə yeniləmə linkinin vaxtı bitib və ya artıq istifadə olunub.");
-      setBooksView("forgot");
-      return;
-    }
-
-    if (!resetDraft.password || !resetDraft.confirmPassword) {
-      setBooksNotice("Yeni şifrə üçün hər iki sahəni doldurun.");
-      return;
-    }
-
-    if (resetDraft.password !== resetDraft.confirmPassword) {
-      setBooksNotice("Şifrələr üst-üstə düşmür.");
-      return;
-    }
-
-    setAuthUsers((current) => current.map((user) => user.email.toLowerCase() === activeRequest.email ? normalizeAuthUser({ ...user, password: resetDraft.password }) : user));
-    setResetRequests((current) => current.map((request) => request.token === activeResetToken ? { ...request, usedAt: Date.now() } : request));
-
-    const remembered = JSON.parse(window.localStorage.getItem(AUTH_REMEMBER_KEY) || "null");
-    if (remembered?.email === activeRequest.email) {
-      window.localStorage.setItem(AUTH_REMEMBER_KEY, JSON.stringify({ email: activeRequest.email, password: resetDraft.password }));
-      setAuthDraft((current) => ({ ...current, email: activeRequest.email, password: resetDraft.password, rememberMe: true }));
-    } else {
-      setAuthDraft((current) => ({ ...current, email: activeRequest.email, password: "", rememberMe: false }));
-    }
-
     setResetDraft({ password: "", confirmPassword: "" });
     setActiveResetToken("");
-    setBooksView("signin");
-    setBooksNotice("Şifrə yeniləndi. Yeni şifrə ilə daxil ola bilərsiniz.");
+    setBooksNotice("Local reset axını söndürülüb. Şifrə yeniləmə backend endpoint-i ilə təmin olunmalıdır.");
   }
 
   function renderBooksLanding() {
@@ -12021,21 +12494,27 @@ function renderSettings() {
           {backBtn}
           <div className="panel">
             <div className="panel-head"><div><h3>{at.nav.settings}</h3><p className="panel-copy">{at.settings_profileDesc}</p></div><span>{at.settings_profileBadge}</span></div>
-            <form className="form-grid" onSubmit={(e) => { saveSettings(e); setProfileSaved(true); }}>
-              <label><span>{at.settings_entityType}</span><select name="entityType" disabled={profileSaved} defaultValue={state.settings.entityType || "Hüquqi şəxs"}><option value="Fiziki şəxs">{at.settings_entityIndiv}</option><option value="Hüquqi şəxs">{at.settings_entityCompany}</option></select></label>
-              <label><span>{at.settings_companyOwnerName}</span><input name="companyName" disabled={profileSaved} defaultValue={state.settings.companyName} required /></label>
-              <label><span>{at.settings_taxId}</span><input name="taxId" disabled={profileSaved} defaultValue={state.settings.taxId} placeholder="0000000000" required /></label>
-              <label><span>{at.settings_mobile}</span><input name="mobilePhone" disabled={profileSaved} defaultValue={state.settings.mobilePhone || ""} placeholder="+994..." required /></label>
-              <label><span>{at.settings_currency}</span><input name="currency" disabled={profileSaved} defaultValue={state.settings.currency} required /></label>
-              <label><span>{at.settings_fiscalYear}</span><input name="fiscalYear" disabled={profileSaved} defaultValue={state.settings.fiscalYear} required /></label>
-              <label><span>{at.settings_uiScale}</span><select name="uiScale" disabled={profileSaved} defaultValue={state.settings.uiScale || "Avtomatik"}><option value="Avtomatik">{at.settings_uiAuto}</option><option value="Kiçik">{at.settings_uiSmall}</option><option value="Standart">{at.settings_uiStandard}</option><option value="Böyük">{at.settings_uiLarge}</option></select></label>
+            <form
+              key={`company-settings-${state.settings.entityType || ""}-${state.settings.companyName || ""}-${state.settings.taxId || ""}-${state.settings.mobilePhone || ""}-${state.settings.currency || ""}-${state.settings.fiscalYear || ""}-${state.settings.uiScale || ""}`}
+              className="form-grid"
+              onSubmit={saveSettingsToBackend}
+            >
+              {companySettingsError ? <p className="panel-copy">{companySettingsError}</p> : null}
+              {companySettingsLoading ? <p className="panel-copy">Şirkət məlumatları backend ilə sinxronlaşdırılır...</p> : null}
+              <label><span>{at.settings_entityType}</span><select name="entityType" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.entityType || "Hüquqi şəxs"}><option value="Fiziki şəxs">{at.settings_entityIndiv}</option><option value="Hüquqi şəxs">{at.settings_entityCompany}</option></select></label>
+              <label><span>{at.settings_companyOwnerName}</span><input name="companyName" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.companyName} required /></label>
+              <label><span>{at.settings_taxId}</span><input name="taxId" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.taxId} placeholder="0000000000" required /></label>
+              <label><span>{at.settings_mobile}</span><input name="mobilePhone" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.mobilePhone || ""} placeholder="+994..." required /></label>
+              <label><span>{at.settings_currency}</span><input name="currency" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.currency} required /></label>
+              <label><span>{at.settings_fiscalYear}</span><input name="fiscalYear" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.fiscalYear} required /></label>
+              <label><span>{at.settings_uiScale}</span><select name="uiScale" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.uiScale || "Avtomatik"}><option value="Avtomatik">{at.settings_uiAuto}</option><option value="Kiçik">{at.settings_uiSmall}</option><option value="Standart">{at.settings_uiStandard}</option><option value="Böyük">{at.settings_uiLarge}</option></select></label>
               {profileSaved ? (
                 <div className="settings-saved-row">
                   <span className="settings-saved-badge">✓ Yadda saxlanıldı</span>
-                  <button type="button" className="ghost-btn settings-edit-btn" onClick={() => setProfileSaved(false)}>Dəyişiklik et</button>
+                  <button type="button" className="ghost-btn settings-edit-btn" onClick={() => setProfileSaved(false)} disabled={companySettingsLoading}>Dəyişiklik et</button>
                 </div>
               ) : (
-                <button className="primary-btn" type="submit">{at.save}</button>
+                <button className="primary-btn" type="submit" disabled={companySettingsLoading}>{at.save}</button>
               )}
             </form>
           </div>

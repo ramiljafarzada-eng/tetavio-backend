@@ -1,4 +1,4 @@
-import { createSeedData, STORAGE_KEY, today } from "./data";
+import { createSeedData, today } from "./data";
 
 const numberFields = new Set([
   "serialNumber",
@@ -265,17 +265,8 @@ async function getInvoke() {
   return null;
 }
 
-function getUserKey(userEmail) {
-  if (!userEmail) return STORAGE_KEY;
-  return `${STORAGE_KEY}-${encodeURIComponent(String(userEmail).trim().toLowerCase())}`;
-}
-
-// Bütün bu istifadəçiyə aid açarları sil (köhnə default açar da daxil)
 export function clearAppState(userEmail) {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-  if (userEmail) {
-    try { localStorage.removeItem(getUserKey(userEmail)); } catch { /* ignore */ }
-  }
+  void userEmail;
 }
 
 const EMPTY_STATE = null; // normalizeState(EMPTY_STATE) → seed fallback-lar olmadan boş state
@@ -347,20 +338,11 @@ export async function saveAppState(state, userEmail) {
 }
 
 function loadBrowserState(userEmail) {
-  const key = getUserKey(userEmail);
-  const saved = localStorage.getItem(key);
-
-  if (saved) {
-    try {
-      return normalizeState(JSON.parse(saved));
-    } catch { /* ignore */ }
-  }
-
-  // Heç nə tapılmadı — tamamilə boş state qaytar (seed demo data yox)
+  void userEmail;
   return normalizeState(emptyState());
 }
 
 function saveBrowserState(state, userEmail) {
-  const key = getUserKey(userEmail);
-  localStorage.setItem(key, JSON.stringify(state));
+  void state;
+  void userEmail;
 }

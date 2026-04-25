@@ -52,6 +52,10 @@ Backend:
 
 \- Root directory: backend
 
+\- Local backend test command:
+
+&#x20; npm test
+
 \- Start command:
 
 &#x20; npm run start:prod
@@ -259,4 +263,197 @@ Backend change:
 &#x20; - API works
 
 &#x20; - DB connected
+
+\---
+
+\## ERP Backend Notes
+
+\- Phase 1 ERP backend modules exist for `company-settings`, `customers`, `vendors`, and `invoices`.
+
+\- All ERP endpoints are JWT-protected and must stay scoped by `user.accountId`.
+  Never accept `accountId` from frontend payloads.
+
+\- Invoice totals are server-calculated only.
+  Client input must not control `subTotalMinor`, `taxMinor`, `discountMinor`, `totalMinor`, or `lineTotalMinor`.
+
+\- Invoice numbering is unique per `accountId + invoiceNumber`.
+  If invoice number is omitted, backend auto-generates `INV-000001` style values and retries on concurrent collisions.
+
+\- ERP list endpoints `GET /customers`, `GET /vendors`, and `GET /invoices` are paginated.
+  Response shape is `{ data, meta }` with `page` default `1`, `limit` default `20`, max `100`.
+  Paginated ERP responses use a shared helper and this `{ data, meta }` shape must stay stable.
+  - customers: `search`, `sortBy`, `sortOrder`
+  - vendors: `search`, `sortBy`, `sortOrder`
+  - invoices: `search`, `status`, `customerId`, `issueDateFrom`, `issueDateTo`, `dueDateFrom`, `dueDateTo`, `sortBy`, `sortOrder`
+  - invoice date filters are inclusive: `From` uses start-of-day, `To` uses end-of-day
+  - invalid filter or sort query values should fail with `400`, not be silently ignored
+  - supported sort fields:
+    - customers: `createdAt`, `displayName`, `companyName`, `email`
+    - vendors: `createdAt`, `vendorName`, `companyName`, `email`
+    - invoices: `issueDate`, `dueDate`, `createdAt`, `invoiceNumber`, `totalMinor`, `status`
+
+\- ERP delete operations are soft deletes.
+  Deleted customers, vendors, invoices, and invoice lines are excluded from normal list/get/update flows.
+  Customers referenced by active invoices must not be deletable.
+  Vendor delete guards should be extended when vendor-linked purchase documents or bills are added.
+
+\- ERP DTO validation trims string inputs before validation.
+  Currency codes are normalized to uppercase in DTO input handling.
+
+\## ERP API Contract
+
+\- All ERP endpoints require JWT bearer auth and are scoped by `user.accountId`.
+  Frontend must never send `accountId`.
+
+\### Company Settings
+
+\- Endpoints:
+  - `GET /api/v1/company-settings/me`
+  - `PATCH /api/v1/company-settings/me`
+
+\- Request body summary:
+  - optional fields: `companyName`, `taxId`, `mobilePhone`, `entityType`, `currency`, `fiscalYear`
+
+\- Response summary:
+  - single company settings object for current account
+  - if no profile exists yet, backend returns a fallback object derived from account data
+
+\- Important rules:
+  - scoped to current account only
+  - `currency` is normalized to uppercase
+
+\### Customers
+
+\- Endpoints:
+  - `GET /api/v1/customers`
+  - `GET /api/v1/customers/:id`
+  - `POST /api/v1/customers`
+  - `PATCH /api/v1/customers/:id`
+  - `DELETE /api/v1/customers/:id`
+
+\- Request body summary:
+  - create/update fields: `displayName`, `companyName`, `email`, `phone`, `taxId`, `status`
+
+\- List query params:
+  - `page`, `limit`, `search`, `sortBy`, `sortOrder`
+
+\- Response summary:
+  - list: `{ data, meta }`
+  - detail/create/update: customer object
+  - delete: `{ deleted: true, id }`
+
+\- Important rules:
+  - soft delete only
+  - deleted records are excluded from normal list/get/update
+  - customers referenced by active invoices cannot be deleted
+
+\### Vendors
+
+\- Endpoints:
+  - `GET /api/v1/vendors`
+  - `GET /api/v1/vendors/:id`
+  - `POST /api/v1/vendors`
+  - `PATCH /api/v1/vendors/:id`
+  - `DELETE /api/v1/vendors/:id`
+
+\- Request body summary:
+  - create/update fields: `vendorName`, `companyName`, `email`, `phone`, `taxId`, `status`
+
+\- List query params:
+  - `page`, `limit`, `search`, `sortBy`, `sortOrder`
+
+\- Response summary:
+  - list: `{ data, meta }`
+  - detail/create/update: vendor object
+  - delete: `{ deleted: true, id }`
+
+\- Important rules:
+  - soft delete only
+  - deleted records are excluded from normal list/get/update
+  - future vendor-linked purchase/bill documents must block deletion when added
+
+\### Invoices
+
+\- Endpoints:
+  - `GET /api/v1/invoices`
+  - `GET /api/v1/invoices/:id`
+  - `POST /api/v1/invoices`
+  - `PATCH /api/v1/invoices/:id`
+  - `DELETE /api/v1/invoices/:id`
+
+\- Request body summary:
+  - invoice fields: `customerId`, optional `invoiceNumber`, optional `status`, `issueDate`, optional `dueDate`, optional `currency`, optional `notes`
+  - `lines[]`: `itemName`, optional `description`, `quantity`, `unitPriceMinor`, optional `taxCode`, optional `taxRate`
+
+\- List query params:
+  - `page`, `limit`, `search`, `status`, `customerId`, `issueDateFrom`, `issueDateTo`, `dueDateFrom`, `dueDateTo`, `sortBy`, `sortOrder`
+
+\- Response summary:
+  - list: `{ data, meta }`
+  - detail/create/update: invoice object with `customer` and active `lines`
+  - delete: `{ deleted: true, id }`
+
+\- Important rules:
+  - invoice totals and line totals are backend-calculated only
+  - frontend must not send `subTotalMinor`, `taxMinor`, `discountMinor`, `totalMinor`, or `lineTotalMinor`
+  - `invoiceNumber` is unique per account
+  - if omitted, backend may auto-generate `INV-000001` style values
+  - soft delete only; deleted invoices and deleted invoice lines are excluded from normal reads
+  - soft-deleted customers cannot be used for invoice create/update
+
+\## Frontend ERP API Client Conventions
+
+\- Frontend ERP API calls live in `src/lib/api.js`.
+\- Always use `VITE_API_BASE_URL`; never hardcode backend URLs.
+\- Frontend must fail loudly if `VITE_API_BASE_URL` is missing; do not silently fall back to localhost or any other default backend URL.
+\- Use the existing authenticated request flow and session rotation helpers already in `src/lib/api.js`.
+\- ERP list endpoints are expected to return paginated `{ data, meta }` responses.
+\- Frontend invoice payloads must never send backend-calculated fields such as invoice totals or `lineTotalMinor`.
+\- Company Settings frontend flow now persists through backend APIs (`apiGetCompanySettings`, `apiUpdateCompanySettings`) and must not reintroduce localStorage-based company settings persistence.
+\- Customers frontend flow now persists through backend APIs (`apiListCustomers`, `apiCreateCustomer`, `apiUpdateCustomer`, `apiDeleteCustomer`) and must not reintroduce localStorage-based customer persistence.
+\- Invoices frontend flow now persists through backend APIs (`apiListInvoices`, `apiCreateInvoice`, `apiUpdateInvoice`, `apiDeleteInvoice`) and must not reintroduce localStorage-based invoice persistence.
+\- Frontend invoices must map the selected customer to a real backend `customerId`; never send fake IDs or backend-calculated invoice totals/line totals.
+\- Vendors frontend flow now persists through backend APIs (`apiListVendors`, `apiCreateVendor`, `apiUpdateVendor`, `apiDeleteVendor`) and must not reintroduce localStorage-based vendor persistence.
+
+\## Current Handoff State
+
+\- Production architecture:
+  - frontend: Hostinger at `https://www.tetavio.com`
+  - backend: Render at `https://tetavio-backend.onrender.com`
+  - database: Render PostgreSQL
+\- Frontend must use `VITE_API_BASE_URL` only.
+\- Auth and payment flows are already working and must not be modified unless explicitly requested.
+\- ERP backend Phase 1 exists in `backend/` for:
+  - `company-settings`
+  - `customers`
+  - `vendors`
+  - `invoices`
+\- ERP backend rules:
+  - all ERP endpoints require JWT
+  - all ERP data is scoped by `user.accountId`
+  - frontend must never send `accountId`
+  - invoice totals and line totals are backend-calculated only
+  - ERP deletes are soft deletes
+\- Frontend persistence status:
+  - Company Settings: backend-persisted
+  - Customers: backend-persisted
+  - Vendors: backend-persisted
+  - Invoices: backend-persisted
+\- ERP/business data must not be stored in `localStorage`.
+\- Safe browser persistence should be limited to UI preferences such as language.
+
+\## Next Task
+
+\- Phase 1 ERP full-stack persistence is now in place for:
+  - Company Settings
+  - Customers
+  - Vendors
+  - Invoices
+\- Next frontend/backend work should build on this baseline without reintroducing localStorage-based ERP persistence.
+\- Preserve these rules:
+  - do not modify auth/payment/subscription flows unless explicitly requested
+  - frontend must use `VITE_API_BASE_URL` only
+  - do not send `accountId`
+  - do not send backend-calculated invoice fields: `subTotalMinor`, `taxMinor`, `discountMinor`, `totalMinor`, `lineTotalMinor`
+  - invoices must always use a real backend `customerId`
 

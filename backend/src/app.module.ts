@@ -4,11 +4,15 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { CompanySettingsModule } from './modules/company-settings/company-settings.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
 
 @Module({
   imports: [
@@ -33,6 +37,10 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     SubscriptionsModule,
     OrdersModule,
     PaymentsModule,
+    CompanySettingsModule,
+    CustomersModule,
+    VendorsModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [

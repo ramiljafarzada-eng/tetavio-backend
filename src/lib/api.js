@@ -1,10 +1,58 @@
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").replace(/\/$/, "");
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!configuredApiBaseUrl) {
+  throw new Error(
+    "Missing VITE_API_BASE_URL. Define VITE_API_BASE_URL before building or running the frontend.",
+  );
+}
+
+export const API_BASE_URL = configuredApiBaseUrl.replace(/\/$/, "");
 
 let activeSession = null;
 
 export function setApiSession(session) {
   activeSession = session || null;
+}
+
+function buildQueryString(params = {}) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    searchParams.set(key, String(value));
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+function sanitizeInvoiceLinePayload(line = {}) {
+  return {
+    itemName: line.itemName,
+    description: line.description,
+    quantity: line.quantity,
+    unitPriceMinor: line.unitPriceMinor,
+    taxCode: line.taxCode,
+    taxRate: line.taxRate,
+  };
+}
+
+function sanitizeInvoicePayload(payload = {}) {
+  return {
+    customerId: payload.customerId,
+    invoiceNumber: payload.invoiceNumber,
+    status: payload.status,
+    issueDate: payload.issueDate,
+    dueDate: payload.dueDate,
+    currency: payload.currency,
+    notes: payload.notes,
+    ...(Array.isArray(payload.lines)
+      ? { lines: payload.lines.map((line) => sanitizeInvoiceLinePayload(line)) }
+      : {}),
+  };
 }
 
 function unwrapEnvelope(payload) {
@@ -167,4 +215,156 @@ export function apiLogout(refreshToken) {
     method: "POST",
     body: JSON.stringify({ refreshToken }),
   });
+}
+
+export function apiGetCompanySettings(onSessionUpdate) {
+  return authRequest("/company-settings/me", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiUpdateCompanySettings(payload, onSessionUpdate) {
+  return authRequest(
+    "/company-settings/me",
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        companyName: payload?.companyName,
+        taxId: payload?.taxId,
+        mobilePhone: payload?.mobilePhone,
+        entityType: payload?.entityType,
+        currency: payload?.currency,
+        fiscalYear: payload?.fiscalYear,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiListCustomers(query = {}, onSessionUpdate) {
+  return authRequest(`/customers${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetCustomerById(customerId, onSessionUpdate) {
+  return authRequest(`/customers/${customerId}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateCustomer(payload, onSessionUpdate) {
+  return authRequest(
+    "/customers",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        displayName: payload?.displayName,
+        companyName: payload?.companyName,
+        email: payload?.email,
+        phone: payload?.phone,
+        taxId: payload?.taxId,
+        status: payload?.status,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateCustomer(customerId, payload, onSessionUpdate) {
+  return authRequest(
+    `/customers/${customerId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        displayName: payload?.displayName,
+        companyName: payload?.companyName,
+        email: payload?.email,
+        phone: payload?.phone,
+        taxId: payload?.taxId,
+        status: payload?.status,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiDeleteCustomer(customerId, onSessionUpdate) {
+  return authRequest(`/customers/${customerId}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+export function apiListVendors(query = {}, onSessionUpdate) {
+  return authRequest(`/vendors${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetVendorById(vendorId, onSessionUpdate) {
+  return authRequest(`/vendors/${vendorId}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateVendor(payload, onSessionUpdate) {
+  return authRequest(
+    "/vendors",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        vendorName: payload?.vendorName,
+        companyName: payload?.companyName,
+        email: payload?.email,
+        phone: payload?.phone,
+        taxId: payload?.taxId,
+        status: payload?.status,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateVendor(vendorId, payload, onSessionUpdate) {
+  return authRequest(
+    `/vendors/${vendorId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        vendorName: payload?.vendorName,
+        companyName: payload?.companyName,
+        email: payload?.email,
+        phone: payload?.phone,
+        taxId: payload?.taxId,
+        status: payload?.status,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiDeleteVendor(vendorId, onSessionUpdate) {
+  return authRequest(`/vendors/${vendorId}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+export function apiListInvoices(query = {}, onSessionUpdate) {
+  return authRequest(`/invoices${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetInvoiceById(invoiceId, onSessionUpdate) {
+  return authRequest(`/invoices/${invoiceId}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateInvoice(payload, onSessionUpdate) {
+  return authRequest(
+    "/invoices",
+    {
+      method: "POST",
+      body: JSON.stringify(sanitizeInvoicePayload(payload)),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateInvoice(invoiceId, payload, onSessionUpdate) {
+  return authRequest(
+    `/invoices/${invoiceId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(sanitizeInvoicePayload(payload)),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiDeleteInvoice(invoiceId, onSessionUpdate) {
+  return authRequest(`/invoices/${invoiceId}`, { method: "DELETE" }, onSessionUpdate);
 }
