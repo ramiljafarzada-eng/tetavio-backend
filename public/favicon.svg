@@ -1,12 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0c2e50"/>
-      <stop offset="58%" stop-color="#1255a3"/>
-      <stop offset="100%" stop-color="#1769c8"/>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2bd4ff"/>
+      <stop offset="100%" stop-color="#0037ff"/>
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
-  <rect x="3" y="7" width="26" height="8" rx="3" fill="#ffc533"/>
-  <rect x="12" y="15" width="8" height="14" rx="2.5" fill="rgba(255,255,255,0.93)"/>
+  <!-- small square bottom-left -->
+  <rect x="1" y="20" width="8" height="8" rx="2.5" fill="url(#g)"/>
+  <!-- horizontal pill indicator top-left -->
+  <rect x="1" y="10" width="13" height="8" rx="4" fill="url(#g)"/>
+  <!-- medium bar -->
+  <rect x="17" y="8" width="6" height="20" rx="3" fill="url(#g)"/>
+  <!-- tallest bar right -->
+  <rect x="25" y="2" width="6" height="26" rx="3" fill="url(#g)"/>
 </svg>

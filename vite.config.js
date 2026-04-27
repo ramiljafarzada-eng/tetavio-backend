@@ -16,8 +16,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, "index.html"),
-        admin: resolve(__dirname, "wp-admin/index.html")
+        main: resolve(__dirname, "index.html")
       },
       output: {
         manualChunks(id) {

@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import logoSrc from "./assets/logo-icon.png";
 import { createResetData, currency, today } from "./lib/data";
 import { normalizeAppState } from "./lib/storage";
 import I18N from './i18n';
@@ -1177,15 +1178,16 @@ function getActiveLegalNavId(pageId) {
 }
 
 function getVisibleLegalSections(page) {
-  if (page?.id !== "contact-info") return page?.sections || [];
+  const sections = Array.isArray(page?.sections) ? page.sections : [];
+  if (page?.id !== "contact-info") return sections;
   const currentHash = getContactInfoHash();
   if (currentHash === "legal-info") {
-    return page.sections.filter((section) => section.heading === "Hüquqi məlumatlar");
+    return sections.filter((section, index) => getLegalSectionId(page.id, section, index) === "legal-info");
   }
   if (currentHash === "contact") {
-    return page.sections.filter((section) => section.heading === "Əlaqə vasitələri");
+    return sections.filter((section, index) => getLegalSectionId(page.id, section, index) === "contact");
   }
-  return page.sections || [];
+  return sections;
 }
 
 function getVisibleStandaloneLegalSections(pageId, sections) {
@@ -1457,6 +1459,8 @@ const SUBSCRIPTION_PLANS = [
   { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 100, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
   { id: "ultimate", name: "Ultimate", monthlyPrice: 249, annualMonthlyPrice: 200, currency: "USD", operationLimit: 250000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
 ];
+
+const FREE_PLAN_ENTITY_LIMITS = { customers: 5, vendors: 5, invoices: 5 };
 
 const BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID = {
   free: "FREE",
@@ -1896,10 +1900,7 @@ function PublicMarketingTopbar({
       <div className="ph-topbar-inner">
         <button className="lp-brand ph-brand-button" type="button" onClick={navigateHome}>
           <div className="lp-brand-icon">
-            <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-              <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-            </svg>
+            <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>
           <div>
             <strong>Tetavio</strong>
@@ -2016,11 +2017,9 @@ function StandaloneLegalPage({ page, lang, onLangChange }) {
             ))}
           </div>
 
-          <div className="lp-legal-sections">
-            {visibleSections.map((section) => {
-              const sectionId = page.id === "contact-info"
-                ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
-                : undefined;
+            <div className="lp-legal-sections">
+            {visibleSections.map((section, index) => {
+              const sectionId = getLegalSectionId(page.id, section, index);
 
               return (
                 <article key={section.heading} id={sectionId} className="lp-legal-section">
@@ -2433,6 +2432,35 @@ function MainApp() {
     };
   }
 
+  const FREE_LIMIT_MESSAGES = {
+    az: {
+      customers: "Pulsuz plan limiti dolub. 5-dən çox müştəri əlavə etmək üçün planı yüksəldin.",
+      vendors:   "Pulsuz plan limiti dolub. 5-dən çox vendor əlavə etmək üçün planı yüksəldin.",
+      invoices:  "Pulsuz plan limiti dolub. 5-dən çox invoice yaratmaq üçün planı yüksəldin.",
+    },
+    en: {
+      customers: "Free plan limit reached. Upgrade to add more than 5 customers.",
+      vendors:   "Free plan limit reached. Upgrade to add more than 5 vendors.",
+      invoices:  "Free plan limit reached. Upgrade to create more than 5 invoices.",
+    },
+    ru: {
+      customers: "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы добавить более 5 клиентов.",
+      vendors:   "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы добавить более 5 поставщиков.",
+      invoices:  "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы создать более 5 счетов.",
+    },
+    tr: {
+      customers: "Ücretsiz plan limitine ulaşıldı. 5'ten fazla müşteri eklemek için planı yükseltin.",
+      vendors:   "Ücretsiz plan limitine ulaşıldı. 5'ten fazla tedarikçi eklemek için planı yükseltin.",
+      invoices:  "Ücretsiz plan limitine ulaşıldı. 5'ten fazla fatura oluşturmak için planı yükseltin.",
+    },
+    de: {
+      customers: "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Kunden hinzuzufügen.",
+      vendors:   "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Lieferanten hinzuzufügen.",
+      invoices:  "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Rechnungen zu erstellen.",
+    },
+  };
+  const freeLimitMsg = FREE_LIMIT_MESSAGES[hubLang] || FREE_LIMIT_MESSAGES.en;
+
   async function submitCustomerModule(activeDraft, editingId) {
     const payload = buildCustomerApiPayload(activeDraft);
 
@@ -2448,6 +2476,12 @@ function MainApp() {
       if (editingId) {
         await apiUpdateCustomer(editingId, payload, updateBackendSession);
       } else {
+        if (isAtFreePlanEntityLimit("customers")) {
+          setCustomersError(freeLimitMsg.customers);
+          setCustomersLoading(false);
+          setAccountPanel("plans");
+          return;
+        }
         await apiCreateCustomer(payload, updateBackendSession);
         markOperationUsage();
       }
@@ -2578,6 +2612,12 @@ function MainApp() {
       if (editingId) {
         await apiUpdateVendor(editingId, payload, updateBackendSession);
       } else {
+        if (isAtFreePlanEntityLimit("vendors")) {
+          setVendorsError(freeLimitMsg.vendors);
+          setVendorsLoading(false);
+          setAccountPanel("plans");
+          return;
+        }
         await apiCreateVendor(payload, updateBackendSession);
         markOperationUsage();
       }
@@ -2823,6 +2863,12 @@ function MainApp() {
       if (editingId) {
         await apiUpdateInvoice(editingId, payload, updateBackendSession);
       } else {
+        if (isAtFreePlanEntityLimit("invoices")) {
+          setInvoicesError(freeLimitMsg.invoices);
+          setInvoicesLoading(false);
+          setAccountPanel("plans");
+          return;
+        }
         await apiCreateInvoice(payload, updateBackendSession);
         markOperationUsage();
       }
@@ -3362,6 +3408,13 @@ function MainApp() {
     setAccountPanel("plans");
     setProfileMenuOpen(false);
     return false;
+  }
+
+  function isAtFreePlanEntityLimit(entity) {
+    if (!currentUser || currentUser.role === "super_admin") return false;
+    if (getCurrentPlan().id !== "free") return false;
+    const counts = { customers: state.customers.length, vendors: state.vendors.length, invoices: state.invoices.length };
+    return (counts[entity] ?? 0) >= (FREE_PLAN_ENTITY_LIMITS[entity] ?? Infinity);
   }
 
   function applySubscriptionToUser(email, planId, billingCycle = "annual", durationDays = null) {
@@ -9354,11 +9407,174 @@ function renderItemsCatalog() {
   function renderHome() {
     const netCashFlow = totals.collected - totals.cashOut;
     const netPositive = netCashFlow >= 0;
+    const onboardingT = {
+      az: {
+        title: "Başlama bələdçisi",
+        desc: "Tetavio-dan istifadəyə başlamaq üçün bu addımları izləyin.",
+        done: "Tamamlandı",
+        progress: (n, t) => `${n} / ${t} addım tamamlandı`,
+        companyTitle: "Şirkət profilini tamamla",
+        companyDesc: "Fakturalarınız düzgün görünsün deyə şirkət adını, vergi nömrəsini və valyutanı daxil edin.",
+        companyAction: "Profilə keç",
+        customerTitle: "İlk müştərini əlavə et",
+        customerDesc: "Faktura göndərə bilmək üçün ilk müştərini əlavə edin.",
+        customerAction: "Müştərilərə keç",
+        vendorTitle: "İlk təchizatçını əlavə et",
+        vendorDesc: "Nədən nə aldığınızı izləmək üçün ilk təchizatçını əlavə edin. Bunu sonraya buraxa bilərsiniz.",
+        vendorAction: "Təchizatçılara keç",
+        invoiceTitle: "İlk fakturanı yarat",
+        invoiceDesc: "Başlamaq üçün ilk fakturanı yaradın.",
+        invoiceAction: "Fakturalara keç",
+      },
+      en: {
+        title: "Getting started",
+        desc: "Follow these steps to start using Tetavio.",
+        done: "Completed",
+        progress: (n, t) => `${n} of ${t} steps done`,
+        companyTitle: "Complete company profile",
+        companyDesc: "Enter your company name, tax ID, and currency so your invoices look correct.",
+        companyAction: "Open profile",
+        customerTitle: "Add first customer",
+        customerDesc: "Add your first customer so you can send them an invoice.",
+        customerAction: "Open customers",
+        vendorTitle: "Add first vendor",
+        vendorDesc: "Add your first vendor so you can track what you buy from them. You can do this later.",
+        vendorAction: "Open vendors",
+        invoiceTitle: "Create first invoice",
+        invoiceDesc: "Create your first invoice to get started.",
+        invoiceAction: "Open invoices",
+      },
+      ru: {
+        title: "Первые шаги",
+        desc: "Следуйте этим шагам, чтобы начать работу с Tetavio.",
+        done: "Готово",
+        progress: (n, t) => `${n} из ${t} шагов выполнено`,
+        companyTitle: "Заполнить профиль компании",
+        companyDesc: "Введите название компании, ИНН и валюту, чтобы счета выглядели корректно.",
+        companyAction: "Открыть профиль",
+        customerTitle: "Добавить первого клиента",
+        customerDesc: "Добавьте первого клиента, чтобы отправить ему счёт.",
+        customerAction: "Открыть клиентов",
+        vendorTitle: "Добавить первого поставщика",
+        vendorDesc: "Добавьте первого поставщика, чтобы отслеживать закупки. Можно сделать позже.",
+        vendorAction: "Открыть поставщиков",
+        invoiceTitle: "Создать первый счёт",
+        invoiceDesc: "Создайте первый счёт, чтобы начать работу.",
+        invoiceAction: "Открыть счета",
+      },
+      tr: {
+        title: "Başlangıç adımları",
+        desc: "Tetavio'yu kullanmaya başlamak için bu adımları izleyin.",
+        done: "Tamamlandı",
+        progress: (n, t) => `${n} / ${t} adım tamamlandı`,
+        companyTitle: "Şirket profilini tamamla",
+        companyDesc: "Faturalarınız doğru görünsün diye şirket adını, vergi numarasını ve para birimini girin.",
+        companyAction: "Profili aç",
+        customerTitle: "İlk müşteriyi ekle",
+        customerDesc: "Fatura gönderebilmek için ilk müşterinizi ekleyin.",
+        customerAction: "Müşterileri aç",
+        vendorTitle: "İlk tedarikçiyi ekle",
+        vendorDesc: "Satın aldıklarınızı takip etmek için ilk tedarikçinizi ekleyin. Bunu sonra yapabilirsiniz.",
+        vendorAction: "Tedarikçileri aç",
+        invoiceTitle: "İlk faturayı oluştur",
+        invoiceDesc: "Başlamak için ilk faturanızı oluşturun.",
+        invoiceAction: "Faturaları aç",
+      },
+      de: {
+        title: "Erste Schritte",
+        desc: "Folgen Sie diesen Schritten, um Tetavio zu starten.",
+        done: "Erledigt",
+        progress: (n, t) => `${n} von ${t} Schritten erledigt`,
+        companyTitle: "Unternehmensprofil vervollständigen",
+        companyDesc: "Geben Sie Firmennamen, Steuernummer und Währung ein, damit Ihre Rechnungen korrekt aussehen.",
+        companyAction: "Profil öffnen",
+        customerTitle: "Ersten Kunden anlegen",
+        customerDesc: "Fügen Sie Ihren ersten Kunden hinzu, um ihm eine Rechnung zu senden.",
+        customerAction: "Kunden öffnen",
+        vendorTitle: "Ersten Lieferanten anlegen",
+        vendorDesc: "Fügen Sie Ihren ersten Lieferanten hinzu, um Einkäufe zu verfolgen. Das können Sie auch später tun.",
+        vendorAction: "Lieferanten öffnen",
+        invoiceTitle: "Erste Rechnung erstellen",
+        invoiceDesc: "Erstellen Sie Ihre erste Rechnung, um loszulegen.",
+        invoiceAction: "Rechnungen öffnen",
+      },
+    }[hubLang] || {
+      title: "Getting started",
+      desc: "Follow these steps to start using Tetavio.",
+      done: "Completed",
+      progress: (n, t) => `${n} of ${t} steps done`,
+      companyTitle: "Complete company profile",
+      companyDesc: "Enter your company name, tax ID, and currency so your invoices look correct.",
+      companyAction: "Open profile",
+      customerTitle: "Add first customer",
+      customerDesc: "Add your first customer so you can send them an invoice.",
+      customerAction: "Open customers",
+      vendorTitle: "Add first vendor",
+      vendorDesc: "Add your first vendor so you can track what you buy from them. You can do this later.",
+      vendorAction: "Open vendors",
+      invoiceTitle: "Create first invoice",
+      invoiceDesc: "Create your first invoice to get started.",
+      invoiceAction: "Open invoices",
+    };
 
     function goTo(section, module) {
       setSection(section);
       if (module) setActiveModule(module);
     }
+
+    function goToSettingsProfile() {
+      setSection("settings");
+      setSettingsTab("profile");
+    }
+
+    const companyProfileCompleted = [
+      state.settings.companyName,
+      state.settings.taxId,
+      state.settings.mobilePhone,
+      state.settings.entityType,
+      state.settings.currency,
+      state.settings.fiscalYear,
+    ].every((value) => String(value || "").trim());
+
+    const onboardingItems = [
+      {
+        id: "company-profile",
+        icon: "🏢",
+        title: onboardingT.companyTitle,
+        desc: onboardingT.companyDesc,
+        done: companyProfileCompleted,
+        actionLabel: onboardingT.companyAction,
+        action: goToSettingsProfile,
+      },
+      {
+        id: "first-customer",
+        icon: "👥",
+        title: onboardingT.customerTitle,
+        desc: onboardingT.customerDesc,
+        done: state.customers.length > 0,
+        actionLabel: onboardingT.customerAction,
+        action: () => goTo("sales", "customers"),
+      },
+      {
+        id: "first-vendor",
+        icon: "🏭",
+        title: onboardingT.vendorTitle,
+        desc: onboardingT.vendorDesc,
+        done: state.vendors.length > 0,
+        actionLabel: onboardingT.vendorAction,
+        action: () => goTo("purchases", "vendors"),
+      },
+      {
+        id: "first-invoice",
+        icon: "🧾",
+        title: onboardingT.invoiceTitle,
+        desc: onboardingT.invoiceDesc,
+        done: state.invoices.length > 0,
+        actionLabel: onboardingT.invoiceAction,
+        action: () => goTo("sales", "invoices"),
+      },
+    ];
+    const completedOnboardingCount = onboardingItems.filter((item) => item.done).length;
 
     const shortcuts = [
       { icon: "🧾", label: at.home_salesInv, sub: `${state.invoices.length} ${at.unit_record}`, section: "sales", module: "invoices" },
@@ -9371,6 +9587,37 @@ function renderItemsCatalog() {
 
     return (
       <section className="view active">
+
+        <div className="dash-onboarding panel">
+          <div className="panel-head">
+            <div>
+              <h3>{onboardingT.title}</h3>
+              <p className="panel-copy">{onboardingT.desc}</p>
+            </div>
+            <span className="dash-onboarding-progress">{onboardingT.progress(completedOnboardingCount, onboardingItems.length)}</span>
+          </div>
+          <div className="dash-onboarding-list">
+            {onboardingItems.map((item) => (
+              <div key={item.id} className={`dash-onboarding-item${item.done ? " is-done" : ""}`}>
+                <div className="dash-onboarding-copy">
+                  <div className="dash-onboarding-title-row">
+                    <span className="dash-onboarding-icon" aria-hidden="true">{item.icon}</span>
+                    <strong>{item.title}</strong>
+                    {item.done && (
+                      <span className="dash-onboarding-state is-done">
+                        {onboardingT.done}
+                      </span>
+                    )}
+                  </div>
+                  <p>{item.desc}</p>
+                </div>
+                <button className={item.done ? "ghost-btn compact-btn" : "primary-btn compact-btn"} type="button" onClick={item.action}>
+                  {item.actionLabel}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* ── KPI kartları ── */}
         <div className="dash-kpi-grid">
@@ -9920,10 +10167,7 @@ function renderItemsCatalog() {
           <div className="ph-topbar-inner">
             <div className="lp-brand">
               <div className="lp-brand-icon">
-                <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-                </svg>
+                <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div>
                 <strong>Tetavio</strong>
@@ -10643,10 +10887,8 @@ function renderItemsCatalog() {
               ))}
             </div>
             <div className="lp-legal-sections">
-              {visibleSections.map((section) => {
-                const sectionId = legalPage.id === "contact-info"
-                  ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
-                  : undefined;
+              {visibleSections.map((section, index) => {
+                const sectionId = getLegalSectionId(legalPage.id, section, index);
 
                 return (
                   <article key={section.heading} id={sectionId} className="lp-legal-section">
@@ -10672,10 +10914,7 @@ function renderItemsCatalog() {
             <div className="lp-topbar-inner">
               <div className="lp-brand">
                 <div className="lp-brand-icon">
-                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                    <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-                    <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-                  </svg>
+                  <img src={logoSrc} alt="Tetavio" className="app-logo" />
                 </div>
                 <div className="lp-brand-copy">
                   <strong>Tetavio</strong>
@@ -10870,10 +11109,7 @@ function renderItemsCatalog() {
           <div className="lp-topbar-inner">
             <div className="lp-brand">
               <div className="lp-brand-icon">
-                <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533"/>
-                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)"/>
-                </svg>
+                <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div className="lp-brand-copy">
                 <strong>Tetavio</strong>
@@ -14011,10 +14247,7 @@ function renderSettings() {
             <div className="lp-topbar-inner">
               <div className="lp-brand">
                 <div className="lp-brand-icon">
-                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                    <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-                    <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-                  </svg>
+                  <img src={logoSrc} alt="Tetavio" className="app-logo" />
                 </div>
                 <div className="lp-brand-copy">
                   <strong>Tetavio</strong>
@@ -14044,10 +14277,7 @@ function renderSettings() {
           <div className="lp-topbar-inner">
             <div className="lp-brand">
               <div className="lp-brand-icon">
-                <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                  <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533" />
-                  <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)" />
-                </svg>
+                <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div className="lp-brand-copy">
                 <strong>Tetavio</strong>
@@ -14082,10 +14312,8 @@ function renderSettings() {
             </div>
 
             <div className="lp-legal-sections">
-              {visibleSections.map((section) => {
-                const sectionId = legalPage.id === "contact-info"
-                  ? (section.heading === "Hüquqi məlumatlar" ? "legal-info" : section.heading === "Əlaqə vasitələri" ? "contact" : undefined)
-                  : undefined;
+              {visibleSections.map((section, index) => {
+                const sectionId = getLegalSectionId(legalPage.id, section, index);
 
                 return (
                   <article key={section.heading} id={sectionId} className="lp-legal-section">
@@ -14142,10 +14370,7 @@ function renderSettings() {
       <aside className="sidebar" onClick={(event) => event.stopPropagation()}>
         <button className="brand-block" type="button" onClick={() => { setActiveSection("home"); setActiveModule(null); setExpandedSections(new Set(["home"])); setAppNavOpen(false); }}>
           <div className="brand-icon">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect x="1" y="2" width="20" height="6" rx="2.5" fill="#ffc533"/>
-              <rect x="8" y="8" width="6" height="12" rx="2" fill="rgba(255,255,255,0.92)"/>
-            </svg>
+            <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>
           <div className="brand-copy">
             <strong>Tetavio <span className="brand-erp">ERP</span></strong>
