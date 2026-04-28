@@ -1,9 +1,15 @@
-import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { JwtAuthGuard } from '../modules/auth/guards/jwt-auth.guard';
 import { AdminService } from './admin.service';
+import { AddNoteDto } from './dto/add-note.dto';
+import { FlagAccountDto } from './dto/flag-account.dto';
+import { ReviewAnomalyDto } from './dto/review-anomaly.dto';
+import { UnflagAccountDto } from './dto/unflag-account.dto';
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -101,5 +107,44 @@ export class AdminController {
     const result = await this.adminService.getAccountById(id);
     if (!result) throw new NotFoundException('Account not found');
     return result;
+  }
+
+  @Post('accounts/:id/notes')
+  @ApiOperation({ summary: 'Add internal admin note to an account (SUPER_ADMIN only)' })
+  addNote(
+    @Param('id') id: string,
+    @Body() dto: AddNoteDto,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.adminService.addNote(id, actor.sub, dto.note);
+  }
+
+  @Post('accounts/:id/flag')
+  @ApiOperation({ summary: 'Flag an account for review (SUPER_ADMIN only)' })
+  flagAccount(
+    @Param('id') id: string,
+    @Body() dto: FlagAccountDto,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.adminService.flagAccount(id, actor.sub, dto.reason);
+  }
+
+  @Post('accounts/:id/unflag')
+  @ApiOperation({ summary: 'Clear active flags on an account (SUPER_ADMIN only)' })
+  unflagAccount(
+    @Param('id') id: string,
+    @Body() dto: UnflagAccountDto,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.adminService.unflagAccount(id, actor.sub, dto.reason);
+  }
+
+  @Post('anomalies/review')
+  @ApiOperation({ summary: 'Mark an anomaly as reviewed (SUPER_ADMIN only)' })
+  reviewAnomaly(
+    @Body() dto: ReviewAnomalyDto,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.adminService.reviewAnomaly(dto.accountId, dto.anomalyType, actor.sub, dto.note);
   }
 }

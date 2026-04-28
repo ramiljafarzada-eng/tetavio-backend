@@ -472,6 +472,18 @@ Backend change:
   - Filters: severity, type, search; pagination; summary KPIs always reflect unfiltered totals
   - No admin mutations yet
 
+\- Phase 3I: Audit-Safe Admin Actions (mutations)
+  - New Prisma models: AdminAccountNote, AdminAccountFlag, AdminAnomalyReview, AdminAuditLog (migration: 20260428173925_admin_audit_actions)
+  - Endpoints (all SUPER_ADMIN only, all atomic with audit log):
+    - POST /internal/accounts/:id/notes — add internal note to account
+    - POST /internal/accounts/:id/flag — flag account for review (creates active flag)
+    - POST /internal/accounts/:id/unflag — clear all active flags on account
+    - POST /internal/anomalies/review — mark anomaly as reviewed (upsert by accountId+anomalyType)
+  - All mutations write to AdminAuditLog with actorUserId, action, targetType, targetId, metadata
+  - Account deep view modal: shows internalNotes (latest 10), activeFlags, recentAdminActions; includes add-note, flag, unflag forms
+  - Anomalies tab: Status column shows reviewed badge or Mark Reviewed button with optional note; inline form expands per row
+  - Refresh key pattern: adminAccountDetailKey and adminAnomaliesKey incremented after successful mutations to re-fetch
+
 \- Phase 3G: Account Deep View (read-only)
   - Endpoint: `GET /api/v1/internal/accounts/:id` (SUPER_ADMIN only)
   - Returns: account summary, subscription info, owner, users list, ERP metrics, recent activity

@@ -9,6 +9,10 @@ import {
   apiCreateVendor,
   apiDeleteCustomer,
   apiDeleteVendor,
+  apiAddAdminNote,
+  apiAdminFlagAccount,
+  apiAdminUnflagAccount,
+  apiAdminReviewAnomaly,
   apiGetAdminAccountDetail,
   apiGetAdminAccounts,
   apiGetAdminAnomalies,
@@ -2314,6 +2318,21 @@ function MainApp() {
   const [adminAccountDetail, setAdminAccountDetail] = useState(null);
   const [adminAccountDetailLoading, setAdminAccountDetailLoading] = useState(false);
   const [adminAccountDetailError, setAdminAccountDetailError] = useState("");
+  const [adminAccountDetailKey, setAdminAccountDetailKey] = useState(0);
+  const [adminNoteInput, setAdminNoteInput] = useState("");
+  const [adminNoteLoading, setAdminNoteLoading] = useState(false);
+  const [adminNoteFeedback, setAdminNoteFeedback] = useState(null);
+  const [adminFlagInput, setAdminFlagInput] = useState("");
+  const [adminFlagLoading, setAdminFlagLoading] = useState(false);
+  const [adminFlagFeedback, setAdminFlagFeedback] = useState(null);
+  const [adminUnflagInput, setAdminUnflagInput] = useState("");
+  const [adminUnflagLoading, setAdminUnflagLoading] = useState(false);
+  const [adminUnflagFeedback, setAdminUnflagFeedback] = useState(null);
+  const [adminReviewingId, setAdminReviewingId] = useState(null);
+  const [adminReviewNote, setAdminReviewNote] = useState("");
+  const [adminReviewLoading, setAdminReviewLoading] = useState(false);
+  const [adminReviewFeedback, setAdminReviewFeedback] = useState(null);
+  const [adminAnomaliesKey, setAdminAnomaliesKey] = useState(0);
   const [adminAnomaliesData, setAdminAnomaliesData] = useState(null);
   const [adminAnomaliesLoading, setAdminAnomaliesLoading] = useState(false);
   const [adminAnomaliesError, setAdminAnomaliesError] = useState("");
@@ -3308,7 +3327,7 @@ function MainApp() {
         setAdminAnomaliesError(err?.message || "Anomalies yüklənmədi.");
         setAdminAnomaliesLoading(false);
       });
-  }, [currentUser, adminActiveTab, adminAnomaliesPage, adminAnomaliesSearch, adminAnomaliesSeverity, adminAnomaliesType]);
+  }, [currentUser, adminActiveTab, adminAnomaliesPage, adminAnomaliesSearch, adminAnomaliesSeverity, adminAnomaliesType, adminAnomaliesKey]);
 
   useEffect(() => {
     if (!adminAccountDetailId) {
@@ -3327,7 +3346,7 @@ function MainApp() {
         setAdminAccountDetailError(err?.message || "Account detail yüklənmədi.");
         setAdminAccountDetailLoading(false);
       });
-  }, [adminAccountDetailId]);
+  }, [adminAccountDetailId, adminAccountDetailKey]);
 
   useEffect(() => {
     const allowedNav = getAccessibleNavItems(currentUser);
@@ -10683,23 +10702,104 @@ function renderItemsCatalog() {
                       <th>Account</th>
                       <th>Description</th>
                       <th>Detected At</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <span className="iac-anomaly-sev" style={{ color: SEV_COLORS[item.severity] ?? "#94a3b8" }}>
-                            {item.severity}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="iac-anomaly-type">{item.type.replace(/_/g, " ")}</span>
-                        </td>
-                        <td className="iac-acc-name">{item.accountName}</td>
-                        <td style={{ color: "#94a3b8", fontSize: 13 }}>{item.description}</td>
-                        <td>{fmtDate(item.detectedAt)}</td>
-                      </tr>
+                      <Fragment key={item.id}>
+                        <tr>
+                          <td>
+                            <span className="iac-anomaly-sev" style={{ color: SEV_COLORS[item.severity] ?? "#94a3b8" }}>
+                              {item.severity}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="iac-anomaly-type">{item.type.replace(/_/g, " ")}</span>
+                          </td>
+                          <td className="iac-acc-name">{item.accountName}</td>
+                          <td style={{ color: "#94a3b8", fontSize: 13 }}>{item.description}</td>
+                          <td>{fmtDate(item.detectedAt)}</td>
+                          <td>
+                            {item.reviewed ? (
+                              <span style={{ color: "#10b981", fontWeight: 600, fontSize: 12 }}>
+                                ✓ Reviewed
+                                {item.reviewedAt && (
+                                  <span style={{ display: "block", color: "#64748b", fontWeight: 400, fontSize: 11 }}>
+                                    {fmtDate(item.reviewedAt)}
+                                  </span>
+                                )}
+                              </span>
+                            ) : adminReviewingId === item.id ? (
+                              <button
+                                className="iac-btn-sm iac-btn-ghost"
+                                onClick={() => { setAdminReviewingId(null); setAdminReviewNote(""); setAdminReviewFeedback(null); }}
+                              >
+                                Cancel
+                              </button>
+                            ) : (
+                              <button
+                                className="iac-btn-sm iac-btn-primary"
+                                onClick={() => { setAdminReviewingId(item.id); setAdminReviewNote(""); setAdminReviewFeedback(null); }}
+                              >
+                                Mark Reviewed
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {adminReviewingId === item.id && (
+                          <tr>
+                            <td colSpan={6} style={{ background: "#0f172a", padding: "12px 16px" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
+                                <textarea
+                                  rows={2}
+                                  placeholder="Optional review note…"
+                                  value={adminReviewNote}
+                                  onChange={(e) => setAdminReviewNote(e.target.value)}
+                                  style={{ background: "#1e293b", border: "1px solid #334155", color: "#e2e8f0", borderRadius: 6, padding: "6px 10px", fontSize: 13, resize: "vertical" }}
+                                />
+                                {adminReviewFeedback && (
+                                  <span style={{ fontSize: 12, color: adminReviewFeedback.ok ? "#10b981" : "#ef4444" }}>
+                                    {adminReviewFeedback.msg}
+                                  </span>
+                                )}
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button
+                                    className="iac-btn-sm iac-btn-primary"
+                                    disabled={adminReviewLoading}
+                                    onClick={async () => {
+                                      setAdminReviewLoading(true);
+                                      setAdminReviewFeedback(null);
+                                      try {
+                                        await apiAdminReviewAnomaly(
+                                          { accountId: item.accountId, anomalyType: item.type, note: adminReviewNote || undefined },
+                                          onSessionUpdate,
+                                        );
+                                        setAdminReviewingId(null);
+                                        setAdminReviewNote("");
+                                        setAdminAnomaliesKey((k) => k + 1);
+                                      } catch (err) {
+                                        setAdminReviewFeedback({ ok: false, msg: err.message || "Failed to save review." });
+                                      } finally {
+                                        setAdminReviewLoading(false);
+                                      }
+                                    }}
+                                  >
+                                    {adminReviewLoading ? "Saving…" : "Confirm Review"}
+                                  </button>
+                                  <button
+                                    className="iac-btn-sm iac-btn-ghost"
+                                    disabled={adminReviewLoading}
+                                    onClick={() => { setAdminReviewingId(null); setAdminReviewNote(""); setAdminReviewFeedback(null); }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -10748,11 +10848,77 @@ function renderItemsCatalog() {
       if (!adminAccountDetailId) return null;
       const d = adminAccountDetail;
       const ACTIVITY_COLORS = { INVOICE: "#6366f1", CUSTOMER: "#10b981", VENDOR: "#f59e0b", USER: "#3b82f6" };
+      const ACTION_COLORS = { ADD_NOTE: "#6366f1", FLAG_ACCOUNT: "#ef4444", UNFLAG_ACCOUNT: "#10b981", REVIEW_ANOMALY: "#f59e0b" };
+
+      function handleClose() {
+        setAdminAccountDetailId(null);
+        setAdminAccountDetail(null);
+        setAdminNoteInput("");
+        setAdminNoteFeedback(null);
+        setAdminFlagInput("");
+        setAdminFlagFeedback(null);
+        setAdminUnflagInput("");
+        setAdminUnflagFeedback(null);
+      }
+
+      function handleAddNote(e) {
+        e.preventDefault();
+        if (!adminNoteInput.trim()) return;
+        setAdminNoteLoading(true);
+        setAdminNoteFeedback(null);
+        apiAddAdminNote(adminAccountDetailId, { note: adminNoteInput }, updateBackendSession)
+          .then(() => {
+            setAdminNoteInput("");
+            setAdminNoteFeedback({ ok: true, msg: "Note added." });
+            setAdminNoteLoading(false);
+            setAdminAccountDetailKey((k) => k + 1);
+          })
+          .catch((err) => {
+            setAdminNoteFeedback({ ok: false, msg: err?.message || "Failed to add note." });
+            setAdminNoteLoading(false);
+          });
+      }
+
+      function handleFlag(e) {
+        e.preventDefault();
+        if (!adminFlagInput.trim()) return;
+        setAdminFlagLoading(true);
+        setAdminFlagFeedback(null);
+        apiAdminFlagAccount(adminAccountDetailId, { reason: adminFlagInput }, updateBackendSession)
+          .then(() => {
+            setAdminFlagInput("");
+            setAdminFlagFeedback({ ok: true, msg: "Account flagged." });
+            setAdminFlagLoading(false);
+            setAdminAccountDetailKey((k) => k + 1);
+          })
+          .catch((err) => {
+            setAdminFlagFeedback({ ok: false, msg: err?.message || "Failed to flag account." });
+            setAdminFlagLoading(false);
+          });
+      }
+
+      function handleUnflag(e) {
+        e.preventDefault();
+        setAdminUnflagLoading(true);
+        setAdminUnflagFeedback(null);
+        apiAdminUnflagAccount(adminAccountDetailId, adminUnflagInput.trim() ? { reason: adminUnflagInput } : {}, updateBackendSession)
+          .then((res) => {
+            setAdminUnflagInput("");
+            setAdminUnflagFeedback({ ok: true, msg: `Cleared ${res?.cleared ?? 0} flag(s).` });
+            setAdminUnflagLoading(false);
+            setAdminAccountDetailKey((k) => k + 1);
+          })
+          .catch((err) => {
+            setAdminUnflagFeedback({ ok: false, msg: err?.message || "Failed to unflag account." });
+            setAdminUnflagLoading(false);
+          });
+      }
+
       return (
         <div
           className="modal-backdrop"
           style={{ zIndex: 1200 }}
-          onClick={() => setAdminAccountDetailId(null)}
+          onClick={handleClose}
         >
           <section
             className="modal-card"
@@ -10764,13 +10930,13 @@ function renderItemsCatalog() {
                 <div style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9" }}>
                   {adminAccountDetailLoading ? "Loading…" : (d?.account?.name ?? "Account Detail")}
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Account Deep View · Read-only</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Account Deep View · Admin Actions</div>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span className="iac-badge iac-badge--ro">Read-only</span>
                 <button
                   style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: "2px 6px" }}
-                  onClick={() => setAdminAccountDetailId(null)}
+                  onClick={handleClose}
                   aria-label="Close"
                 >×</button>
               </div>
@@ -10918,7 +11084,7 @@ function renderItemsCatalog() {
                   </div>
 
                   {/* Recent Activity */}
-                  <div className="iac-section">
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
                     <div className="iac-section-hd">
                       <span className="iac-dot iac-dot--signups" />
                       <span className="iac-section-lbl">Recent Activity</span>
@@ -10935,6 +11101,120 @@ function renderItemsCatalog() {
                               <div style={{ color: "#64748b", fontSize: 11 }}>{item.subtitle}</div>
                             </div>
                             <span style={{ color: "#475569", fontSize: 11, flexShrink: 0 }}>{fmtDate(item.createdAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Internal Notes */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot" style={{ background: "#6366f1" }} />
+                      <span className="iac-section-lbl">Internal Notes ({d.internalNotes?.length ?? 0})</span>
+                    </div>
+                    {(d.internalNotes?.length ?? 0) === 0 ? (
+                      <div className="iac-fin-empty">No notes yet.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                        {d.internalNotes.map((n) => (
+                          <div key={n.id} style={{ background: "#0f172a", borderRadius: 7, padding: "10px 14px", fontSize: 13 }}>
+                            <div style={{ color: "#e2e8f0" }}>{n.note}</div>
+                            <div style={{ color: "#475569", fontSize: 11, marginTop: 4 }}>{n.authorEmail} · {fmtDate(n.createdAt)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <form onSubmit={handleAddNote} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <textarea
+                        style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 7, color: "#e2e8f0", fontSize: 13, padding: "8px 12px", resize: "vertical", minHeight: 64, width: "100%", boxSizing: "border-box" }}
+                        placeholder="Add an internal note… (max 2000 chars)"
+                        value={adminNoteInput}
+                        maxLength={2000}
+                        onChange={(e) => setAdminNoteInput(e.target.value)}
+                      />
+                      {adminNoteFeedback && (
+                        <div style={{ fontSize: 12, color: adminNoteFeedback.ok ? "#10b981" : "#ef4444" }}>{adminNoteFeedback.msg}</div>
+                      )}
+                      <button type="submit" className="iac-search-btn" disabled={adminNoteLoading || !adminNoteInput.trim()} style={{ alignSelf: "flex-start" }}>
+                        {adminNoteLoading ? "Saving…" : "Add Note"}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Flags */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot" style={{ background: "#ef4444" }} />
+                      <span className="iac-section-lbl">Active Flags ({d.activeFlags?.length ?? 0})</span>
+                    </div>
+                    {(d.activeFlags?.length ?? 0) === 0 ? (
+                      <div className="iac-fin-empty" style={{ marginBottom: 12 }}>No active flags.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                        {d.activeFlags.map((f) => (
+                          <div key={f.id} style={{ background: "#0f172a", borderRadius: 7, padding: "10px 14px", fontSize: 13, borderLeft: "3px solid #ef4444" }}>
+                            <div style={{ color: "#fca5a5" }}>{f.reason}</div>
+                            <div style={{ color: "#475569", fontSize: 11, marginTop: 4 }}>{f.createdByEmail} · {fmtDate(f.createdAt)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <form onSubmit={handleFlag} style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                        <input
+                          type="text"
+                          className="iac-search-input"
+                          style={{ flex: 1, minWidth: 200 }}
+                          placeholder="Flag reason… (max 500 chars)"
+                          value={adminFlagInput}
+                          maxLength={500}
+                          onChange={(e) => setAdminFlagInput(e.target.value)}
+                        />
+                        <button type="submit" className="iac-search-btn" disabled={adminFlagLoading || !adminFlagInput.trim()} style={{ background: "#7f1d1d", borderColor: "#7f1d1d" }}>
+                          {adminFlagLoading ? "…" : "Flag Account"}
+                        </button>
+                        {adminFlagFeedback && (
+                          <span style={{ fontSize: 12, color: adminFlagFeedback.ok ? "#10b981" : "#ef4444", alignSelf: "center" }}>{adminFlagFeedback.msg}</span>
+                        )}
+                      </form>
+                      {(d.activeFlags?.length ?? 0) > 0 && (
+                        <form onSubmit={handleUnflag} style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                          <input
+                            type="text"
+                            className="iac-search-input"
+                            style={{ flex: 1, minWidth: 200 }}
+                            placeholder="Unflag reason (optional)…"
+                            value={adminUnflagInput}
+                            maxLength={500}
+                            onChange={(e) => setAdminUnflagInput(e.target.value)}
+                          />
+                          <button type="submit" className="iac-search-btn" disabled={adminUnflagLoading} style={{ background: "#14532d", borderColor: "#14532d" }}>
+                            {adminUnflagLoading ? "…" : "Unflag Account"}
+                          </button>
+                          {adminUnflagFeedback && (
+                            <span style={{ fontSize: 12, color: adminUnflagFeedback.ok ? "#10b981" : "#ef4444", alignSelf: "center" }}>{adminUnflagFeedback.msg}</span>
+                          )}
+                        </form>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recent Admin Actions */}
+                  <div className="iac-section">
+                    <div className="iac-section-hd">
+                      <span className="iac-dot" style={{ background: "#f59e0b" }} />
+                      <span className="iac-section-lbl">Admin Audit Log ({d.recentAdminActions?.length ?? 0} recent)</span>
+                    </div>
+                    {(d.recentAdminActions?.length ?? 0) === 0 ? (
+                      <div className="iac-fin-empty">No admin actions recorded.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        {d.recentAdminActions.map((a) => (
+                          <div key={a.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 12px", background: "#0f172a", borderRadius: 7, fontSize: 12 }}>
+                            <span style={{ fontWeight: 700, color: ACTION_COLORS[a.action] ?? "#94a3b8", whiteSpace: "nowrap", minWidth: 130, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.04em" }}>{a.action.replace(/_/g, " ")}</span>
+                            <span style={{ color: "#64748b", flex: 1 }}>{a.actorEmail}</span>
+                            <span style={{ color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(a.createdAt)}</span>
                           </div>
                         ))}
                       </div>

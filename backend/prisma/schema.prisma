@@ -73,6 +73,9 @@ model Account {
   invoices       Invoice[]
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  adminNotes     AdminAccountNote[]
+  adminFlags     AdminAccountFlag[]
+  anomalyReviews AdminAnomalyReview[]
 
   @@map("accounts")
 }
@@ -93,6 +96,11 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  adminNotes              AdminAccountNote[]        @relation("AdminNoteAuthor")
+  createdFlags            AdminAccountFlag[]        @relation("AdminFlagCreator")
+  clearedFlags            AdminAccountFlag[]        @relation("AdminFlagClearer")
+  anomalyReviews          AdminAnomalyReview[]      @relation("AdminAnomalyReviewer")
+  adminAuditLogs          AdminAuditLog[]           @relation("AdminAuditActor")
 
   @@index([accountId])
   @@map("users")
@@ -343,4 +351,64 @@ model InvoiceLine {
 
   @@index([invoiceId])
   @@map("invoice_lines")
+}
+
+model AdminAccountNote {
+  id           String   @id @default(uuid()) @db.Uuid
+  accountId    String   @map("account_id") @db.Uuid
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  authorUserId String   @map("author_user_id") @db.Uuid
+  author       User     @relation("AdminNoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  note         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([accountId])
+  @@map("admin_account_notes")
+}
+
+model AdminAccountFlag {
+  id              String    @id @default(uuid()) @db.Uuid
+  accountId       String    @map("account_id") @db.Uuid
+  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  reason          String
+  isActive        Boolean   @default(true) @map("is_active")
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdBy       User      @relation("AdminFlagCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  clearedByUserId String?   @map("cleared_by_user_id") @db.Uuid
+  clearedBy       User?     @relation("AdminFlagClearer", fields: [clearedByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  clearedAt       DateTime? @map("cleared_at") @db.Timestamptz(6)
+
+  @@index([accountId])
+  @@map("admin_account_flags")
+}
+
+model AdminAnomalyReview {
+  id               String   @id @default(uuid()) @db.Uuid
+  accountId        String   @map("account_id") @db.Uuid
+  account          Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  anomalyType      String   @map("anomaly_type")
+  reviewedByUserId String   @map("reviewed_by_user_id") @db.Uuid
+  reviewedBy       User     @relation("AdminAnomalyReviewer", fields: [reviewedByUserId], references: [id], onDelete: Restrict)
+  reviewedAt       DateTime @default(now()) @map("reviewed_at") @db.Timestamptz(6)
+  note             String?
+
+  @@unique([accountId, anomalyType])
+  @@index([accountId])
+  @@map("admin_anomaly_reviews")
+}
+
+model AdminAuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String   @map("actor_user_id") @db.Uuid
+  actor       User     @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([actorUserId])
+  @@index([targetId])
+  @@map("admin_audit_logs")
 }

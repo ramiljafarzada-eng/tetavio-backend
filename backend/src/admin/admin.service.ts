@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Prisma,
   PlanInterval,
@@ -966,14 +966,46 @@ export class AdminService {
       }
     }
 
+    // Enrich with review status
+    const reviewMap = new Map<string, { reviewedAt: Date; reviewedByEmail: string }>();
+    if (anomalies.length > 0) {
+      const reviews = await this.prisma.adminAnomalyReview.findMany({
+        where: {
+          OR: anomalies.map((a) => ({ accountId: a.accountId, anomalyType: a.type })),
+        },
+        select: {
+          accountId: true,
+          anomalyType: true,
+          reviewedAt: true,
+          reviewedBy: { select: { email: true } },
+        },
+      });
+      for (const r of reviews) {
+        reviewMap.set(`${r.accountId}:${r.anomalyType}`, {
+          reviewedAt: r.reviewedAt,
+          reviewedByEmail: r.reviewedBy.email,
+        });
+      }
+    }
+
+    const enriched = anomalies.map((a) => {
+      const review = reviewMap.get(`${a.accountId}:${a.type}`);
+      return {
+        ...a,
+        reviewed: !!review,
+        reviewedAt: review?.reviewedAt ?? null,
+        reviewedByEmail: review?.reviewedByEmail ?? null,
+      };
+    });
+
     // Summary from full unfiltered set
-    const highCount = anomalies.filter((a) => a.severity === 'HIGH').length;
-    const mediumCount = anomalies.filter((a) => a.severity === 'MEDIUM').length;
-    const lowCount = anomalies.filter((a) => a.severity === 'LOW').length;
-    const affectedAccountIds = new Set(anomalies.map((a) => a.accountId));
+    const highCount = enriched.filter((a) => a.severity === 'HIGH').length;
+    const mediumCount = enriched.filter((a) => a.severity === 'MEDIUM').length;
+    const lowCount = enriched.filter((a) => a.severity === 'LOW').length;
+    const affectedAccountIds = new Set(enriched.map((a) => a.accountId));
 
     // Apply filters
-    let filtered = anomalies;
+    let filtered = enriched;
     const severityUpper = severity?.toUpperCase();
     const typeUpper = type?.toUpperCase();
     if (severityUpper && severityUpper !== 'ALL') {
@@ -1018,6 +1050,104 @@ export class AdminService {
         pageCount: Math.ceil(filtered.length / safeLimit),
       },
     };
+  }
+
+  private async requireAccount(id: string) {
+    const account = await this.prisma.account.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!account) throw new NotFoundException('Account not found');
+    return account;
+  }
+
+  async addNote(accountId: string, actorUserId: string, note: string) {
+    await this.requireAccount(accountId);
+    const [newNote] = await this.prisma.$transaction([
+      this.prisma.adminAccountNote.create({
+        data: { accountId, authorUserId: actorUserId, note },
+        select: { id: true, note: true, createdAt: true },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorUserId,
+          action: 'ADD_NOTE',
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          metadata: { notePreview: note.slice(0, 100) },
+        },
+      }),
+    ]);
+    return newNote;
+  }
+
+  async flagAccount(accountId: string, actorUserId: string, reason: string) {
+    await this.requireAccount(accountId);
+    const [flag] = await this.prisma.$transaction([
+      this.prisma.adminAccountFlag.create({
+        data: { accountId, reason, createdByUserId: actorUserId },
+        select: { id: true, reason: true, createdAt: true },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorUserId,
+          action: 'FLAG_ACCOUNT',
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          metadata: { reason },
+        },
+      }),
+    ]);
+    return flag;
+  }
+
+  async unflagAccount(accountId: string, actorUserId: string, reason?: string) {
+    await this.requireAccount(accountId);
+    const now = new Date();
+    const [result] = await this.prisma.$transaction([
+      this.prisma.adminAccountFlag.updateMany({
+        where: { accountId, isActive: true },
+        data: { isActive: false, clearedByUserId: actorUserId, clearedAt: now },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorUserId,
+          action: 'UNFLAG_ACCOUNT',
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          metadata: reason ? { reason } : {},
+        },
+      }),
+    ]);
+    return { cleared: result.count };
+  }
+
+  async reviewAnomaly(
+    accountId: string,
+    anomalyType: string,
+    actorUserId: string,
+    note?: string,
+  ) {
+    await this.requireAccount(accountId);
+    const now = new Date();
+    const [review] = await this.prisma.$transaction([
+      this.prisma.adminAnomalyReview.upsert({
+        where: { accountId_anomalyType: { accountId, anomalyType } },
+        create: { accountId, anomalyType, reviewedByUserId: actorUserId, reviewedAt: now, note },
+        update: { reviewedByUserId: actorUserId, reviewedAt: now, note: note ?? null },
+        select: { id: true, anomalyType: true, reviewedAt: true },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorUserId,
+          action: 'REVIEW_ANOMALY',
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          metadata: { anomalyType, ...(note ? { note: note.slice(0, 100) } : {}) },
+        },
+      }),
+    ]);
+    return review;
   }
 
   async getAccountById(id: string) {
@@ -1066,6 +1196,9 @@ export class AdminService {
       recentCustomers,
       recentVendors,
       recentUsers,
+      internalNotes,
+      activeFlags,
+      recentAdminActions,
     ] = await Promise.all([
       this.prisma.user.findMany({
         where: { accountId: id, role: { not: UserRole.SUPER_ADMIN } },
@@ -1111,6 +1244,39 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: { id: true, email: true, fullName: true, createdAt: true },
+      }),
+      this.prisma.adminAccountNote.findMany({
+        where: { accountId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          note: true,
+          createdAt: true,
+          author: { select: { email: true } },
+        },
+      }),
+      this.prisma.adminAccountFlag.findMany({
+        where: { accountId: id, isActive: true },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          reason: true,
+          createdAt: true,
+          createdBy: { select: { email: true } },
+        },
+      }),
+      this.prisma.adminAuditLog.findMany({
+        where: { targetId: id, targetType: 'ACCOUNT' },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          action: true,
+          createdAt: true,
+          metadata: true,
+          actor: { select: { email: true } },
+        },
       }),
     ]);
 
@@ -1188,6 +1354,25 @@ export class AdminService {
         type: a.type,
         title: a.title,
         subtitle: a.subtitle,
+        createdAt: a.createdAt,
+      })),
+      internalNotes: internalNotes.map((n) => ({
+        id: n.id,
+        note: n.note,
+        authorEmail: n.author.email,
+        createdAt: n.createdAt,
+      })),
+      activeFlags: activeFlags.map((f) => ({
+        id: f.id,
+        reason: f.reason,
+        createdByEmail: f.createdBy.email,
+        createdAt: f.createdAt,
+      })),
+      recentAdminActions: recentAdminActions.map((a) => ({
+        id: a.id,
+        action: a.action,
+        actorEmail: a.actor.email,
+        metadata: a.metadata,
         createdAt: a.createdAt,
       })),
     };

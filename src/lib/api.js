@@ -242,6 +242,34 @@ export function apiGetAdminAccountDetail(id, onSessionUpdate) {
   return authRequest(`/internal/accounts/${id}`, { method: "GET" }, onSessionUpdate);
 }
 
+export function apiAddAdminNote(accountId, payload, onSessionUpdate) {
+  return authRequest(`/internal/accounts/${accountId}/notes`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, onSessionUpdate);
+}
+
+export function apiAdminFlagAccount(accountId, payload, onSessionUpdate) {
+  return authRequest(`/internal/accounts/${accountId}/flag`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, onSessionUpdate);
+}
+
+export function apiAdminUnflagAccount(accountId, payload, onSessionUpdate) {
+  return authRequest(`/internal/accounts/${accountId}/unflag`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, onSessionUpdate);
+}
+
+export function apiAdminReviewAnomaly(payload, onSessionUpdate) {
+  return authRequest("/internal/anomalies/review", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",
