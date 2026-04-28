@@ -13,6 +13,7 @@ import { PlansModule } from './modules/plans/plans.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     CustomersModule,
     VendorsModule,
     InvoicesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

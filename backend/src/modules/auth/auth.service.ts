@@ -28,6 +28,7 @@ type UserIdentity = {
   id: string;
   accountId: string;
   email: string;
+  role: string;
 };
 
 type RequestMeta = {
@@ -97,6 +98,7 @@ export class AuthService {
         id: user.id,
         accountId: user.accountId,
         email: user.email,
+        role: user.role,
       },
       meta,
     );
@@ -136,6 +138,7 @@ export class AuthService {
         id: user.id,
         accountId: user.accountId,
         email: user.email,
+        role: user.role,
       },
       meta,
     );
@@ -177,6 +180,7 @@ export class AuthService {
       sub: existing.user.id,
       accountId: existing.user.accountId,
       email: existing.user.email,
+      role: existing.user.role,
     });
 
     return {
@@ -400,6 +404,7 @@ export class AuthService {
       sub: user.id,
       accountId: user.accountId,
       email: user.email,
+      role: user.role,
     });
 
     return {

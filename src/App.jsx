@@ -2327,7 +2327,7 @@ function MainApp() {
       id: me.id,
       fullName: me.fullName || me.email,
       email: me.email,
-      role: "trial_user",
+      role: String(me.role || "").toLowerCase() || "owner",
       profile: {
         entityType: "Hüquqi şəxs",
         companyName: me.fullName || me.email,
@@ -2944,6 +2944,7 @@ function MainApp() {
   }
 
   function buildHashFromState() {
+    if (window.location.pathname === "/internal") return "/internal";
     if (activeProduct === "hub") return "/homepage";
     if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/accounting/${booksView}` : "/accounting";
     if (activeSection === "home") return "/dashboard";
@@ -2983,6 +2984,10 @@ function MainApp() {
       setActiveProduct("booksLanding");
       setBooksView(landingRoute.initialBooksView);
       setBooksNotice("");
+      return;
+    }
+
+    if (part1 === "internal") {
       return;
     }
 
@@ -9404,6 +9409,91 @@ function renderItemsCatalog() {
     );
   }
 
+  function renderInternalAdmin() {
+    if (!currentUser) {
+      return (
+        <div className="internal-admin-gate">
+          <div className="internal-admin-gate-box">
+            <div className="brand-icon" style={{ width: 48, height: 48, margin: "0 auto 16px" }}>
+              <img src={logoSrc} alt="Tetavio" className="app-logo" />
+            </div>
+            <h2>Tetavio Admin</h2>
+            <p>Bu panelə daxil olmaq üçün əvvəlcə sistemə giriş edin.</p>
+            <button
+              className="internal-admin-link-btn"
+              type="button"
+              onClick={() => {
+                window.history.pushState({}, "", "/accounting/signin");
+                setActiveProduct("booksLanding");
+                setBooksView("signin");
+                setBooksNotice("");
+              }}
+            >Giriş səhifəsinə keç</button>
+          </div>
+        </div>
+      );
+    }
+
+    const isSuperAdmin = currentUser.role === "super_admin" || currentUser.role === "SUPER_ADMIN";
+    if (!isSuperAdmin) {
+      return (
+        <div className="internal-admin-gate">
+          <div className="internal-admin-gate-box">
+            <div className="internal-admin-403">403</div>
+            <h2>Giriş qadağandır</h2>
+            <p>Bu panelə daxil olmaq üçün icazəniz yoxdur.</p>
+            <button className="internal-admin-link-btn" onClick={() => { window.location.href = "/dashboard"; }}>Əsas panelə qayıt</button>
+          </div>
+        </div>
+      );
+    }
+
+    const plan = getCurrentPlan();
+
+    return (
+      <div className="internal-admin">
+        <header className="internal-admin-header">
+          <div className="brand-icon" style={{ width: 36, height: 36 }}>
+            <img src={logoSrc} alt="Tetavio" className="app-logo" />
+          </div>
+          <span className="internal-admin-title">Tetavio</span>
+          <span className="internal-admin-badge">Internal Admin</span>
+        </header>
+        <main className="internal-admin-body">
+          <section className="internal-admin-meta">
+            <h3>Session</h3>
+            <dl className="internal-admin-dl">
+              <dt>Email</dt>
+              <dd>{currentUser.email}</dd>
+              <dt>Role</dt>
+              <dd><code>{currentUser.role}</code></dd>
+              <dt>Plan</dt>
+              <dd>{plan.name || plan.id}</dd>
+            </dl>
+          </section>
+          <section className="internal-admin-stats">
+            <h3>Current Account Data</h3>
+            <div className="internal-admin-grid">
+              <div className="internal-stat-card">
+                <span>Customers</span>
+                <strong>{state.customers.length}</strong>
+              </div>
+              <div className="internal-stat-card">
+                <span>Vendors</span>
+                <strong>{state.vendors.length}</strong>
+              </div>
+              <div className="internal-stat-card">
+                <span>Invoices</span>
+                <strong>{state.invoices.length}</strong>
+              </div>
+            </div>
+          </section>
+          <p className="internal-admin-note">Phase 1 — read-only shell. No actions available.</p>
+        </main>
+      </div>
+    );
+  }
+
   function renderHome() {
     const netCashFlow = totals.collected - totals.cashOut;
     const netPositive = netCashFlow >= 0;
@@ -14352,6 +14442,10 @@ function renderSettings() {
 
   if (standaloneLegalSlugMatched) {
     return renderStandaloneLegalRouteGuard(standaloneLegalRoute);
+  }
+
+  if (window.location.pathname === "/internal") {
+    return renderInternalAdmin();
   }
 
   if (activeProduct === "hub") {

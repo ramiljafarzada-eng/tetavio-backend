@@ -4,7 +4,12 @@
       "Bash(npx vite *)",
       "Bash(npm run *)",
       "PowerShell(Get-Item *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npx prisma *)",
+      "Bash(2>&1)",
+      "Bash(node -e ' *)"
     ]
   }
 }

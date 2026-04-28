@@ -3,6 +3,7 @@ import {
   PlanInterval,
   SubscriptionStatus,
   UserStatus,
+  UserRole,
 } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
@@ -124,6 +125,7 @@ async function main() {
       fullName: DEFAULT_ADMIN_NAME,
       isEmailVerified: true,
       status: UserStatus.ACTIVE,
+      role: UserRole.SUPER_ADMIN,
     },
     update: {
       accountId: adminAccountId,
@@ -131,6 +133,7 @@ async function main() {
       fullName: DEFAULT_ADMIN_NAME,
       isEmailVerified: true,
       status: UserStatus.ACTIVE,
+      role: UserRole.SUPER_ADMIN,
     },
     select: {
       id: true,
