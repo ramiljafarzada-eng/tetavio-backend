@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
+import { AdminController } from './admin.controller';
+import { AdminService } from './admin.service';
 
-// Placeholder — admin endpoints will be added in Phase 2.
-// All admin endpoints must use: @UseGuards(JwtAuthGuard, RolesGuard) + @Roles('SUPER_ADMIN')
-@Module({})
+@Module({
+  controllers: [AdminController],
+  providers: [AdminService],
+})
 export class AdminModule {}

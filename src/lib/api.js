@@ -210,6 +210,10 @@ export function apiMockWebhook(payload) {
   });
 }
 
+export function apiGetAdminOverview(onSessionUpdate) {
+  return authRequest("/internal/overview", { method: "GET" }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",

@@ -9,6 +9,7 @@ import {
   apiCreateVendor,
   apiDeleteCustomer,
   apiDeleteVendor,
+  apiGetAdminOverview,
   apiGetCompanySettings,
   apiGetCurrentSubscription,
   apiGetMyOrders,
@@ -2265,6 +2266,10 @@ function MainApp() {
   const [booksView, setBooksView] = useState(() => {
     return getBooksLandingRouteDetails().initialBooksView;
   });
+  const [internalGateError, setInternalGateError] = useState("");
+  const [adminOverview, setAdminOverview] = useState(null);
+  const [adminOverviewLoading, setAdminOverviewLoading] = useState(false);
+  const [adminOverviewError, setAdminOverviewError] = useState("");
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -2944,7 +2949,8 @@ function MainApp() {
   }
 
   function buildHashFromState() {
-    if (window.location.pathname === "/internal") return "/internal";
+    const _lp = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (_lp === "/internal" || _lp.endsWith("/internal")) return "/internal";
     if (activeProduct === "hub") return "/homepage";
     if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/accounting/${booksView}` : "/accounting";
     if (activeSection === "home") return "/dashboard";
@@ -3120,6 +3126,22 @@ function MainApp() {
         entityType: nextEntityType
       }
     }));
+  }, [currentUser]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin) return;
+    setAdminOverviewLoading(true);
+    setAdminOverviewError("");
+    apiGetAdminOverview(updateBackendSession)
+      .then((data) => {
+        setAdminOverview(data);
+        setAdminOverviewLoading(false);
+      })
+      .catch((err) => {
+        setAdminOverviewError(err?.message || "Admin məlumatları yüklənmədi.");
+        setAdminOverviewLoading(false);
+      });
   }, [currentUser]);
 
   useEffect(() => {
@@ -9411,6 +9433,22 @@ function renderItemsCatalog() {
 
   function renderInternalAdmin() {
     if (!currentUser) {
+      async function handleInternalLogin(event) {
+        event.preventDefault();
+        setInternalGateError("");
+        try {
+          const email = String(authDraft.email || "").trim().toLowerCase();
+          const response = await apiLogin(email, authDraft.password);
+          const session = {
+            accessToken: response?.tokens?.accessToken,
+            refreshToken: response?.tokens?.refreshToken,
+          };
+          updateBackendSession(session);
+          await syncBackendSubscription(session);
+        } catch (error) {
+          setInternalGateError(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+        }
+      }
       return (
         <div className="internal-admin-gate">
           <div className="internal-admin-gate-box">
@@ -9418,17 +9456,28 @@ function renderItemsCatalog() {
               <img src={logoSrc} alt="Tetavio" className="app-logo" />
             </div>
             <h2>Tetavio Admin</h2>
-            <p>Bu panelə daxil olmaq üçün əvvəlcə sistemə giriş edin.</p>
-            <button
-              className="internal-admin-link-btn"
-              type="button"
-              onClick={() => {
-                window.history.pushState({}, "", "/accounting/signin");
-                setActiveProduct("booksLanding");
-                setBooksView("signin");
-                setBooksNotice("");
-              }}
-            >Giriş səhifəsinə keç</button>
+            <form onSubmit={handleInternalLogin} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+              <input
+                type="email"
+                placeholder="E-poçt"
+                value={authDraft.email}
+                onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))}
+                className="internal-admin-input"
+                required
+                autoComplete="username"
+              />
+              <input
+                type="password"
+                placeholder="Şifrə"
+                value={authDraft.password}
+                onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))}
+                className="internal-admin-input"
+                required
+                autoComplete="current-password"
+              />
+              {internalGateError && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{internalGateError}</p>}
+              <button className="internal-admin-link-btn" type="submit">Daxil ol</button>
+            </form>
           </div>
         </div>
       );
@@ -9448,7 +9497,19 @@ function renderItemsCatalog() {
       );
     }
 
-    const plan = getCurrentPlan();
+    function fmtAZN(minor) {
+      return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((minor || 0) / 100);
+    }
+    function fmtDate(dateStr) {
+      if (!dateStr) return "—";
+      try {
+        return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(dateStr));
+      } catch { return "—"; }
+    }
+    function pct(part, total) {
+      if (!total) return "—";
+      return `${Math.round((part / total) * 100)}%`;
+    }
 
     return (
       <div className="internal-admin">
@@ -9467,28 +9528,130 @@ function renderItemsCatalog() {
               <dd>{currentUser.email}</dd>
               <dt>Role</dt>
               <dd><code>{currentUser.role}</code></dd>
-              <dt>Plan</dt>
-              <dd>{plan.name || plan.id}</dd>
             </dl>
           </section>
-          <section className="internal-admin-stats">
-            <h3>Current Account Data</h3>
-            <div className="internal-admin-grid">
-              <div className="internal-stat-card">
-                <span>Customers</span>
-                <strong>{state.customers.length}</strong>
-              </div>
-              <div className="internal-stat-card">
-                <span>Vendors</span>
-                <strong>{state.vendors.length}</strong>
-              </div>
-              <div className="internal-stat-card">
-                <span>Invoices</span>
-                <strong>{state.invoices.length}</strong>
-              </div>
+
+          {adminOverviewLoading && (
+            <div className="internal-admin-loading">
+              <span className="internal-admin-spinner" />
+              Yüklənir...
             </div>
-          </section>
-          <p className="internal-admin-note">Phase 1 — read-only shell. No actions available.</p>
+          )}
+
+          {adminOverviewError && !adminOverviewLoading && (
+            <div className="internal-admin-error">{adminOverviewError}</div>
+          )}
+
+          {adminOverview && !adminOverviewLoading && (
+            <>
+              <section className="internal-admin-kpi-group">
+                <h4 className="ia-group-header">
+                  <span className="ia-group-dot ia-group-dot--growth" />
+                  Growth
+                </h4>
+                <div className="internal-admin-grid">
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Total Users</span>
+                    <strong className="ia-card-value">{adminOverview.totalUsers}</strong>
+                    <span className="ia-card-sub">all registered users</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Total Accounts</span>
+                    <strong className="ia-card-value">{adminOverview.totalAccounts}</strong>
+                    <span className="ia-card-sub">unique accounts</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Active Users</span>
+                    <strong className="ia-card-value">{adminOverview.activeUsers}</strong>
+                    <span className="ia-card-sub">{pct(adminOverview.activeUsers, adminOverview.totalUsers)} of total</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="internal-admin-kpi-group">
+                <h4 className="ia-group-header">
+                  <span className="ia-group-dot ia-group-dot--revenue" />
+                  Revenue
+                </h4>
+                <div className="internal-admin-grid">
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Free Accounts</span>
+                    <strong className="ia-card-value">{adminOverview.freeAccounts}</strong>
+                    <span className="ia-card-sub">{pct(adminOverview.freeAccounts, adminOverview.totalAccounts)} of accounts</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Paid Accounts</span>
+                    <strong className="ia-card-value">{adminOverview.paidAccounts}</strong>
+                    <span className="ia-card-sub">active paid plans</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Invoice Revenue</span>
+                    <strong className="ia-card-value ia-card-value--sm">{fmtAZN(adminOverview.totalInvoiceValueMinor)}</strong>
+                    <span className="ia-card-sub">all time · {adminOverview.currency}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="internal-admin-kpi-group">
+                <h4 className="ia-group-header">
+                  <span className="ia-group-dot ia-group-dot--usage" />
+                  Usage
+                </h4>
+                <div className="internal-admin-grid">
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Customers</span>
+                    <strong className="ia-card-value">{adminOverview.totalCustomers}</strong>
+                    <span className="ia-card-sub">across all accounts</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Vendors</span>
+                    <strong className="ia-card-value">{adminOverview.totalVendors}</strong>
+                    <span className="ia-card-sub">across all accounts</span>
+                  </div>
+                  <div className="internal-stat-card">
+                    <span className="ia-card-label">Invoices</span>
+                    <strong className="ia-card-value">{adminOverview.totalInvoices}</strong>
+                    <span className="ia-card-sub">total issued</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="internal-admin-kpi-group">
+                <h4 className="ia-group-header">
+                  <span className="ia-group-dot ia-group-dot--signups" />
+                  Recent Signups
+                </h4>
+                {adminOverview.recentSignups?.length > 0 ? (
+                  <div className="internal-admin-table-wrap">
+                    <table className="internal-admin-table">
+                      <thead>
+                        <tr>
+                          <th>Account</th>
+                          <th>Email</th>
+                          <th>Plan</th>
+                          <th>Joined</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminOverview.recentSignups.map((signup) => (
+                          <tr key={signup.accountId}>
+                            <td>{signup.accountName}</td>
+                            <td>{signup.ownerEmail ?? "—"}</td>
+                            <td><code>{signup.planCode ?? "—"}</code></td>
+                            <td>{fmtDate(signup.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="internal-admin-empty">Hələ heç bir qeydiyyat yoxdur.</div>
+                )}
+              </section>
+            </>
+          )}
+
+          <p className="internal-admin-note">Phase 2 — read-only analytics. No actions available.</p>
         </main>
       </div>
     );
@@ -14444,7 +14607,8 @@ function renderSettings() {
     return renderStandaloneLegalRouteGuard(standaloneLegalRoute);
   }
 
-  if (window.location.pathname === "/internal") {
+  const _internalPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (_internalPath === "/internal" || _internalPath.endsWith("/internal")) {
     return renderInternalAdmin();
   }
 

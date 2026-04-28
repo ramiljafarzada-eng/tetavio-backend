@@ -9147,6 +9147,17 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   text-decoration: none;
 }
 .internal-admin-link-btn:hover { opacity: 0.88; }
+.internal-admin-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+.internal-admin-input:focus { border-color: var(--brand); }
 
 .internal-admin {
   min-height: 100vh;
@@ -9254,4 +9265,109 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   color: var(--muted);
   text-align: center;
   margin: 0;
+}
+.internal-admin-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 20px 0;
+}
+.internal-admin-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: ia-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes ia-spin { to { transform: rotate(360deg); } }
+.internal-admin-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.internal-admin-recent { margin-top: 8px; }
+.internal-admin-recent h3 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 10px; }
+.internal-admin-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+.internal-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.internal-admin-table th {
+  background: #f9fafb;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.internal-admin-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: var(--text);
+}
+.internal-admin-table tbody tr:last-child td { border-bottom: none; }
+.internal-admin-table tbody tr:hover td { background: #f9fafb; }
+
+/* Phase 2C — grouped KPI sections */
+.internal-admin-kpi-group {
+  margin-bottom: 24px;
+}
+.ia-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.ia-group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ia-group-dot--growth   { background: #6366f1; }
+.ia-group-dot--revenue  { background: #10b981; }
+.ia-group-dot--usage    { background: #f59e0b; }
+.ia-group-dot--signups  { background: #3b82f6; }
+.ia-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.ia-card-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.ia-card-value--sm {
+  font-size: 20px;
+}
+.ia-card-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.internal-admin-empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
 }
