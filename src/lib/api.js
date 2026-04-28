@@ -234,6 +234,10 @@ export function apiGetAdminSystemHealth(onSessionUpdate) {
   return authRequest("/internal/system-health", { method: "GET" }, onSessionUpdate);
 }
 
+export function apiGetAdminAnomalies(params = {}, onSessionUpdate) {
+  return authRequest(`/internal/anomalies${buildQueryString(params)}`, { method: "GET" }, onSessionUpdate);
+}
+
 export function apiGetAdminAccountDetail(id, onSessionUpdate) {
   return authRequest(`/internal/accounts/${id}`, { method: "GET" }, onSessionUpdate);
 }

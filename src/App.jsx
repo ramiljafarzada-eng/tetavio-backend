@@ -11,6 +11,7 @@ import {
   apiDeleteVendor,
   apiGetAdminAccountDetail,
   apiGetAdminAccounts,
+  apiGetAdminAnomalies,
   apiGetAdminActivity,
   apiGetAdminFinance,
   apiGetAdminSystemHealth,
@@ -2313,6 +2314,16 @@ function MainApp() {
   const [adminAccountDetail, setAdminAccountDetail] = useState(null);
   const [adminAccountDetailLoading, setAdminAccountDetailLoading] = useState(false);
   const [adminAccountDetailError, setAdminAccountDetailError] = useState("");
+  const [adminAnomaliesData, setAdminAnomaliesData] = useState(null);
+  const [adminAnomaliesLoading, setAdminAnomaliesLoading] = useState(false);
+  const [adminAnomaliesError, setAdminAnomaliesError] = useState("");
+  const [adminAnomaliesPage, setAdminAnomaliesPage] = useState(1);
+  const [adminAnomaliesSearch, setAdminAnomaliesSearch] = useState("");
+  const [adminAnomaliesSearchInput, setAdminAnomaliesSearchInput] = useState("");
+  const [adminAnomaliesSeverity, setAdminAnomaliesSeverity] = useState("");
+  const [adminAnomaliesSeverityInput, setAdminAnomaliesSeverityInput] = useState("");
+  const [adminAnomaliesType, setAdminAnomaliesType] = useState("");
+  const [adminAnomaliesTypeInput, setAdminAnomaliesTypeInput] = useState("");
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3278,6 +3289,26 @@ function MainApp() {
         setAdminSystemHealthLoading(false);
       });
   }, [currentUser, adminActiveTab]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "anomalies") return;
+    setAdminAnomaliesLoading(true);
+    setAdminAnomaliesError("");
+    const params = { page: adminAnomaliesPage, limit: 20 };
+    if (adminAnomaliesSearch) params.search = adminAnomaliesSearch;
+    if (adminAnomaliesSeverity) params.severity = adminAnomaliesSeverity;
+    if (adminAnomaliesType) params.type = adminAnomaliesType;
+    apiGetAdminAnomalies(params, updateBackendSession)
+      .then((data) => {
+        setAdminAnomaliesData(data);
+        setAdminAnomaliesLoading(false);
+      })
+      .catch((err) => {
+        setAdminAnomaliesError(err?.message || "Anomalies yüklənmədi.");
+        setAdminAnomaliesLoading(false);
+      });
+  }, [currentUser, adminActiveTab, adminAnomaliesPage, adminAnomaliesSearch, adminAnomaliesSeverity, adminAnomaliesType]);
 
   useEffect(() => {
     if (!adminAccountDetailId) {
@@ -9671,6 +9702,7 @@ function renderItemsCatalog() {
       { key: "finance",       label: "Finance",       icon: "₼" },
       { key: "subscriptions", label: "Subscriptions", icon: "★" },
       { key: "activity",      label: "Activity",      icon: "◑" },
+      { key: "anomalies",     label: "Anomalies",     icon: "⚠" },
       { key: "system",        label: "System",        icon: "◈" },
       { key: "settings",      label: "Settings",      icon: "⚙" },
     ];
@@ -10518,6 +10550,189 @@ function renderItemsCatalog() {
       );
     }
 
+    function renderAnomaliesTab() {
+      const SEVERITY_OPTIONS = [
+        { value: "", label: "All severities" },
+        { value: "HIGH",   label: "High" },
+        { value: "MEDIUM", label: "Medium" },
+        { value: "LOW",    label: "Low" },
+      ];
+      const TYPE_OPTIONS = [
+        { value: "", label: "All types" },
+        { value: "INACTIVE_ACCOUNT",         label: "Inactive Account" },
+        { value: "HIGH_INVOICE_VOLUME",      label: "High Invoice Volume" },
+        { value: "EXPIRED_PAID_SUBSCRIPTION", label: "Expired Subscription" },
+        { value: "TRIAL_OR_FREE_WITH_USAGE", label: "Free with Usage" },
+        { value: "NO_OWNER",                 label: "No Owner" },
+      ];
+      const SEV_COLORS = { HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#6366f1" };
+      const hasFilter = adminAnomaliesSearch || adminAnomaliesSeverity || adminAnomaliesType;
+
+      function handleApply(e) {
+        e.preventDefault();
+        setAdminAnomaliesPage(1);
+        setAdminAnomaliesSearch(adminAnomaliesSearchInput);
+        setAdminAnomaliesSeverity(adminAnomaliesSeverityInput);
+        setAdminAnomaliesType(adminAnomaliesTypeInput);
+      }
+      function handleClear() {
+        setAdminAnomaliesSearchInput("");
+        setAdminAnomaliesSeverityInput("");
+        setAdminAnomaliesTypeInput("");
+        setAdminAnomaliesSearch("");
+        setAdminAnomaliesSeverity("");
+        setAdminAnomaliesType("");
+        setAdminAnomaliesPage(1);
+      }
+
+      const s = adminAnomaliesData?.summary;
+      const items = adminAnomaliesData?.items ?? [];
+      const meta = adminAnomaliesData?.meta;
+
+      return (
+        <>
+          <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+            <span className="iac-dot" style={{ background: "#ef4444" }} />
+            <span className="iac-section-lbl">Anomaly Detection</span>
+            {s && <span className="iac-meta-count">{s.totalAnomalies} total</span>}
+          </div>
+
+          {s && (
+            <div className="iac-kpi-row" style={{ marginBottom: 20 }}>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Total</span>
+                <strong className="iac-kpi-val">{s.totalAnomalies}</strong>
+                <span className="iac-kpi-sub">anomalies</span>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl" style={{ color: "#ef4444" }}>High</span>
+                <strong className="iac-kpi-val" style={{ color: "#ef4444" }}>{s.high}</strong>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl" style={{ color: "#f59e0b" }}>Medium</span>
+                <strong className="iac-kpi-val" style={{ color: "#f59e0b" }}>{s.medium}</strong>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl" style={{ color: "#6366f1" }}>Low</span>
+                <strong className="iac-kpi-val" style={{ color: "#6366f1" }}>{s.low}</strong>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Affected</span>
+                <strong className="iac-kpi-val">{s.accountsAffected}</strong>
+                <span className="iac-kpi-sub">accounts</span>
+              </div>
+            </div>
+          )}
+
+          <form className="iac-search-bar" onSubmit={handleApply}>
+            <input
+              type="text"
+              className="iac-search-input"
+              placeholder="Search by account or type…"
+              value={adminAnomaliesSearchInput}
+              onChange={(e) => setAdminAnomaliesSearchInput(e.target.value)}
+            />
+            <select
+              className="iac-filter-select"
+              value={adminAnomaliesSeverityInput}
+              onChange={(e) => setAdminAnomaliesSeverityInput(e.target.value)}
+            >
+              {SEVERITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <select
+              className="iac-filter-select"
+              value={adminAnomaliesTypeInput}
+              onChange={(e) => setAdminAnomaliesTypeInput(e.target.value)}
+            >
+              {TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <button type="submit" className="iac-search-btn">Apply</button>
+            {hasFilter && (
+              <button type="button" className="iac-search-clear" onClick={handleClear}>Clear</button>
+            )}
+          </form>
+
+          {adminAnomaliesLoading && (
+            <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir...</div>
+          )}
+          {adminAnomaliesError && !adminAnomaliesLoading && (
+            <div className="iac-state-err">{adminAnomaliesError}</div>
+          )}
+
+          {!adminAnomaliesLoading && !adminAnomaliesError && items.length === 0 && (
+            <div className="iac-coming-soon">
+              <div className="iac-cs-title">{hasFilter ? "No Anomalies Match" : "No Anomalies Detected"}</div>
+              <div className="iac-cs-sub">
+                {hasFilter ? "Try adjusting your filters." : "All accounts look healthy."}
+              </div>
+            </div>
+          )}
+
+          {!adminAnomaliesLoading && items.length > 0 && (
+            <>
+              <div className="internal-admin-table-wrap">
+                <table className="internal-admin-table">
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>Type</th>
+                      <th>Account</th>
+                      <th>Description</th>
+                      <th>Detected At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <span className="iac-anomaly-sev" style={{ color: SEV_COLORS[item.severity] ?? "#94a3b8" }}>
+                            {item.severity}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="iac-anomaly-type">{item.type.replace(/_/g, " ")}</span>
+                        </td>
+                        <td className="iac-acc-name">{item.accountName}</td>
+                        <td style={{ color: "#94a3b8", fontSize: 13 }}>{item.description}</td>
+                        <td>{fmtDate(item.detectedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {meta && meta.pageCount > 1 && (
+                <div className="iac-pagination">
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminAnomaliesPage <= 1}
+                    onClick={() => setAdminAnomaliesPage((p) => p - 1)}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="iac-page-info">
+                    Page {meta.page} of {meta.pageCount}
+                    <span className="iac-page-total"> · {meta.total} anomalies</span>
+                  </span>
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminAnomaliesPage >= meta.pageCount}
+                    onClick={() => setAdminAnomaliesPage((p) => p + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    }
+
     function renderComingSoonTab(tab) {
       const LABELS = { settings: "Settings" };
       return (
@@ -10783,8 +10998,9 @@ function renderItemsCatalog() {
             {adminActiveTab === "finance" && renderFinanceTab()}
             {adminActiveTab === "subscriptions" && renderSubscriptionsTab()}
             {adminActiveTab === "activity" && renderActivityTab()}
+            {adminActiveTab === "anomalies" && renderAnomaliesTab()}
             {adminActiveTab === "system" && renderSystemHealthTab()}
-            {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "system" && renderComingSoonTab(adminActiveTab)}
+            {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "anomalies" && adminActiveTab !== "system" && renderComingSoonTab(adminActiveTab)}
           </div>
         </div>
         {renderAccountDeepView()}

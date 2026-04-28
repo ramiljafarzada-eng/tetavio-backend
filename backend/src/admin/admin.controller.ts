@@ -63,6 +63,24 @@ export class AdminController {
     return this.adminService.getFinance();
   }
 
+  @Get('anomalies')
+  @ApiOperation({ summary: 'Anomaly detection report (SUPER_ADMIN only)' })
+  getAnomalies(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('severity') severity?: string,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.getAnomalies(
+      parseInt(page ?? '1', 10) || 1,
+      parseInt(limit ?? '20', 10) || 20,
+      severity?.trim() || undefined,
+      type?.trim() || undefined,
+      search?.trim() || undefined,
+    );
+  }
+
   @Get('accounts')
   @ApiOperation({ summary: 'Paginated account list (SUPER_ADMIN only)' })
   getAccounts(

@@ -465,6 +465,13 @@ Backend change:
   - All data fetched lazily on tab activation via separate `useEffect` hooks
   - No `accountId` sent from frontend
 
+\- Phase 3H: Anomaly Detection (read-only intelligence layer)
+  - Endpoint: `GET /api/v1/internal/anomalies` (SUPER_ADMIN only)
+  - Detection rules: INACTIVE_ACCOUNT (medium), HIGH_INVOICE_VOLUME (low), EXPIRED_PAID_SUBSCRIPTION (high), TRIAL_OR_FREE_WITH_USAGE (medium), NO_OWNER (high)
+  - Query strategy: bounded account fetch + parallel grouped queries, all in-memory detection — no N+1
+  - Filters: severity, type, search; pagination; summary KPIs always reflect unfiltered totals
+  - No admin mutations yet
+
 \- Phase 3G: Account Deep View (read-only)
   - Endpoint: `GET /api/v1/internal/accounts/:id` (SUPER_ADMIN only)
   - Returns: account summary, subscription info, owner, users list, ERP metrics, recent activity

@@ -790,6 +790,236 @@ export class AdminService {
     };
   }
 
+  async getAnomalies(
+    page: number,
+    limit: number,
+    severity?: string,
+    type?: string,
+    search?: string,
+  ) {
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const noAdmin: Prisma.AccountWhereInput = {
+      users: { none: { role: UserRole.SUPER_ADMIN } },
+    };
+
+    // Load all non-admin accounts with their owner and subscription (bounded, safe for SaaS scale)
+    const [
+      allAccounts,
+      recentInvoiceAccIds,
+      recentCustomerAccIds,
+      recentVendorAccIds,
+      recentInvoiceGroups,
+      totalInvoiceGroups,
+    ] = await Promise.all([
+      this.prisma.account.findMany({
+        where: noAdmin,
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          users: {
+            where: { role: UserRole.OWNER },
+            select: { id: true },
+            take: 1,
+          },
+          subscriptions: {
+            select: {
+              status: true,
+              plan: { select: { code: true, interval: true } },
+            },
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.invoice.findMany({
+        where: { createdAt: { gte: fourteenDaysAgo }, deletedAt: null },
+        select: { accountId: true },
+        distinct: ['accountId'],
+      }),
+      this.prisma.customer.findMany({
+        where: { createdAt: { gte: fourteenDaysAgo }, deletedAt: null },
+        select: { accountId: true },
+        distinct: ['accountId'],
+      }),
+      this.prisma.vendor.findMany({
+        where: { createdAt: { gte: fourteenDaysAgo }, deletedAt: null },
+        select: { accountId: true },
+        distinct: ['accountId'],
+      }),
+      this.prisma.invoice.groupBy({
+        by: ['accountId'],
+        where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null },
+        _count: { _all: true },
+      }),
+      this.prisma.invoice.groupBy({
+        by: ['accountId'],
+        where: { deletedAt: null },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const recentInvoiceSet = new Set(recentInvoiceAccIds.map((r) => r.accountId));
+    const recentCustomerSet = new Set(recentCustomerAccIds.map((r) => r.accountId));
+    const recentVendorSet = new Set(recentVendorAccIds.map((r) => r.accountId));
+    const recentInvoiceCountMap = new Map(recentInvoiceGroups.map((g) => [g.accountId, g._count._all]));
+    const totalInvoiceCountMap = new Map(totalInvoiceGroups.map((g) => [g.accountId, g._count._all]));
+
+    const detectedAt = new Date();
+    type AnomalyItem = {
+      id: string;
+      type: string;
+      severity: string;
+      accountId: string;
+      accountName: string;
+      title: string;
+      description: string;
+      detectedAt: Date;
+      metadata: Record<string, unknown>;
+    };
+    const anomalies: AnomalyItem[] = [];
+
+    for (const acc of allAccounts) {
+      const sub = acc.subscriptions[0];
+      const planInterval = sub?.plan?.interval;
+      const subStatus = sub?.status;
+      const planCode = sub?.plan?.code ?? 'FREE';
+      const hasOwner = acc.users.length > 0;
+      const hasRecentActivity =
+        recentInvoiceSet.has(acc.id) ||
+        recentCustomerSet.has(acc.id) ||
+        recentVendorSet.has(acc.id);
+      const recentInvoiceCount = recentInvoiceCountMap.get(acc.id) ?? 0;
+      const totalInvoiceCount = totalInvoiceCountMap.get(acc.id) ?? 0;
+      const isFree = planInterval === PlanInterval.NONE || planInterval == null;
+
+      if (!hasRecentActivity) {
+        anomalies.push({
+          id: `${acc.id}_INACTIVE_ACCOUNT`,
+          type: 'INACTIVE_ACCOUNT',
+          severity: 'MEDIUM',
+          accountId: acc.id,
+          accountName: acc.name,
+          title: 'Inactive account',
+          description: 'No invoices, customers, or vendors in the last 14 days.',
+          detectedAt,
+          metadata: {},
+        });
+      }
+
+      if (recentInvoiceCount > 20) {
+        anomalies.push({
+          id: `${acc.id}_HIGH_INVOICE_VOLUME`,
+          type: 'HIGH_INVOICE_VOLUME',
+          severity: 'LOW',
+          accountId: acc.id,
+          accountName: acc.name,
+          title: 'High invoice volume',
+          description: `${recentInvoiceCount} invoices created in the last 7 days.`,
+          detectedAt,
+          metadata: { recentInvoiceCount },
+        });
+      }
+
+      if (!isFree && subStatus === SubscriptionStatus.EXPIRED) {
+        anomalies.push({
+          id: `${acc.id}_EXPIRED_PAID_SUBSCRIPTION`,
+          type: 'EXPIRED_PAID_SUBSCRIPTION',
+          severity: 'HIGH',
+          accountId: acc.id,
+          accountName: acc.name,
+          title: 'Expired paid subscription',
+          description: `Plan "${planCode}" subscription has expired.`,
+          detectedAt,
+          metadata: { planCode, subStatus },
+        });
+      }
+
+      if (isFree && totalInvoiceCount > 10) {
+        anomalies.push({
+          id: `${acc.id}_TRIAL_OR_FREE_WITH_USAGE`,
+          type: 'TRIAL_OR_FREE_WITH_USAGE',
+          severity: 'MEDIUM',
+          accountId: acc.id,
+          accountName: acc.name,
+          title: 'Free plan with high usage',
+          description: `${totalInvoiceCount} invoices on a free plan.`,
+          detectedAt,
+          metadata: { totalInvoiceCount },
+        });
+      }
+
+      if (!hasOwner) {
+        anomalies.push({
+          id: `${acc.id}_NO_OWNER`,
+          type: 'NO_OWNER',
+          severity: 'HIGH',
+          accountId: acc.id,
+          accountName: acc.name,
+          title: 'No owner user',
+          description: 'Account has no user with OWNER role.',
+          detectedAt,
+          metadata: {},
+        });
+      }
+    }
+
+    // Summary from full unfiltered set
+    const highCount = anomalies.filter((a) => a.severity === 'HIGH').length;
+    const mediumCount = anomalies.filter((a) => a.severity === 'MEDIUM').length;
+    const lowCount = anomalies.filter((a) => a.severity === 'LOW').length;
+    const affectedAccountIds = new Set(anomalies.map((a) => a.accountId));
+
+    // Apply filters
+    let filtered = anomalies;
+    const severityUpper = severity?.toUpperCase();
+    const typeUpper = type?.toUpperCase();
+    if (severityUpper && severityUpper !== 'ALL') {
+      filtered = filtered.filter((a) => a.severity === severityUpper);
+    }
+    if (typeUpper && typeUpper !== 'ALL') {
+      filtered = filtered.filter((a) => a.type === typeUpper);
+    }
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.accountName.toLowerCase().includes(s) ||
+          a.type.toLowerCase().includes(s) ||
+          a.title.toLowerCase().includes(s),
+      );
+    }
+
+    // Sort: HIGH first, then MEDIUM, LOW; tie-break by accountName
+    const SEV_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+    filtered.sort(
+      (a, b) =>
+        (SEV_ORDER[a.severity] ?? 3) - (SEV_ORDER[b.severity] ?? 3) ||
+        a.accountName.localeCompare(b.accountName),
+    );
+
+    const skip = (safePage - 1) * safeLimit;
+
+    return {
+      summary: {
+        totalAnomalies: anomalies.length,
+        high: highCount,
+        medium: mediumCount,
+        low: lowCount,
+        accountsAffected: affectedAccountIds.size,
+      },
+      items: filtered.slice(skip, skip + safeLimit),
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total: filtered.length,
+        pageCount: Math.ceil(filtered.length / safeLimit),
+      },
+    };
+  }
+
   async getAccountById(id: string) {
     const account = await this.prisma.account.findFirst({
       where: { id },
