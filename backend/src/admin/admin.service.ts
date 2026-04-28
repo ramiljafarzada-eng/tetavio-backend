@@ -790,6 +790,183 @@ export class AdminService {
     };
   }
 
+  async getAccountById(id: string) {
+    const noAdmin: Prisma.AccountWhereInput = {
+      users: { none: { role: UserRole.SUPER_ADMIN } },
+    };
+
+    const account = await this.prisma.account.findFirst({
+      where: { id, ...noAdmin },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        users: {
+          where: { role: UserRole.OWNER },
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+            createdAt: true,
+          },
+          take: 1,
+        },
+        subscriptions: {
+          select: {
+            status: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+            plan: { select: { code: true, name: true, interval: true } },
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!account) return null;
+
+    const [
+      users,
+      usersCount,
+      customersCount,
+      vendorsCount,
+      invoicesCount,
+      invoiceAgg,
+      paidInvoicesCount,
+      draftInvoicesCount,
+      overdueInvoicesCount,
+      recentInvoices,
+      recentCustomers,
+      recentVendors,
+      recentUsers,
+    ] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { accountId: id, role: { not: UserRole.SUPER_ADMIN } },
+        select: { id: true, email: true, fullName: true, role: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.user.count({ where: { accountId: id, role: { not: UserRole.SUPER_ADMIN } } }),
+      this.prisma.customer.count({ where: { accountId: id, deletedAt: null } }),
+      this.prisma.vendor.count({ where: { accountId: id, deletedAt: null } }),
+      this.prisma.invoice.count({ where: { accountId: id, deletedAt: null } }),
+      this.prisma.invoice.aggregate({
+        _sum: { totalMinor: true },
+        where: { accountId: id, deletedAt: null },
+      }),
+      this.prisma.invoice.count({ where: { accountId: id, deletedAt: null, status: 'PAID' } }),
+      this.prisma.invoice.count({ where: { accountId: id, deletedAt: null, status: 'DRAFT' } }),
+      this.prisma.invoice.count({ where: { accountId: id, deletedAt: null, status: 'OVERDUE' } }),
+      this.prisma.invoice.findMany({
+        where: { accountId: id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          invoiceNumber: true,
+          createdAt: true,
+          customer: { select: { displayName: true } },
+        },
+      }),
+      this.prisma.customer.findMany({
+        where: { accountId: id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, displayName: true, createdAt: true },
+      }),
+      this.prisma.vendor.findMany({
+        where: { accountId: id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, vendorName: true, createdAt: true },
+      }),
+      this.prisma.user.findMany({
+        where: { accountId: id, role: { not: UserRole.SUPER_ADMIN } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, email: true, fullName: true, createdAt: true },
+      }),
+    ]);
+
+    type ActivityItem = {
+      id: string;
+      type: string;
+      title: string;
+      subtitle: string;
+      createdAt: Date;
+    };
+
+    const activity: ActivityItem[] = [];
+    for (const inv of recentInvoices) {
+      activity.push({
+        id: inv.id,
+        type: 'INVOICE',
+        title: `Invoice ${inv.invoiceNumber}`,
+        subtitle: `For ${inv.customer?.displayName ?? '—'}`,
+        createdAt: inv.createdAt,
+      });
+    }
+    for (const c of recentCustomers) {
+      activity.push({ id: c.id, type: 'CUSTOMER', title: c.displayName, subtitle: 'Customer added', createdAt: c.createdAt });
+    }
+    for (const v of recentVendors) {
+      activity.push({ id: v.id, type: 'VENDOR', title: v.vendorName, subtitle: 'Vendor added', createdAt: v.createdAt });
+    }
+    for (const u of recentUsers) {
+      activity.push({ id: u.id, type: 'USER', title: u.fullName ?? u.email, subtitle: 'User registered', createdAt: u.createdAt });
+    }
+    activity.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const sub = account.subscriptions[0];
+    const owner = account.users[0] ?? null;
+
+    return {
+      account: {
+        id: account.id,
+        name: account.name,
+        plan: sub?.plan?.code ?? null,
+        subscriptionStatus: sub?.status ?? null,
+        subscriptionInterval: sub?.plan?.interval ?? null,
+        subscriptionCurrentPeriodStart: sub?.currentPeriodStart ?? null,
+        subscriptionCurrentPeriodEnd: sub?.currentPeriodEnd ?? null,
+        createdAt: account.createdAt,
+      },
+      owner: owner
+        ? {
+            id: owner.id,
+            email: owner.email,
+            name: owner.fullName ?? null,
+            role: owner.role,
+            createdAt: owner.createdAt,
+          }
+        : null,
+      users: users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.fullName ?? null,
+        role: u.role,
+        createdAt: u.createdAt,
+      })),
+      metrics: {
+        usersCount,
+        customersCount,
+        vendorsCount,
+        invoicesCount,
+        totalInvoiceValueMinor: invoiceAgg._sum.totalMinor ?? 0,
+        paidInvoicesCount,
+        draftInvoicesCount,
+        overdueInvoicesCount,
+      },
+      recentActivity: activity.slice(0, 20).map((a) => ({
+        id: a.id,
+        type: a.type,
+        title: a.title,
+        subtitle: a.subtitle,
+        createdAt: a.createdAt,
+      })),
+    };
+  }
+
   async getSystemHealth() {
     let dbStatus: 'connected' | 'disconnected' = 'connected';
     try {

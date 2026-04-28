@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -75,5 +75,13 @@ export class AdminController {
       parseInt(limit ?? '20', 10) || 20,
       search?.trim() || undefined,
     );
+  }
+
+  @Get('accounts/:id')
+  @ApiOperation({ summary: 'Single account deep view (SUPER_ADMIN only)' })
+  async getAccountById(@Param('id') id: string) {
+    const result = await this.adminService.getAccountById(id);
+    if (!result) throw new NotFoundException('Account not found');
+    return result;
   }
 }

@@ -9,6 +9,7 @@ import {
   apiCreateVendor,
   apiDeleteCustomer,
   apiDeleteVendor,
+  apiGetAdminAccountDetail,
   apiGetAdminAccounts,
   apiGetAdminActivity,
   apiGetAdminFinance,
@@ -2308,6 +2309,10 @@ function MainApp() {
   const [adminActivitySearchInput, setAdminActivitySearchInput] = useState("");
   const [adminActivityType, setAdminActivityType] = useState("");
   const [adminActivityTypeInput, setAdminActivityTypeInput] = useState("");
+  const [adminAccountDetailId, setAdminAccountDetailId] = useState(null);
+  const [adminAccountDetail, setAdminAccountDetail] = useState(null);
+  const [adminAccountDetailLoading, setAdminAccountDetailLoading] = useState(false);
+  const [adminAccountDetailError, setAdminAccountDetailError] = useState("");
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3273,6 +3278,25 @@ function MainApp() {
         setAdminSystemHealthLoading(false);
       });
   }, [currentUser, adminActiveTab]);
+
+  useEffect(() => {
+    if (!adminAccountDetailId) {
+      setAdminAccountDetail(null);
+      setAdminAccountDetailError("");
+      return;
+    }
+    setAdminAccountDetailLoading(true);
+    setAdminAccountDetailError("");
+    apiGetAdminAccountDetail(adminAccountDetailId, updateBackendSession)
+      .then((data) => {
+        setAdminAccountDetail(data);
+        setAdminAccountDetailLoading(false);
+      })
+      .catch((err) => {
+        setAdminAccountDetailError(err?.message || "Account detail yüklənmədi.");
+        setAdminAccountDetailLoading(false);
+      });
+  }, [adminAccountDetailId]);
 
   useEffect(() => {
     const allowedNav = getAccessibleNavItems(currentUser);
@@ -9896,6 +9920,7 @@ function renderItemsCatalog() {
                       <th>Invoices</th>
                       <th>Revenue</th>
                       <th>Joined</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -9917,6 +9942,14 @@ function renderItemsCatalog() {
                         <td className="iac-num">{acc.invoiceCount}</td>
                         <td className="iac-num">{fmtAZN(acc.invoiceTotalMinor)} ₼</td>
                         <td>{fmtDate(acc.createdAt)}</td>
+                        <td>
+                          <button
+                            className="iac-view-btn"
+                            onClick={() => setAdminAccountDetailId(acc.id)}
+                          >
+                            View
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -10496,6 +10529,210 @@ function renderItemsCatalog() {
       );
     }
 
+    function renderAccountDeepView() {
+      if (!adminAccountDetailId) return null;
+      const d = adminAccountDetail;
+      const ACTIVITY_COLORS = { INVOICE: "#6366f1", CUSTOMER: "#10b981", VENDOR: "#f59e0b", USER: "#3b82f6" };
+      return (
+        <div
+          className="modal-backdrop"
+          style={{ zIndex: 1200 }}
+          onClick={() => setAdminAccountDetailId(null)}
+        >
+          <section
+            className="modal-card"
+            style={{ maxWidth: 780, width: "95%", maxHeight: "90vh", overflowY: "auto", padding: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #1e293b", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9" }}>
+                  {adminAccountDetailLoading ? "Loading…" : (d?.account?.name ?? "Account Detail")}
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Account Deep View · Read-only</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className="iac-badge iac-badge--ro">Read-only</span>
+                <button
+                  style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: "2px 6px" }}
+                  onClick={() => setAdminAccountDetailId(null)}
+                  aria-label="Close"
+                >×</button>
+              </div>
+            </div>
+
+            <div style={{ padding: "20px 24px" }}>
+              {adminAccountDetailLoading && (
+                <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir…</div>
+              )}
+              {adminAccountDetailError && !adminAccountDetailLoading && (
+                <div className="iac-state-err">{adminAccountDetailError}</div>
+              )}
+
+              {!adminAccountDetailLoading && !adminAccountDetailError && d && (
+                <>
+                  {/* Account + Subscription */}
+                  <div className="iac-preview-pair" style={{ marginBottom: 20 }}>
+                    <div className="iac-preview-card" style={{ flex: 1 }}>
+                      <div className="iac-preview-hd">
+                        <span className="iac-dot iac-dot--growth" />
+                        <span className="iac-preview-title">Account</span>
+                      </div>
+                      <dl className="iac-preview-dl">
+                        <div className="iac-preview-item"><dt>Name</dt><dd>{d.account.name}</dd></div>
+                        <div className="iac-preview-item"><dt>Joined</dt><dd>{fmtDate(d.account.createdAt)}</dd></div>
+                      </dl>
+                    </div>
+                    <div className="iac-preview-card" style={{ flex: 1 }}>
+                      <div className="iac-preview-hd">
+                        <span className="iac-dot iac-dot--revenue" />
+                        <span className="iac-preview-title">Subscription</span>
+                      </div>
+                      <dl className="iac-preview-dl">
+                        <div className="iac-preview-item">
+                          <dt>Plan</dt>
+                          <dd><span className="iac-plan-badge">{d.account.plan ?? "—"}</span></dd>
+                        </div>
+                        <div className="iac-preview-item">
+                          <dt>Status</dt>
+                          <dd>
+                            <span className={"iac-status-badge iac-status-badge--" + (d.account.subscriptionStatus?.toLowerCase() ?? "none")}>
+                              {d.account.subscriptionStatus ?? "—"}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="iac-preview-item"><dt>Interval</dt><dd>{d.account.subscriptionInterval ?? "—"}</dd></div>
+                        <div className="iac-preview-item"><dt>Period Start</dt><dd>{fmtDate(d.account.subscriptionCurrentPeriodStart)}</dd></div>
+                        <div className="iac-preview-item"><dt>Period End</dt><dd>{fmtDate(d.account.subscriptionCurrentPeriodEnd)}</dd></div>
+                      </dl>
+                    </div>
+                  </div>
+
+                  {/* Owner */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot iac-dot--signups" />
+                      <span className="iac-section-lbl">Owner</span>
+                    </div>
+                    {d.owner ? (
+                      <dl className="iac-preview-dl" style={{ background: "#0f172a", borderRadius: 8, padding: "10px 14px" }}>
+                        <div className="iac-preview-item"><dt>Email</dt><dd>{d.owner.email}</dd></div>
+                        <div className="iac-preview-item"><dt>Name</dt><dd>{d.owner.name ?? "—"}</dd></div>
+                        <div className="iac-preview-item"><dt>Role</dt><dd>{d.owner.role}</dd></div>
+                        <div className="iac-preview-item"><dt>Joined</dt><dd>{fmtDate(d.owner.createdAt)}</dd></div>
+                      </dl>
+                    ) : (
+                      <div className="iac-fin-empty">No owner found.</div>
+                    )}
+                  </div>
+
+                  {/* ERP Metrics */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot iac-dot--revenue" />
+                      <span className="iac-section-lbl">ERP Metrics</span>
+                    </div>
+                    <div className="iac-kpi-row" style={{ flexWrap: "wrap", gap: 10 }}>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Users</span>
+                        <strong className="iac-kpi-val">{d.metrics.usersCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Customers</span>
+                        <strong className="iac-kpi-val">{d.metrics.customersCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Vendors</span>
+                        <strong className="iac-kpi-val">{d.metrics.vendorsCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Invoices</span>
+                        <strong className="iac-kpi-val">{d.metrics.invoicesCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 120, flex: "1 1 120px" }}>
+                        <span className="iac-kpi-lbl">Total Revenue</span>
+                        <strong className="iac-kpi-val iac-kpi-val--sm">{fmtAZN(d.metrics.totalInvoiceValueMinor)} ₼</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Paid</span>
+                        <strong className="iac-kpi-val">{d.metrics.paidInvoicesCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Draft</span>
+                        <strong className="iac-kpi-val">{d.metrics.draftInvoicesCount}</strong>
+                      </div>
+                      <div className="iac-kpi-card" style={{ minWidth: 100, flex: "1 1 100px" }}>
+                        <span className="iac-kpi-lbl">Overdue</span>
+                        <strong className="iac-kpi-val">{d.metrics.overdueInvoicesCount}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Users list */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot iac-dot--growth" />
+                      <span className="iac-section-lbl">Users ({d.users.length})</span>
+                    </div>
+                    {d.users.length === 0 ? (
+                      <div className="iac-fin-empty">No users.</div>
+                    ) : (
+                      <div className="internal-admin-table-wrap">
+                        <table className="internal-admin-table">
+                          <thead>
+                            <tr>
+                              <th>Email</th>
+                              <th>Name</th>
+                              <th>Role</th>
+                              <th>Joined</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {d.users.map((u) => (
+                              <tr key={u.id}>
+                                <td>{u.email}</td>
+                                <td>{u.name ?? "—"}</td>
+                                <td>{u.role}</td>
+                                <td>{fmtDate(u.createdAt)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="iac-section">
+                    <div className="iac-section-hd">
+                      <span className="iac-dot iac-dot--signups" />
+                      <span className="iac-section-lbl">Recent Activity</span>
+                    </div>
+                    {d.recentActivity.length === 0 ? (
+                      <div className="iac-fin-empty">No recent activity.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {d.recentActivity.map((item) => (
+                          <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#0f172a", borderRadius: 7, fontSize: 13 }}>
+                            <span style={{ width: 70, flexShrink: 0, fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS[item.type] ?? "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.type}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: "#e2e8f0", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+                              <div style={{ color: "#64748b", fontSize: 11 }}>{item.subtitle}</div>
+                            </div>
+                            <span style={{ color: "#475569", fontSize: 11, flexShrink: 0 }}>{fmtDate(item.createdAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+      );
+    }
+
     return (
       <div className="iac-shell">
         <aside className="iac-sidebar">
@@ -10550,6 +10787,7 @@ function renderItemsCatalog() {
             {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "system" && renderComingSoonTab(adminActiveTab)}
           </div>
         </div>
+        {renderAccountDeepView()}
       </div>
     );
   }

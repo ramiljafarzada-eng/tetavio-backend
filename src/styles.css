@@ -9809,7 +9809,24 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
 .iac-search-clear:hover { background: #f1f5f9; }
 
 /* Accounts table */
-.iac-accounts-table { min-width: 900px; }
+.iac-accounts-table { min-width: 960px; }
+.iac-view-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.iac-view-btn:hover {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
 .iac-acc-name {
   font-weight: 600;
   color: #1e293b;

@@ -465,6 +465,13 @@ Backend change:
   - All data fetched lazily on tab activation via separate `useEffect` hooks
   - No `accountId` sent from frontend
 
+\- Phase 3G: Account Deep View (read-only)
+  - Endpoint: `GET /api/v1/internal/accounts/:id` (SUPER_ADMIN only)
+  - Returns: account summary, subscription info, owner, users list, ERP metrics, recent activity
+  - Sensitive fields excluded: no passwordHash, no token fields, no payment payloads
+  - No admin mutations; no accountId accepted from frontend
+  - Frontend: "View" button per account row opens a modal with full account detail
+
 \## Next Task
 
 \- Phase 1 ERP full-stack persistence is now in place for:
