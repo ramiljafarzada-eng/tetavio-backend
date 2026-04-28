@@ -10,3 +10,4 @@ Thumbs.db
 *.bak
 *.docx
 ~$*
+.claude/settings.local.json
