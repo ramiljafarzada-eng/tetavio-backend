@@ -791,12 +791,8 @@ export class AdminService {
   }
 
   async getAccountById(id: string) {
-    const noAdmin: Prisma.AccountWhereInput = {
-      users: { none: { role: UserRole.SUPER_ADMIN } },
-    };
-
     const account = await this.prisma.account.findFirst({
-      where: { id, ...noAdmin },
+      where: { id },
       select: {
         id: true,
         name: true,
