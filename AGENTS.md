@@ -442,6 +442,29 @@ Backend change:
 \- ERP/business data must not be stored in `localStorage`.
 \- Safe browser persistence should be limited to UI preferences such as language.
 
+\## Admin Panel (Phases 3A–3E Completed)
+
+\- Dashboards implemented (all read-only):
+  - Overview — platform KPI cards (growth, revenue, usage, recent signups)
+  - Accounts — paginated account list with search + usage counts
+  - Finance — revenue analytics, plan distribution, top accounts by revenue
+  - Subscriptions — paginated subscription list with summary KPIs, status/search filter
+  - Activity — unified activity feed (accounts, users, invoices, customers, vendors) with type/search filter
+
+\- All admin endpoints follow these rules:
+  - Protected by `JwtAuthGuard + RolesGuard + @Roles('SUPER_ADMIN')`
+  - All under `/api/v1/internal/*`
+  - Read-only — no write, edit, delete, or impersonation actions
+  - SUPER_ADMIN accounts are excluded from all analytics and lists
+  - Sensitive fields are never exposed: no `passwordHash`, no token fields, no payment provider payloads, no card details
+  - Explicit Prisma `select` used on all admin queries
+
+\- Frontend admin shell (`/internal`):
+  - Sidebar navigation with tab state (`adminActiveTab`)
+  - Gate: inline login form if not authenticated; 403 if authenticated but not SUPER_ADMIN
+  - All data fetched lazily on tab activation via separate `useEffect` hooks
+  - No `accountId` sent from frontend
+
 \## Next Task
 
 \- Phase 1 ERP full-stack persistence is now in place for:

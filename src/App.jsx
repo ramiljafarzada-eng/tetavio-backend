@@ -9,6 +9,11 @@ import {
   apiCreateVendor,
   apiDeleteCustomer,
   apiDeleteVendor,
+  apiGetAdminAccounts,
+  apiGetAdminActivity,
+  apiGetAdminFinance,
+  apiGetAdminSystemHealth,
+  apiGetAdminSubscriptions,
   apiGetAdminOverview,
   apiGetCompanySettings,
   apiGetCurrentSubscription,
@@ -2270,6 +2275,39 @@ function MainApp() {
   const [adminOverview, setAdminOverview] = useState(null);
   const [adminOverviewLoading, setAdminOverviewLoading] = useState(false);
   const [adminOverviewError, setAdminOverviewError] = useState("");
+  const [adminActiveTab, setAdminActiveTab] = useState("overview");
+  const [adminAccountsData, setAdminAccountsData] = useState([]);
+  const [adminAccountsMeta, setAdminAccountsMeta] = useState(null);
+  const [adminAccountsLoading, setAdminAccountsLoading] = useState(false);
+  const [adminAccountsError, setAdminAccountsError] = useState("");
+  const [adminAccountsPage, setAdminAccountsPage] = useState(1);
+  const [adminAccountsSearch, setAdminAccountsSearch] = useState("");
+  const [adminAccountsSearchInput, setAdminAccountsSearchInput] = useState("");
+  const [adminFinanceData, setAdminFinanceData] = useState(null);
+  const [adminFinanceLoading, setAdminFinanceLoading] = useState(false);
+  const [adminFinanceError, setAdminFinanceError] = useState("");
+  const [adminSubsData, setAdminSubsData] = useState([]);
+  const [adminSubsSummary, setAdminSubsSummary] = useState(null);
+  const [adminSubsMeta, setAdminSubsMeta] = useState(null);
+  const [adminSubsLoading, setAdminSubsLoading] = useState(false);
+  const [adminSubsError, setAdminSubsError] = useState("");
+  const [adminSubsPage, setAdminSubsPage] = useState(1);
+  const [adminSubsSearch, setAdminSubsSearch] = useState("");
+  const [adminSubsSearchInput, setAdminSubsSearchInput] = useState("");
+  const [adminSubsStatus, setAdminSubsStatus] = useState("");
+  const [adminSubsStatusInput, setAdminSubsStatusInput] = useState("");
+  const [adminSystemHealth, setAdminSystemHealth] = useState(null);
+  const [adminSystemHealthLoading, setAdminSystemHealthLoading] = useState(false);
+  const [adminSystemHealthError, setAdminSystemHealthError] = useState("");
+  const [adminActivityItems, setAdminActivityItems] = useState([]);
+  const [adminActivityPagination, setAdminActivityPagination] = useState(null);
+  const [adminActivityLoading, setAdminActivityLoading] = useState(false);
+  const [adminActivityError, setAdminActivityError] = useState("");
+  const [adminActivityPage, setAdminActivityPage] = useState(1);
+  const [adminActivitySearch, setAdminActivitySearch] = useState("");
+  const [adminActivitySearchInput, setAdminActivitySearchInput] = useState("");
+  const [adminActivityType, setAdminActivityType] = useState("");
+  const [adminActivityTypeInput, setAdminActivityTypeInput] = useState("");
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3143,6 +3181,98 @@ function MainApp() {
         setAdminOverviewLoading(false);
       });
   }, [currentUser]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "accounts") return;
+    setAdminAccountsLoading(true);
+    setAdminAccountsError("");
+    const params = { page: adminAccountsPage, limit: 20 };
+    if (adminAccountsSearch) params.search = adminAccountsSearch;
+    apiGetAdminAccounts(params, updateBackendSession)
+      .then((res) => {
+        setAdminAccountsData(res.data ?? []);
+        setAdminAccountsMeta(res.meta ?? null);
+        setAdminAccountsLoading(false);
+      })
+      .catch((err) => {
+        setAdminAccountsError(err?.message || "Accounts yüklənmədi.");
+        setAdminAccountsLoading(false);
+      });
+  }, [currentUser, adminActiveTab, adminAccountsPage, adminAccountsSearch]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "finance") return;
+    setAdminFinanceLoading(true);
+    setAdminFinanceError("");
+    apiGetAdminFinance(updateBackendSession)
+      .then((data) => {
+        setAdminFinanceData(data);
+        setAdminFinanceLoading(false);
+      })
+      .catch((err) => {
+        setAdminFinanceError(err?.message || "Finance məlumatları yüklənmədi.");
+        setAdminFinanceLoading(false);
+      });
+  }, [currentUser, adminActiveTab]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "subscriptions") return;
+    setAdminSubsLoading(true);
+    setAdminSubsError("");
+    const params = { page: adminSubsPage, limit: 20 };
+    if (adminSubsSearch) params.search = adminSubsSearch;
+    if (adminSubsStatus) params.status = adminSubsStatus;
+    apiGetAdminSubscriptions(params, updateBackendSession)
+      .then((res) => {
+        setAdminSubsData(res.data ?? []);
+        setAdminSubsSummary(res.summary ?? null);
+        setAdminSubsMeta(res.meta ?? null);
+        setAdminSubsLoading(false);
+      })
+      .catch((err) => {
+        setAdminSubsError(err?.message || "Subscriptions yüklənmədi.");
+        setAdminSubsLoading(false);
+      });
+  }, [currentUser, adminActiveTab, adminSubsPage, adminSubsSearch, adminSubsStatus]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "activity") return;
+    setAdminActivityLoading(true);
+    setAdminActivityError("");
+    const params = { page: adminActivityPage, limit: 20 };
+    if (adminActivitySearch) params.search = adminActivitySearch;
+    if (adminActivityType) params.type = adminActivityType;
+    apiGetAdminActivity(params, updateBackendSession)
+      .then((res) => {
+        setAdminActivityItems(res.items ?? []);
+        setAdminActivityPagination(res.pagination ?? null);
+        setAdminActivityLoading(false);
+      })
+      .catch((err) => {
+        setAdminActivityError(err?.message || "Activity yüklənmədi.");
+        setAdminActivityLoading(false);
+      });
+  }, [currentUser, adminActiveTab, adminActivityPage, adminActivitySearch, adminActivityType]);
+
+  useEffect(() => {
+    const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "SUPER_ADMIN";
+    if (!isSuperAdmin || adminActiveTab !== "system") return;
+    setAdminSystemHealthLoading(true);
+    setAdminSystemHealthError("");
+    apiGetAdminSystemHealth(updateBackendSession)
+      .then((data) => {
+        setAdminSystemHealth(data);
+        setAdminSystemHealthLoading(false);
+      })
+      .catch((err) => {
+        setAdminSystemHealthError(err?.message || "System health yüklənmədi.");
+        setAdminSystemHealthLoading(false);
+      });
+  }, [currentUser, adminActiveTab]);
 
   useEffect(() => {
     const allowedNav = getAccessibleNavItems(currentUser);
@@ -9511,134 +9641,172 @@ function renderItemsCatalog() {
       return `${Math.round((part / total) * 100)}%`;
     }
 
-    return (
-      <div className="internal-admin">
-        <header className="internal-admin-header">
-          <div className="brand-icon" style={{ width: 36, height: 36 }}>
-            <img src={logoSrc} alt="Tetavio" className="app-logo" />
-          </div>
-          <span className="internal-admin-title">Tetavio</span>
-          <span className="internal-admin-badge">Internal Admin</span>
-        </header>
-        <main className="internal-admin-body">
-          <section className="internal-admin-meta">
-            <h3>Session</h3>
-            <dl className="internal-admin-dl">
-              <dt>Email</dt>
-              <dd>{currentUser.email}</dd>
-              <dt>Role</dt>
-              <dd><code>{currentUser.role}</code></dd>
-            </dl>
-          </section>
+    const IAC_NAV = [
+      { key: "overview",      label: "Overview",      icon: "⊞" },
+      { key: "accounts",      label: "Accounts",      icon: "⊙" },
+      { key: "finance",       label: "Finance",       icon: "₼" },
+      { key: "subscriptions", label: "Subscriptions", icon: "★" },
+      { key: "activity",      label: "Activity",      icon: "◑" },
+      { key: "system",        label: "System",        icon: "◈" },
+      { key: "settings",      label: "Settings",      icon: "⚙" },
+    ];
 
+    function renderOverviewTab() {
+      return (
+        <>
           {adminOverviewLoading && (
-            <div className="internal-admin-loading">
+            <div className="iac-state-msg">
               <span className="internal-admin-spinner" />
               Yüklənir...
             </div>
           )}
-
           {adminOverviewError && !adminOverviewLoading && (
-            <div className="internal-admin-error">{adminOverviewError}</div>
+            <div className="iac-state-err">{adminOverviewError}</div>
           )}
-
           {adminOverview && !adminOverviewLoading && (
             <>
-              <section className="internal-admin-kpi-group">
-                <h4 className="ia-group-header">
-                  <span className="ia-group-dot ia-group-dot--growth" />
-                  Growth
-                </h4>
-                <div className="internal-admin-grid">
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Total Users</span>
-                    <strong className="ia-card-value">{adminOverview.totalUsers}</strong>
-                    <span className="ia-card-sub">all registered users</span>
+              <div className="iac-section">
+                <div className="iac-section-hd">
+                  <span className="iac-dot iac-dot--growth" />
+                  <span className="iac-section-lbl">Growth</span>
+                </div>
+                <div className="iac-kpi-row">
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Total Users</span>
+                    <strong className="iac-kpi-val">{adminOverview.totalUsers}</strong>
+                    <span className="iac-kpi-sub">all registered users</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Total Accounts</span>
-                    <strong className="ia-card-value">{adminOverview.totalAccounts}</strong>
-                    <span className="ia-card-sub">unique accounts</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Total Accounts</span>
+                    <strong className="iac-kpi-val">{adminOverview.totalAccounts}</strong>
+                    <span className="iac-kpi-sub">unique accounts</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Active Users</span>
-                    <strong className="ia-card-value">{adminOverview.activeUsers}</strong>
-                    <span className="ia-card-sub">{pct(adminOverview.activeUsers, adminOverview.totalUsers)} of total</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Active Users</span>
+                    <strong className="iac-kpi-val">{adminOverview.activeUsers}</strong>
+                    <span className="iac-kpi-sub">{pct(adminOverview.activeUsers, adminOverview.totalUsers)} of total</span>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section className="internal-admin-kpi-group">
-                <h4 className="ia-group-header">
-                  <span className="ia-group-dot ia-group-dot--revenue" />
-                  Revenue
-                </h4>
-                <div className="internal-admin-grid">
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Free Accounts</span>
-                    <strong className="ia-card-value">{adminOverview.freeAccounts}</strong>
-                    <span className="ia-card-sub">{pct(adminOverview.freeAccounts, adminOverview.totalAccounts)} of accounts</span>
+              <div className="iac-section">
+                <div className="iac-section-hd">
+                  <span className="iac-dot iac-dot--revenue" />
+                  <span className="iac-section-lbl">Revenue</span>
+                </div>
+                <div className="iac-kpi-row">
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Free Accounts</span>
+                    <strong className="iac-kpi-val">{adminOverview.freeAccounts}</strong>
+                    <span className="iac-kpi-sub">{pct(adminOverview.freeAccounts, adminOverview.totalAccounts)} of accounts</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Paid Accounts</span>
-                    <strong className="ia-card-value">{adminOverview.paidAccounts}</strong>
-                    <span className="ia-card-sub">active paid plans</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Paid Accounts</span>
+                    <strong className="iac-kpi-val">{adminOverview.paidAccounts}</strong>
+                    <span className="iac-kpi-sub">active paid plans</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Invoice Revenue</span>
-                    <strong className="ia-card-value ia-card-value--sm">{fmtAZN(adminOverview.totalInvoiceValueMinor)}</strong>
-                    <span className="ia-card-sub">all time · {adminOverview.currency}</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Invoice Revenue</span>
+                    <strong className="iac-kpi-val iac-kpi-val--sm">{fmtAZN(adminOverview.totalInvoiceValueMinor)} ₼</strong>
+                    <span className="iac-kpi-sub">all time · {adminOverview.currency}</span>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section className="internal-admin-kpi-group">
-                <h4 className="ia-group-header">
-                  <span className="ia-group-dot ia-group-dot--usage" />
-                  Usage
-                </h4>
-                <div className="internal-admin-grid">
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Customers</span>
-                    <strong className="ia-card-value">{adminOverview.totalCustomers}</strong>
-                    <span className="ia-card-sub">across all accounts</span>
+              <div className="iac-section">
+                <div className="iac-section-hd">
+                  <span className="iac-dot iac-dot--usage" />
+                  <span className="iac-section-lbl">Platform Usage</span>
+                </div>
+                <div className="iac-kpi-row">
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Customers</span>
+                    <strong className="iac-kpi-val">{adminOverview.totalCustomers}</strong>
+                    <span className="iac-kpi-sub">across all accounts</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Vendors</span>
-                    <strong className="ia-card-value">{adminOverview.totalVendors}</strong>
-                    <span className="ia-card-sub">across all accounts</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Vendors</span>
+                    <strong className="iac-kpi-val">{adminOverview.totalVendors}</strong>
+                    <span className="iac-kpi-sub">across all accounts</span>
                   </div>
-                  <div className="internal-stat-card">
-                    <span className="ia-card-label">Invoices</span>
-                    <strong className="ia-card-value">{adminOverview.totalInvoices}</strong>
-                    <span className="ia-card-sub">total issued</span>
+                  <div className="iac-kpi-card">
+                    <span className="iac-kpi-lbl">Invoices</span>
+                    <strong className="iac-kpi-val">{adminOverview.totalInvoices}</strong>
+                    <span className="iac-kpi-sub">total issued</span>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section className="internal-admin-kpi-group">
-                <h4 className="ia-group-header">
-                  <span className="ia-group-dot ia-group-dot--signups" />
-                  Recent Signups
-                </h4>
+              <div className="iac-preview-pair">
+                <div className="iac-preview-card">
+                  <div className="iac-preview-hd">
+                    <span className="iac-dot iac-dot--revenue" />
+                    <span className="iac-preview-title">Finance Summary</span>
+                    <span className="iac-badge iac-badge--ro">Read-only</span>
+                  </div>
+                  <dl className="iac-preview-dl">
+                    <div className="iac-preview-item">
+                      <dt>Invoice Revenue</dt>
+                      <dd>{fmtAZN(adminOverview.totalInvoiceValueMinor)} ₼</dd>
+                    </div>
+                    <div className="iac-preview-item">
+                      <dt>Paid Accounts</dt>
+                      <dd>{adminOverview.paidAccounts}</dd>
+                    </div>
+                    <div className="iac-preview-item">
+                      <dt>Free Accounts</dt>
+                      <dd>{adminOverview.freeAccounts}</dd>
+                    </div>
+                    <div className="iac-preview-item">
+                      <dt>Paid Conversion</dt>
+                      <dd>{pct(adminOverview.paidAccounts, adminOverview.totalAccounts)}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div className="iac-preview-card">
+                  <div className="iac-preview-hd">
+                    <span className="iac-dot iac-dot--growth" />
+                    <span className="iac-preview-title">Account Overview</span>
+                    <span className="iac-badge iac-badge--ro">Read-only</span>
+                  </div>
+                  <dl className="iac-preview-dl">
+                    <div className="iac-preview-item">
+                      <dt>Total Accounts</dt>
+                      <dd>{adminOverview.totalAccounts}</dd>
+                    </div>
+                    <div className="iac-preview-item">
+                      <dt>Recent Signups</dt>
+                      <dd>{adminOverview.recentSignups?.length ?? 0}</dd>
+                    </div>
+                  </dl>
+                  <p className="iac-preview-note">Full account management will be added in Phase 3B</p>
+                </div>
+              </div>
+
+              <div className="iac-section">
+                <div className="iac-section-hd">
+                  <span className="iac-dot iac-dot--signups" />
+                  <span className="iac-section-lbl">Recent Signups</span>
+                </div>
                 {adminOverview.recentSignups?.length > 0 ? (
                   <div className="internal-admin-table-wrap">
                     <table className="internal-admin-table">
                       <thead>
                         <tr>
                           <th>Account</th>
-                          <th>Email</th>
+                          <th>Owner Email</th>
                           <th>Plan</th>
                           <th>Joined</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {adminOverview.recentSignups.map((signup) => (
-                          <tr key={signup.accountId}>
-                            <td>{signup.accountName}</td>
-                            <td>{signup.ownerEmail ?? "—"}</td>
-                            <td><code>{signup.planCode ?? "—"}</code></td>
-                            <td>{fmtDate(signup.createdAt)}</td>
+                        {adminOverview.recentSignups.map((s) => (
+                          <tr key={s.accountId}>
+                            <td>{s.accountName}</td>
+                            <td>{s.ownerEmail ?? "—"}</td>
+                            <td><code>{s.planCode ?? "—"}</code></td>
+                            <td>{fmtDate(s.createdAt)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -9647,12 +9815,741 @@ function renderItemsCatalog() {
                 ) : (
                   <div className="internal-admin-empty">Hələ heç bir qeydiyyat yoxdur.</div>
                 )}
-              </section>
+              </div>
             </>
           )}
+        </>
+      );
+    }
 
-          <p className="internal-admin-note">Phase 2 — read-only analytics. No actions available.</p>
-        </main>
+    function renderAccountsTab() {
+      function handleAccountsSearch(e) {
+        e.preventDefault();
+        setAdminAccountsPage(1);
+        setAdminAccountsSearch(adminAccountsSearchInput);
+      }
+      return (
+        <>
+          <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+            <span className="iac-dot iac-dot--growth" />
+            <span className="iac-section-lbl">All Accounts</span>
+            {adminAccountsMeta && (
+              <span className="iac-meta-count">{adminAccountsMeta.total} total</span>
+            )}
+          </div>
+
+          <form className="iac-search-bar" onSubmit={handleAccountsSearch}>
+            <input
+              type="text"
+              className="iac-search-input"
+              placeholder="Search by name or email…"
+              value={adminAccountsSearchInput}
+              onChange={(e) => setAdminAccountsSearchInput(e.target.value)}
+            />
+            <button type="submit" className="iac-search-btn">Search</button>
+            {adminAccountsSearch && (
+              <button
+                type="button"
+                className="iac-search-clear"
+                onClick={() => {
+                  setAdminAccountsSearchInput("");
+                  setAdminAccountsSearch("");
+                  setAdminAccountsPage(1);
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </form>
+
+          {adminAccountsLoading && (
+            <div className="iac-state-msg">
+              <span className="internal-admin-spinner" /> Yüklənir...
+            </div>
+          )}
+          {adminAccountsError && !adminAccountsLoading && (
+            <div className="iac-state-err">{adminAccountsError}</div>
+          )}
+
+          {!adminAccountsLoading && !adminAccountsError && adminAccountsData.length === 0 && (
+            <div className="iac-coming-soon">
+              <div className="iac-cs-title">No Accounts Found</div>
+              <div className="iac-cs-sub">
+                {adminAccountsSearch ? `No results for "${adminAccountsSearch}"` : "No accounts have been created yet."}
+              </div>
+            </div>
+          )}
+
+          {!adminAccountsLoading && adminAccountsData.length > 0 && (
+            <>
+              <div className="internal-admin-table-wrap">
+                <table className="internal-admin-table iac-accounts-table">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Owner Email</th>
+                      <th>Plan</th>
+                      <th>Status</th>
+                      <th>Users</th>
+                      <th>Customers</th>
+                      <th>Vendors</th>
+                      <th>Invoices</th>
+                      <th>Revenue</th>
+                      <th>Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminAccountsData.map((acc) => (
+                      <tr key={acc.id}>
+                        <td className="iac-acc-name">{acc.name}</td>
+                        <td>{acc.ownerEmail ?? "—"}</td>
+                        <td>
+                          <span className="iac-plan-badge">{acc.planCode ?? "—"}</span>
+                        </td>
+                        <td>
+                          <span className={"iac-status-badge iac-status-badge--" + (acc.subscriptionStatus?.toLowerCase() ?? "none")}>
+                            {acc.subscriptionStatus ?? "—"}
+                          </span>
+                        </td>
+                        <td className="iac-num">{acc.userCount}</td>
+                        <td className="iac-num">{acc.customerCount}</td>
+                        <td className="iac-num">{acc.vendorCount}</td>
+                        <td className="iac-num">{acc.invoiceCount}</td>
+                        <td className="iac-num">{fmtAZN(acc.invoiceTotalMinor)} ₼</td>
+                        <td>{fmtDate(acc.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {adminAccountsMeta && adminAccountsMeta.pageCount > 1 && (
+                <div className="iac-pagination">
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminAccountsPage <= 1}
+                    onClick={() => setAdminAccountsPage((p) => p - 1)}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="iac-page-info">
+                    Page {adminAccountsMeta.page} of {adminAccountsMeta.pageCount}
+                    <span className="iac-page-total"> · {adminAccountsMeta.total} accounts</span>
+                  </span>
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminAccountsPage >= adminAccountsMeta.pageCount}
+                    onClick={() => setAdminAccountsPage((p) => p + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    }
+
+    function renderFinanceTab() {
+      if (adminFinanceLoading) {
+        return (
+          <div className="iac-state-msg">
+            <span className="internal-admin-spinner" /> Yüklənir...
+          </div>
+        );
+      }
+      if (adminFinanceError) {
+        return <div className="iac-state-err">{adminFinanceError}</div>;
+      }
+      if (!adminFinanceData) return null;
+
+      const fd = adminFinanceData;
+      const maxPlanCount = fd.planDistribution.length > 0
+        ? Math.max(...fd.planDistribution.map((p) => p.accountCount))
+        : 1;
+
+      return (
+        <>
+          <div className="iac-section">
+            <div className="iac-section-hd">
+              <span className="iac-dot iac-dot--revenue" />
+              <span className="iac-section-lbl">Revenue Overview</span>
+            </div>
+            <div className="iac-kpi-row">
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Total Revenue</span>
+                <strong className="iac-kpi-val iac-kpi-val--sm">{fmtAZN(fd.totalInvoiceValueMinor)} ₼</strong>
+                <span className="iac-kpi-sub">all-time · {fd.currency}</span>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Total Invoices</span>
+                <strong className="iac-kpi-val">{fd.totalInvoices}</strong>
+                <span className="iac-kpi-sub">non-deleted invoices</span>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Avg Invoice Value</span>
+                <strong className="iac-kpi-val iac-kpi-val--sm">{fmtAZN(fd.averageInvoiceValueMinor)} ₼</strong>
+                <span className="iac-kpi-sub">per invoice</span>
+              </div>
+              <div className="iac-kpi-card">
+                <span className="iac-kpi-lbl">Paid Conversion</span>
+                <strong className="iac-kpi-val">{fd.paidConversionRate}%</strong>
+                <span className="iac-kpi-sub">{fd.paidAccounts} paid · {fd.freeAccounts} free</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="iac-preview-pair">
+            <div className="iac-preview-card">
+              <div className="iac-preview-hd">
+                <span className="iac-dot iac-dot--revenue" />
+                <span className="iac-preview-title">Plan Distribution</span>
+                <span className="iac-badge iac-badge--ro">Read-only</span>
+              </div>
+              {fd.planDistribution.length === 0 ? (
+                <div className="iac-fin-empty">No plan data yet.</div>
+              ) : (
+                <div className="iac-plan-dist">
+                  {fd.planDistribution.map((p) => (
+                    <div key={p.planCode} className="iac-plan-row">
+                      <span className="iac-plan-badge">{p.planCode}</span>
+                      <div className="iac-plan-bar-wrap">
+                        <div
+                          className="iac-plan-bar"
+                          style={{ width: `${Math.round((p.accountCount / maxPlanCount) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="iac-plan-count">{p.accountCount}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="iac-preview-card">
+              <div className="iac-preview-hd">
+                <span className="iac-dot iac-dot--growth" />
+                <span className="iac-preview-title">Account Metrics</span>
+                <span className="iac-badge iac-badge--ro">Read-only</span>
+              </div>
+              <dl className="iac-preview-dl">
+                <div className="iac-preview-item">
+                  <dt>Total Accounts</dt>
+                  <dd>{fd.totalAccounts}</dd>
+                </div>
+                <div className="iac-preview-item">
+                  <dt>Paid Accounts</dt>
+                  <dd>{fd.paidAccounts}</dd>
+                </div>
+                <div className="iac-preview-item">
+                  <dt>Free Accounts</dt>
+                  <dd>{fd.freeAccounts}</dd>
+                </div>
+                <div className="iac-preview-item">
+                  <dt>Paid Conversion</dt>
+                  <dd>{fd.paidConversionRate}%</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <div className="iac-section">
+            <div className="iac-section-hd">
+              <span className="iac-dot iac-dot--signups" />
+              <span className="iac-section-lbl">Top Accounts by Revenue</span>
+            </div>
+            {fd.topAccountsByRevenue.length === 0 ? (
+              <div className="internal-admin-empty">Hələ heç bir invoice yoxdur.</div>
+            ) : (
+              <div className="internal-admin-table-wrap">
+                <table className="internal-admin-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Account</th>
+                      <th>Owner Email</th>
+                      <th>Plan</th>
+                      <th>Invoices</th>
+                      <th>Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fd.topAccountsByRevenue.map((acc, idx) => (
+                      <tr key={acc.accountId}>
+                        <td className="iac-num" style={{ color: "#94a3b8", width: 32 }}>{idx + 1}</td>
+                        <td className="iac-acc-name">{acc.accountName}</td>
+                        <td>{acc.ownerEmail ?? "—"}</td>
+                        <td><span className="iac-plan-badge">{acc.planCode ?? "—"}</span></td>
+                        <td className="iac-num">{acc.invoiceCount}</td>
+                        <td className="iac-num">{fmtAZN(acc.invoiceTotalMinor)} ₼</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    function renderSubscriptionsTab() {
+      function handleSubsSearch(e) {
+        e.preventDefault();
+        setAdminSubsPage(1);
+        setAdminSubsSearch(adminSubsSearchInput);
+        setAdminSubsStatus(adminSubsStatusInput);
+      }
+      function handleSubsClear() {
+        setAdminSubsSearchInput("");
+        setAdminSubsStatusInput("");
+        setAdminSubsSearch("");
+        setAdminSubsStatus("");
+        setAdminSubsPage(1);
+      }
+      const hasFilter = adminSubsSearch || adminSubsStatus;
+
+      return (
+        <>
+          {adminSubsSummary && (
+            <div className="iac-section">
+              <div className="iac-section-hd">
+                <span className="iac-dot iac-dot--usage" />
+                <span className="iac-section-lbl">Subscription Summary</span>
+              </div>
+              <div className="iac-kpi-row">
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Total Accounts</span>
+                  <strong className="iac-kpi-val">{adminSubsSummary.totalAccounts}</strong>
+                  <span className="iac-kpi-sub">excluding super admin</span>
+                </div>
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Free Accounts</span>
+                  <strong className="iac-kpi-val">{adminSubsSummary.freeAccounts}</strong>
+                  <span className="iac-kpi-sub">on free plan</span>
+                </div>
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Paid Accounts</span>
+                  <strong className="iac-kpi-val">{adminSubsSummary.paidAccounts}</strong>
+                  <span className="iac-kpi-sub">active paid plan</span>
+                </div>
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Active Subs</span>
+                  <strong className="iac-kpi-val" style={{ color: "#15803d" }}>{adminSubsSummary.activeSubscriptions}</strong>
+                  <span className="iac-kpi-sub">currently active</span>
+                </div>
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Expired Subs</span>
+                  <strong className="iac-kpi-val" style={{ color: "#64748b" }}>{adminSubsSummary.expiredSubscriptions}</strong>
+                  <span className="iac-kpi-sub">expired</span>
+                </div>
+                <div className="iac-kpi-card">
+                  <span className="iac-kpi-lbl">Canceled Subs</span>
+                  <strong className="iac-kpi-val" style={{ color: "#b91c1c" }}>{adminSubsSummary.canceledSubscriptions}</strong>
+                  <span className="iac-kpi-sub">canceled</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+            <span className="iac-dot iac-dot--signups" />
+            <span className="iac-section-lbl">All Subscriptions</span>
+            {adminSubsMeta && (
+              <span className="iac-meta-count">{adminSubsMeta.total} total</span>
+            )}
+          </div>
+
+          <form className="iac-search-bar" onSubmit={handleSubsSearch}>
+            <input
+              type="text"
+              className="iac-search-input"
+              placeholder="Search by name or email…"
+              value={adminSubsSearchInput}
+              onChange={(e) => setAdminSubsSearchInput(e.target.value)}
+            />
+            <select
+              className="iac-filter-select"
+              value={adminSubsStatusInput}
+              onChange={(e) => setAdminSubsStatusInput(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="FREE">Free</option>
+              <option value="EXPIRED">Expired</option>
+              <option value="CANCELED">Canceled</option>
+            </select>
+            <button type="submit" className="iac-search-btn">Apply</button>
+            {hasFilter && (
+              <button type="button" className="iac-search-clear" onClick={handleSubsClear}>Clear</button>
+            )}
+          </form>
+
+          {adminSubsLoading && (
+            <div className="iac-state-msg">
+              <span className="internal-admin-spinner" /> Yüklənir...
+            </div>
+          )}
+          {adminSubsError && !adminSubsLoading && (
+            <div className="iac-state-err">{adminSubsError}</div>
+          )}
+
+          {!adminSubsLoading && !adminSubsError && adminSubsData.length === 0 && (
+            <div className="iac-coming-soon">
+              <div className="iac-cs-title">No Results Found</div>
+              <div className="iac-cs-sub">
+                {hasFilter ? "No accounts match the current filters." : "No accounts have been created yet."}
+              </div>
+            </div>
+          )}
+
+          {!adminSubsLoading && adminSubsData.length > 0 && (
+            <>
+              <div className="internal-admin-table-wrap">
+                <table className="internal-admin-table iac-accounts-table">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Owner Email</th>
+                      <th>Plan</th>
+                      <th>Interval</th>
+                      <th>Status</th>
+                      <th>Period End</th>
+                      <th>Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminSubsData.map((row) => (
+                      <tr key={row.accountId}>
+                        <td className="iac-acc-name">{row.accountName}</td>
+                        <td>{row.ownerEmail ?? "—"}</td>
+                        <td><span className="iac-plan-badge">{row.planCode}</span></td>
+                        <td>
+                          {row.planInterval ? (
+                            <span className="iac-interval-badge">{row.planInterval}</span>
+                          ) : "—"}
+                        </td>
+                        <td>
+                          <span className={"iac-status-badge iac-status-badge--" + row.subscriptionStatus.toLowerCase()}>
+                            {row.subscriptionStatus}
+                          </span>
+                        </td>
+                        <td>{row.currentPeriodEnd ? fmtDate(row.currentPeriodEnd) : "—"}</td>
+                        <td>{fmtDate(row.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {adminSubsMeta && adminSubsMeta.pageCount > 1 && (
+                <div className="iac-pagination">
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminSubsPage <= 1}
+                    onClick={() => setAdminSubsPage((p) => p - 1)}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="iac-page-info">
+                    Page {adminSubsMeta.page} of {adminSubsMeta.pageCount}
+                    <span className="iac-page-total"> · {adminSubsMeta.total} accounts</span>
+                  </span>
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminSubsPage >= adminSubsMeta.pageCount}
+                    onClick={() => setAdminSubsPage((p) => p + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    }
+
+    function renderActivityTab() {
+      const TYPE_OPTIONS = [
+        { value: "", label: "All types" },
+        { value: "ACCOUNT",  label: "Accounts" },
+        { value: "USER",     label: "Users" },
+        { value: "INVOICE",  label: "Invoices" },
+        { value: "CUSTOMER", label: "Customers" },
+        { value: "VENDOR",   label: "Vendors" },
+      ];
+      function handleActivityApply(e) {
+        e.preventDefault();
+        setAdminActivityPage(1);
+        setAdminActivitySearch(adminActivitySearchInput);
+        setAdminActivityType(adminActivityTypeInput);
+      }
+      function handleActivityClear() {
+        setAdminActivitySearchInput("");
+        setAdminActivityTypeInput("");
+        setAdminActivitySearch("");
+        setAdminActivityType("");
+        setAdminActivityPage(1);
+      }
+      const hasFilter = adminActivitySearch || adminActivityType;
+
+      return (
+        <>
+          <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+            <span className="iac-dot iac-dot--signups" />
+            <span className="iac-section-lbl">Platform Activity</span>
+            {adminActivityPagination && (
+              <span className="iac-meta-count">{adminActivityPagination.total} total</span>
+            )}
+          </div>
+
+          <form className="iac-search-bar" onSubmit={handleActivityApply}>
+            <input
+              type="text"
+              className="iac-search-input"
+              placeholder="Search…"
+              value={adminActivitySearchInput}
+              onChange={(e) => setAdminActivitySearchInput(e.target.value)}
+            />
+            <select
+              className="iac-filter-select"
+              value={adminActivityTypeInput}
+              onChange={(e) => setAdminActivityTypeInput(e.target.value)}
+            >
+              {TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <button type="submit" className="iac-search-btn">Apply</button>
+            {hasFilter && (
+              <button type="button" className="iac-search-clear" onClick={handleActivityClear}>Clear</button>
+            )}
+          </form>
+
+          {adminActivityLoading && (
+            <div className="iac-state-msg">
+              <span className="internal-admin-spinner" /> Yüklənir...
+            </div>
+          )}
+          {adminActivityError && !adminActivityLoading && (
+            <div className="iac-state-err">{adminActivityError}</div>
+          )}
+
+          {!adminActivityLoading && !adminActivityError && adminActivityItems.length === 0 && (
+            <div className="iac-coming-soon">
+              <div className="iac-cs-title">No Activity Found</div>
+              <div className="iac-cs-sub">
+                {hasFilter ? "No results match the current filters." : "No activity recorded yet."}
+              </div>
+            </div>
+          )}
+
+          {!adminActivityLoading && adminActivityItems.length > 0 && (
+            <>
+              <div className="internal-admin-table-wrap">
+                <table className="internal-admin-table iac-accounts-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Activity</th>
+                      <th>Account</th>
+                      <th>Email</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminActivityItems.map((item) => (
+                      <tr key={item.type + "-" + item.id}>
+                        <td>
+                          <span className={"iac-activity-badge iac-activity-badge--" + item.type.toLowerCase()}>
+                            {item.type}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="iac-acc-name" style={{ fontWeight: 500 }}>{item.title}</div>
+                          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{item.subtitle}</div>
+                        </td>
+                        <td>{item.accountName ?? "—"}</td>
+                        <td>{item.userEmail ?? "—"}</td>
+                        <td>{fmtDate(item.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {adminActivityPagination && adminActivityPagination.totalPages > 1 && (
+                <div className="iac-pagination">
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminActivityPage <= 1}
+                    onClick={() => setAdminActivityPage((p) => p - 1)}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="iac-page-info">
+                    Page {adminActivityPagination.page} of {adminActivityPagination.totalPages}
+                    <span className="iac-page-total"> · {adminActivityPagination.total} events</span>
+                  </span>
+                  <button
+                    className="iac-page-btn"
+                    disabled={adminActivityPage >= adminActivityPagination.totalPages}
+                    onClick={() => setAdminActivityPage((p) => p + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    }
+
+    function renderSystemHealthTab() {
+      function fmtUptime(seconds) {
+        const d = Math.floor(seconds / 86400);
+        const h = Math.floor((seconds % 86400) / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        const parts = [];
+        if (d > 0) parts.push(`${d}d`);
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}m`);
+        parts.push(`${s}s`);
+        return parts.join(" ");
+      }
+
+      if (adminSystemHealthLoading) {
+        return <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir...</div>;
+      }
+      if (adminSystemHealthError) {
+        return <div className="iac-state-err">{adminSystemHealthError}</div>;
+      }
+      if (!adminSystemHealth) return null;
+
+      const sh = adminSystemHealth;
+      const dbOk = sh.database?.status === "connected";
+      const apiOk = sh.api?.status === "ok";
+
+      return (
+        <>
+          <div className="iac-section-hd" style={{ marginBottom: 20 }}>
+            <span className="iac-dot iac-dot--usage" />
+            <span className="iac-section-lbl">System Health</span>
+            <span className={"iac-health-badge " + (dbOk && apiOk ? "iac-health-badge--ok" : "iac-health-badge--warn")}>
+              {dbOk && apiOk ? "All systems operational" : "Degraded"}
+            </span>
+          </div>
+
+          <div className="iac-health-grid">
+            <div className="iac-health-card">
+              <span className="iac-kpi-lbl">Uptime</span>
+              <strong className="iac-kpi-val iac-kpi-val--sm">{fmtUptime(sh.uptimeSeconds)}</strong>
+              <span className="iac-kpi-sub">{sh.uptimeSeconds} seconds</span>
+            </div>
+            <div className="iac-health-card">
+              <span className="iac-kpi-lbl">Server Time</span>
+              <strong className="iac-kpi-val iac-kpi-val--sm">
+                {sh.serverTime ? new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(sh.serverTime)) : "—"}
+              </strong>
+              <span className="iac-kpi-sub">
+                {sh.serverTime ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(sh.serverTime)) : "—"}
+              </span>
+            </div>
+            <div className="iac-health-card">
+              <span className="iac-kpi-lbl">Environment</span>
+              <strong className="iac-kpi-val iac-kpi-val--sm" style={{ textTransform: "capitalize" }}>{sh.environment}</strong>
+              <span className="iac-kpi-sub">NODE_ENV</span>
+            </div>
+            <div className="iac-health-card">
+              <span className="iac-kpi-lbl">Database</span>
+              <strong className="iac-kpi-val iac-kpi-val--sm" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className={"iac-status-dot " + (dbOk ? "iac-status-dot--ok" : "iac-status-dot--err")} />
+                {sh.database?.status ?? "—"}
+              </strong>
+              <span className="iac-kpi-sub">PostgreSQL</span>
+            </div>
+            <div className="iac-health-card">
+              <span className="iac-kpi-lbl">API</span>
+              <strong className="iac-kpi-val iac-kpi-val--sm" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className={"iac-status-dot " + (apiOk ? "iac-status-dot--ok" : "iac-status-dot--err")} />
+                {sh.api?.status ?? "—"}
+              </strong>
+              <span className="iac-kpi-sub">NestJS REST API</span>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    function renderComingSoonTab(tab) {
+      const LABELS = { settings: "Settings" };
+      return (
+        <div className="iac-coming-soon">
+          <div className="iac-cs-title">{LABELS[tab] || tab}</div>
+          <div className="iac-cs-sub">This section will be available in a future phase.</div>
+          <span className="iac-badge iac-badge--phase">Phase 3B+</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="iac-shell">
+        <aside className="iac-sidebar">
+          <div className="iac-sidebar-brand">
+            <div className="brand-icon" style={{ width: 30, height: 30, flexShrink: 0 }}>
+              <img src={logoSrc} alt="Tetavio" className="app-logo" />
+            </div>
+            <div>
+              <div className="iac-brand-name">Tetavio</div>
+              <div className="iac-brand-env">Admin Console</div>
+            </div>
+          </div>
+          <nav className="iac-nav">
+            {IAC_NAV.map(({ key, label, icon }) => (
+              <button
+                key={key}
+                className={"iac-nav-item" + (adminActiveTab === key ? " iac-nav-item--active" : "")}
+                onClick={() => setAdminActiveTab(key)}
+              >
+                <span className="iac-nav-icon">{icon}</span>
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="iac-sidebar-foot">
+            <div className="iac-su-avatar">{currentUser.email.charAt(0).toUpperCase()}</div>
+            <div className="iac-su-info">
+              <div className="iac-su-email">{currentUser.email}</div>
+              <div className="iac-su-role">super_admin</div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="iac-main">
+          <header className="iac-topbar">
+            <div>
+              <h1 className="iac-topbar-title">Tetavio Admin Console</h1>
+              <p className="iac-topbar-sub">SaaS management and finance overview</p>
+            </div>
+            <div className="iac-topbar-badges">
+              <span className="iac-badge iac-badge--ro">Read-only</span>
+              <span className="iac-badge iac-badge--phase">Phase 3A</span>
+            </div>
+          </header>
+          <div className="iac-content">
+            {adminActiveTab === "overview" && renderOverviewTab()}
+            {adminActiveTab === "accounts" && renderAccountsTab()}
+            {adminActiveTab === "finance" && renderFinanceTab()}
+            {adminActiveTab === "subscriptions" && renderSubscriptionsTab()}
+            {adminActiveTab === "activity" && renderActivityTab()}
+            {adminActiveTab === "system" && renderSystemHealthTab()}
+            {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "system" && renderComingSoonTab(adminActiveTab)}
+          </div>
+        </div>
       </div>
     );
   }

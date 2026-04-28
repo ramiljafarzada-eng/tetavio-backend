@@ -1,0 +1,119 @@
+Continue Tetavio Admin Panel with Phase 3F — System Health Dashboard.
+
+IMPORTANT: This task ALSO introduces workflow discipline (AGENTS.md + Git).
+
+-------------------------------------
+PART 1 — AGENTS.md UPDATE (CONTROLLED)
+-------------------------------------
+
+Update AGENTS.md ONLY if necessary.
+
+Add a new section:
+
+### Admin Panel (Phases 3A–3E Completed)
+
+Include:
+- Overview, Accounts, Finance, Subscriptions, Activity dashboards
+- All admin endpoints are:
+  - read-only
+  - protected by JwtAuthGuard + RolesGuard + @Roles('SUPER_ADMIN')
+  - exclude SUPER_ADMIN from analytics
+  - never expose sensitive fields (passwordHash, tokens, payment payloads)
+
+DO NOT modify any existing ERP rules.
+
+DO NOT rewrite the file — only append/update relevant section.
+
+-------------------------------------
+PART 2 — SYSTEM HEALTH DASHBOARD
+-------------------------------------
+
+Goal:
+Provide high-level backend/system visibility (still read-only).
+
+Backend:
+
+Add endpoint:
+GET /api/v1/internal/system-health
+
+Protected with:
+JwtAuthGuard + RolesGuard + @Roles('SUPER_ADMIN')
+
+Return:
+
+{
+  uptimeSeconds,
+  serverTime,
+  environment: "production",
+  database: {
+    status: "connected" | "disconnected",
+  },
+  api: {
+    status: "ok"
+  }
+}
+
+Rules:
+- No sensitive data
+- No secrets
+- No tokens
+- No DB credentials
+- Read-only only
+
+Hints:
+- uptime: process.uptime()
+- serverTime: new Date()
+- DB check: simple prisma.$queryRaw`SELECT 1` or safe ping
+
+-------------------------------------
+PART 3 — FRONTEND
+-------------------------------------
+
+In Admin panel:
+
+Add "System" or "Health" tab (after Activity)
+
+Implement renderSystemHealthTab()
+
+Features:
+- Fetch on tab select
+- Display:
+  - Uptime (formatted)
+  - Server time
+  - Environment
+  - Database status (badge: green/red)
+  - API status
+
+No charts needed — simple status cards is enough.
+
+-------------------------------------
+PART 4 — GIT WORKFLOW
+-------------------------------------
+
+After everything is COMPLETE and BOTH builds pass:
+
+1. Run:
+   git add .
+
+2. Commit with message:
+   feat(admin): system health dashboard + activity phase + agents update
+
+Rules:
+- Do NOT commit if build fails
+- Do NOT commit partial work
+- Do NOT include debug logs
+
+-------------------------------------
+FINAL REPORT
+-------------------------------------
+
+Return:
+
+1. Files changed
+2. AGENTS.md update (what added)
+3. Endpoint implementation
+4. DB check strategy
+5. Frontend changes
+6. Confirmation no sensitive data exposed
+7. Build results
+8. Git commit confirmation

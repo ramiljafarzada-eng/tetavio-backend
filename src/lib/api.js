@@ -214,6 +214,26 @@ export function apiGetAdminOverview(onSessionUpdate) {
   return authRequest("/internal/overview", { method: "GET" }, onSessionUpdate);
 }
 
+export function apiGetAdminAccounts(params = {}, onSessionUpdate) {
+  return authRequest(`/internal/accounts${buildQueryString(params)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetAdminFinance(onSessionUpdate) {
+  return authRequest("/internal/finance", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetAdminSubscriptions(params = {}, onSessionUpdate) {
+  return authRequest(`/internal/subscriptions${buildQueryString(params)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetAdminActivity(params = {}, onSessionUpdate) {
+  return authRequest(`/internal/activity${buildQueryString(params)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetAdminSystemHealth(onSessionUpdate) {
+  return authRequest("/internal/system-health", { method: "GET" }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",
