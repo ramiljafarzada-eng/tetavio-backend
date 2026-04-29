@@ -374,6 +374,7 @@ Completion Note:
 Banking backend added with BankAccount and BankTransaction models, JWT/account-scoped banking endpoints, atomic balance updates on transaction create/delete, soft delete, and no frontend accountId usage.
 
 Commit Reference:
+fbe7459 feat(banking): add banking backend
 
 ==================================================
 PHASE 6C — REPORTS BACKEND UPGRADE
