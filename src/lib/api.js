@@ -270,6 +270,10 @@ export function apiAdminReviewAnomaly(payload, onSessionUpdate) {
   }, onSessionUpdate);
 }
 
+export function apiGetFinancialInsights(onSessionUpdate) {
+  return authRequest("/insights/financial", { method: "GET" }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",

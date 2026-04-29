@@ -472,6 +472,17 @@ Backend change:
   - Filters: severity, type, search; pagination; summary KPIs always reflect unfiltered totals
   - No admin mutations yet
 
+\- Phase 4A: Financial Insight Engine (customer-facing, read-only)
+  - Endpoint: GET /api/v1/insights/financial (JWT required, no accountId from frontend)
+  - Scoped entirely by authenticated user.accountId from JWT payload
+  - Module: backend/src/modules/insights/
+  - Returns: summary KPIs + insight cards
+  - Insight rules: OVERDUE_INVOICES, CUSTOMER_CONCENTRATION_RISK, LOW_PAYMENT_CONVERSION, NO_RECENT_REVENUE, HEALTHY_REVENUE_SIGNAL
+  - Query strategy: single invoice findMany + customer count via Promise.all, all in-memory detection — no N+1
+  - Handles both English ("PAID") and Azerbaijani ("Ödənilib") invoice status strings
+  - Frontend: renderFinancialInsights() embedded in renderHome() dashboard; 7 KPI cards + severity-coded insight cards
+  - No mutations, no AI, no external services
+
 \- Phase 3I: Audit-Safe Admin Actions (mutations)
   - New Prisma models: AdminAccountNote, AdminAccountFlag, AdminAnomalyReview, AdminAuditLog (migration: 20260428173925_admin_audit_actions)
   - Endpoints (all SUPER_ADMIN only, all atomic with audit log):

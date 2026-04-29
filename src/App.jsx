@@ -13,6 +13,7 @@ import {
   apiAdminFlagAccount,
   apiAdminUnflagAccount,
   apiAdminReviewAnomaly,
+  apiGetFinancialInsights,
   apiGetAdminAccountDetail,
   apiGetAdminAccounts,
   apiGetAdminAnomalies,
@@ -2343,6 +2344,11 @@ function MainApp() {
   const [adminAnomaliesSeverityInput, setAdminAnomaliesSeverityInput] = useState("");
   const [adminAnomaliesType, setAdminAnomaliesType] = useState("");
   const [adminAnomaliesTypeInput, setAdminAnomaliesTypeInput] = useState("");
+
+  const [financialInsightsData, setFinancialInsightsData] = useState(null);
+  const [financialInsightsLoading, setFinancialInsightsLoading] = useState(false);
+  const [financialInsightsError, setFinancialInsightsError] = useState("");
+
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3347,6 +3353,21 @@ function MainApp() {
         setAdminAccountDetailLoading(false);
       });
   }, [adminAccountDetailId, adminAccountDetailKey]);
+
+  useEffect(() => {
+    if (!currentUser || activeSection !== "home") return;
+    setFinancialInsightsLoading(true);
+    setFinancialInsightsError("");
+    apiGetFinancialInsights(updateBackendSession)
+      .then((data) => {
+        setFinancialInsightsData(data);
+        setFinancialInsightsLoading(false);
+      })
+      .catch((err) => {
+        setFinancialInsightsError(err?.message || "Financial insights could not be loaded.");
+        setFinancialInsightsLoading(false);
+      });
+  }, [currentUser, activeSection]);
 
   useEffect(() => {
     const allowedNav = getAccessibleNavItems(currentUser);
@@ -11579,7 +11600,117 @@ function renderItemsCatalog() {
           </div>
         </div>
 
+        {renderFinancialInsights()}
+
       </section>
+    );
+  }
+
+  function renderFinancialInsights() {
+    const cur = state.settings.currency || "AZN";
+    const fmtMinor = (minor) => currency((minor || 0) / 100, cur);
+
+    const SEV_COLOR = { HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#10b981" };
+    const SEV_BG = { HIGH: "rgba(239,68,68,0.08)", MEDIUM: "rgba(245,158,11,0.08)", LOW: "rgba(16,185,129,0.08)" };
+
+    if (financialInsightsLoading) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Financial Insights</h3><p className="panel-copy">Loading…</p></div></div>
+        </div>
+      );
+    }
+
+    if (financialInsightsError) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Financial Insights</h3></div></div>
+          <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{financialInsightsError}</p>
+        </div>
+      );
+    }
+
+    if (!financialInsightsData) return null;
+
+    const { summary, insights } = financialInsightsData;
+
+    const kpis = [
+      { label: "Total Revenue", value: fmtMinor(summary.totalRevenueMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "🧾" },
+      { label: "Paid Revenue", value: fmtMinor(summary.paidRevenueMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: "Outstanding", value: fmtMinor(summary.outstandingRevenueMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏳" },
+      { label: "Overdue", value: fmtMinor(summary.overdueRevenueMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
+      { label: "Invoices", value: summary.invoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
+      { label: "Paid Invoices", value: summary.paidInvoiceCount, accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "💳" },
+      { label: "Customers", value: summary.customerCount, accent: "#0ea5e9", iconBg: "rgba(14,165,233,0.1)", icon: "👥" },
+    ];
+
+    return (
+      <div style={{ marginTop: "var(--space-lg)" }}>
+        <p className="dash-section-label">Financial Insights</p>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-lg)",
+        }}>
+          {kpis.map((kpi) => (
+            <div key={kpi.label} style={{
+              display: "flex", alignItems: "center", gap: "0.75rem",
+              padding: "1rem 1.25rem",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--surface)",
+              border: "1px solid rgba(255,255,255,0.92)",
+              borderLeftWidth: 4,
+              borderLeftColor: kpi.accent,
+            }}>
+              <div style={{
+                fontSize: "1.3rem", width: 40, height: 40, display: "flex",
+                alignItems: "center", justifyContent: "center",
+                borderRadius: 10, background: kpi.iconBg, flexShrink: 0,
+              }}>{kpi.icon}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", minWidth: 0 }}>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", whiteSpace: "nowrap" }}>{kpi.label}</span>
+                <strong style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "clamp(0.9rem,1.2vw,1.25rem)", fontWeight: 800, lineHeight: 1, color: "var(--text)", whiteSpace: "nowrap" }}>{kpi.value}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {insights.length === 0 ? (
+          <div className="panel" style={{ padding: "1.5rem" }}>
+            <p style={{ color: "var(--muted)", fontSize: 14 }}>No active insights at this time. Keep up the strong billing discipline.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+            {insights.map((insight) => (
+              <div key={insight.id} style={{
+                padding: "1.25rem 1.5rem",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--surface)",
+                border: `1px solid ${SEV_COLOR[insight.severity] ?? "#334155"}`,
+                borderLeftWidth: 4,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "2px 8px",
+                    borderRadius: 999,
+                    color: SEV_COLOR[insight.severity],
+                    background: SEV_BG[insight.severity],
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}>{insight.severity}</span>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{insight.title}</strong>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8, lineHeight: 1.5 }}>{insight.description}</p>
+                <p style={{ fontSize: 12, color: SEV_COLOR[insight.severity] ?? "var(--muted)", fontWeight: 500 }}>
+                  Recommendation: {insight.recommendation}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 

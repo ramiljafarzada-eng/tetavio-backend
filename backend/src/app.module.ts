@@ -14,6 +14,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { AdminModule } from './admin/admin.module';
+import { InsightsModule } from './modules/insights/insights.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AdminModule } from './admin/admin.module';
     VendorsModule,
     InvoicesModule,
     AdminModule,
+    InsightsModule,
   ],
   controllers: [AppController],
   providers: [
