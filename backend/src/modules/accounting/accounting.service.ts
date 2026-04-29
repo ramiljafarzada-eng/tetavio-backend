@@ -95,6 +95,7 @@ export class AccountingService {
       where: {
         accountId,
         code: { in: uniqueCodes },
+        isActive: true,
         deletedAt: null,
       },
       select: { id: true, code: true },
