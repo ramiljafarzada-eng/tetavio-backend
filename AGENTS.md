@@ -618,6 +618,29 @@ Backend change:
   - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
   - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
 
+\- Phase 5H: Team Member Management (COMPLETED)
+  - Migration: 20260429140000_extend_user_role_for_team — adds ADMIN, ACCOUNTANT, VIEWER to UserRole enum (additive only; OWNER and SUPER_ADMIN unchanged)
+  - Module: backend/src/modules/team/ (TeamService, TeamController, TeamModule)
+  - Endpoints (all JWT-protected via @UseGuards(JwtAuthGuard), accountId from token only):
+    - GET    /api/v1/team            — list account members (all authenticated roles can list)
+    - POST   /api/v1/team            — create member (OWNER/ADMIN only)
+    - PATCH  /api/v1/team/:id        — update role or isActive (OWNER/ADMIN only)
+    - DELETE /api/v1/team/:id        — soft-deactivate member (OWNER/ADMIN only)
+  - Role rules:
+    - OWNER and ADMIN can create, update, deactivate team members
+    - ACCOUNTANT and VIEWER cannot manage — ForbiddenException thrown by requireManagerRole()
+    - SUPER_ADMIN users are filtered out of all team queries (role: { not: SUPER_ADMIN })
+  - Safety rules (must not be violated in future work):
+    - accountId must NEVER come from the frontend — always from user.accountId in JWT
+    - Response only includes: id, email, fullName, role, isActive, createdAt — never passwordHash, tokens, or payment data
+    - DELETE is soft-deactivate only (status → SUSPENDED); no hard deletes on users
+    - Last active OWNER of an account must always be preserved — assertNotLastActiveOwner() blocks demotion and deactivation
+    - Self-deactivation via DELETE is blocked; via PATCH isActive=false it is allowed only if another active OWNER exists
+  - Safe Prisma select (SAFE_SELECT): id, email, fullName, role, status, createdAt — all other User fields excluded
+  - Frontend: apiListTeam, apiCreateTeamMember, apiUpdateTeamMember, apiDeactivateTeamMember in api.js — no accountId in any request body
+  - UI: Settings → Team tab (settingsTab="team") with member list, invite form, inline role select, deactivate button; loaded via loadTeamMembers() on tab open
+  - Backend form submit handler named submitNewTeamMember (NOT createTeamMember — that name is taken by legacy local-state function at line ~4153)
+
 \- Phase 1 ERP full-stack persistence is now in place for:
   - Company Settings
   - Customers

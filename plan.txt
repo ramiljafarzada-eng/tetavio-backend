@@ -224,11 +224,11 @@ Completion Note:
 Backend POST /api/v1/invoices/:id/send added. It reuses the existing PDF generation logic, sends the generated invoice PDF to the customer email through EmailService, and remains JWT/account-scoped with no accountId from frontend. Frontend invoice edit view now includes an "E-poçtla göndər" button with loading and success/error state.
 
 Commit Reference:
-TBD
+6279047
 
 ==================================================
 PHASE 5H — TEAM MEMBER MANAGEMENT
-Status: NOT STARTED
+Status: COMPLETE
 
 Goal:
 Allow account owners/admins to invite and manage team members.
@@ -256,14 +256,20 @@ Frontend:
 - Deactivate/remove safely
 
 Completion Checklist:
-[ ] Team API added
-[ ] Frontend Team tab backend-wired
-[ ] Role model clear
-[ ] Sensitive fields excluded
-[ ] Build passes
-[ ] Commit pushed
-[ ] AGENTS.md updated
-[ ] plan.txt updated
+[x] Team API added
+[x] Frontend Team tab backend-wired
+[x] Role model clear
+[x] Sensitive fields excluded
+[x] Build passes
+[x] Commit pushed
+[x] AGENTS.md updated
+[x] plan.txt updated
+
+Completion Note:
+Team management added with JWT/account-scoped GET/POST/PATCH/DELETE /api/v1/team endpoints. UserRole now supports ADMIN, ACCOUNTANT, VIEWER. OWNER/ADMIN can manage team members; sensitive fields are excluded; deactivation is soft via SUSPENDED; last-owner protections are enforced. Frontend Settings → Team tab is backend-wired with list, invite, role update, and deactivate actions without sending accountId.
+
+Commit Reference:
+TBD
 
 ==================================================
 PHASE 5I — ERP USER AUDIT TRAIL

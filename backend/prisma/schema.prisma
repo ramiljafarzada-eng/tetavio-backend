@@ -18,6 +18,9 @@ enum UserStatus {
 
 enum UserRole {
   OWNER
+  ADMIN
+  ACCOUNTANT
+  VIEWER
   SUPER_ADMIN
 }
 

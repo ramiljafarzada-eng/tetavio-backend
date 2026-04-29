@@ -516,6 +516,44 @@ export function apiSendInvoiceEmail(invoiceId, onSessionUpdate) {
   return authRequest(`/invoices/${invoiceId}/send`, { method: "POST" }, onSessionUpdate);
 }
 
+export function apiListTeam(onSessionUpdate) {
+  return authRequest("/team", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateTeamMember(payload, onSessionUpdate) {
+  return authRequest(
+    "/team",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email: payload?.email,
+        fullName: payload?.fullName,
+        role: payload?.role,
+        password: payload?.password,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateTeamMember(memberId, payload, onSessionUpdate) {
+  return authRequest(
+    `/team/${memberId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        role: payload?.role,
+        isActive: payload?.isActive,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiDeactivateTeamMember(memberId, onSessionUpdate) {
+  return authRequest(`/team/${memberId}`, { method: "DELETE" }, onSessionUpdate);
+}
+
 export function apiListAccountingAccounts(query = {}, onSessionUpdate) {
   return authRequest(`/accounting/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
 }

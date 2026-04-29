@@ -42,6 +42,10 @@ import {
   apiAddInvoicePayment,
   apiDownloadInvoicePdf,
   apiSendInvoiceEmail,
+  apiListTeam,
+  apiCreateTeamMember,
+  apiUpdateTeamMember,
+  apiDeactivateTeamMember,
   apiGetAccountsReceivableAging,
   apiCreateInvoice,
   apiDeleteInvoice,
@@ -2303,6 +2307,12 @@ function MainApp() {
   const [pdfError, setPdfError] = useState("");
   const [sendEmailLoading, setSendEmailLoading] = useState(false);
   const [sendEmailMessage, setSendEmailMessage] = useState("");
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamError, setTeamError] = useState("");
+  const [teamActionMsg, setTeamActionMsg] = useState("");
+  const [teamDraft, setTeamDraft] = useState({ email: "", fullName: "", role: "ACCOUNTANT", password: "" });
+  const [teamFormVisible, setTeamFormVisible] = useState(false);
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -3319,6 +3329,61 @@ function MainApp() {
     }
   }
 
+  async function loadTeamMembers() {
+    setTeamLoading(true);
+    setTeamError("");
+    try {
+      const data = await apiListTeam(updateBackendSession);
+      setTeamMembers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setTeamError(err?.message || "Komanda üzvləri yüklənmədi.");
+    } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function submitNewTeamMember(e) {
+    e.preventDefault();
+    setTeamLoading(true);
+    setTeamActionMsg("");
+    setTeamError("");
+    try {
+      const created = await apiCreateTeamMember(teamDraft, updateBackendSession);
+      setTeamMembers((prev) => [...prev, created]);
+      setTeamDraft({ email: "", fullName: "", role: "ACCOUNTANT", password: "" });
+      setTeamFormVisible(false);
+      setTeamActionMsg("Üzv əlavə edildi.");
+    } catch (err) {
+      setTeamError(err?.message || "Üzv əlavə edilmədi.");
+    } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function updateTeamMemberRole(memberId, role) {
+    setTeamActionMsg("");
+    setTeamError("");
+    try {
+      const updated = await apiUpdateTeamMember(memberId, { role }, updateBackendSession);
+      setTeamMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
+      setTeamActionMsg("Rol yeniləndi.");
+    } catch (err) {
+      setTeamError(err?.message || "Rol yenilənmədi.");
+    }
+  }
+
+  async function deactivateTeamMember(memberId) {
+    setTeamActionMsg("");
+    setTeamError("");
+    try {
+      const updated = await apiDeactivateTeamMember(memberId, updateBackendSession);
+      setTeamMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
+      setTeamActionMsg("Üzv deaktiv edildi.");
+    } catch (err) {
+      setTeamError(err?.message || "Deaktiv edilmədi.");
+    }
+  }
+
   function getModuleSubview(moduleId) {
     switch (moduleId) {
       case "incomingGoodsServices": return billView;
@@ -3425,7 +3490,7 @@ function MainApp() {
     setSection(part1);
 
     if (part1 === "settings") {
-      setSettingsTab(["profile", "language", "params", "system"].includes(part2) ? part2 : null);
+      setSettingsTab(["profile", "language", "params", "system", "team"].includes(part2) ? part2 : null);
       return;
     }
 
@@ -16647,6 +16712,15 @@ function renderSettings() {
               </div>
               <span className="bill-hub-arrow">→</span>
             </div>
+            <div className="bill-hub-card" onClick={() => { setSettingsTab("team"); loadTeamMembers(); }}>
+              <div className="bill-hub-icon">👥</div>
+              <div className="bill-hub-info">
+                <h3>Komanda</h3>
+                <p>Hesab üzvlərini idarə edin.</p>
+                <span className="bill-hub-count">{teamMembers.length || "—"} üzv</span>
+              </div>
+              <span className="bill-hub-arrow">→</span>
+            </div>
           </div>
         </section>
       );
@@ -16707,6 +16781,91 @@ function renderSettings() {
                 </button>
               ))}
             </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (settingsTab === "team") {
+      return (
+        <section className="view active">
+          {backBtn}
+          <div className="panel">
+            <div className="panel-head">
+              <div><h3>Komanda</h3><p className="panel-copy">Hesab üzvlərini idarə edin.</p></div>
+              <button className="primary-btn" type="button" onClick={() => { setTeamFormVisible((v) => !v); setTeamError(""); setTeamActionMsg(""); }}>
+                {teamFormVisible ? "Ləğv et" : "+ Üzv əlavə et"}
+              </button>
+            </div>
+
+            {teamFormVisible && (
+              <form onSubmit={submitNewTeamMember} className="form-grid" style={{ marginBottom: 24 }}>
+                <label><span>E-poçt</span><input type="email" value={teamDraft.email} onChange={(e) => setTeamDraft((d) => ({ ...d, email: e.target.value }))} required /></label>
+                <label><span>Ad Soyad</span><input type="text" value={teamDraft.fullName} onChange={(e) => setTeamDraft((d) => ({ ...d, fullName: e.target.value }))} /></label>
+                <label>
+                  <span>Rol</span>
+                  <select value={teamDraft.role} onChange={(e) => setTeamDraft((d) => ({ ...d, role: e.target.value }))}>
+                    <option value="OWNER">Sahib</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="ACCOUNTANT">Mühasib</option>
+                    <option value="VIEWER">İzləyici</option>
+                  </select>
+                </label>
+                <label><span>Şifrə</span><input type="password" value={teamDraft.password} onChange={(e) => setTeamDraft((d) => ({ ...d, password: e.target.value }))} required minLength={8} /></label>
+                <button className="primary-btn" type="submit" disabled={teamLoading}>{teamLoading ? "Əlavə edilir..." : "Əlavə et"}</button>
+              </form>
+            )}
+
+            {teamError ? <p style={{ color: "var(--danger)", marginBottom: 12, fontSize: 13 }}>{teamError}</p> : null}
+            {teamActionMsg ? <p style={{ color: "var(--success, #16a34a)", marginBottom: 12, fontSize: 13 }}>{teamActionMsg}</p> : null}
+
+            {teamLoading && !teamFormVisible ? (
+              <p className="panel-copy">Yüklənir...</p>
+            ) : (
+              <table className="bill-item-table" style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>E-poçt</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Ad</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Rol</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Status</th>
+                    <th style={{ textAlign: "right", padding: "8px 4px" }}>Əməliyyatlar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamMembers.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: "16px 4px", color: "var(--text-muted)", textAlign: "center" }}>Üzv tapılmadı</td></tr>
+                  ) : teamMembers.map((m) => (
+                    <tr key={m.id}>
+                      <td style={{ padding: "8px 4px", fontSize: 13 }}>{m.email}</td>
+                      <td style={{ padding: "8px 4px", fontSize: 13 }}>{m.fullName || "—"}</td>
+                      <td style={{ padding: "8px 4px" }}>
+                        <select
+                          value={m.role}
+                          style={{ fontSize: 12, padding: "2px 4px" }}
+                          onChange={(e) => updateTeamMemberRole(m.id, e.target.value)}
+                        >
+                          <option value="OWNER">Sahib</option>
+                          <option value="ADMIN">Admin</option>
+                          <option value="ACCOUNTANT">Mühasib</option>
+                          <option value="VIEWER">İzləyici</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: "8px 4px", fontSize: 12, color: m.isActive ? "var(--success, #16a34a)" : "var(--danger)" }}>
+                        {m.isActive ? "Aktiv" : "Deaktiv"}
+                      </td>
+                      <td style={{ padding: "8px 4px", textAlign: "right" }}>
+                        {m.isActive ? (
+                          <button className="ghost-btn" type="button" style={{ fontSize: 12 }} onClick={() => deactivateTeamMember(m.id)}>
+                            Deaktiv et
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
       );

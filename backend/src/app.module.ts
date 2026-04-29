@@ -17,6 +17,7 @@ import { AdminModule } from './admin/admin.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { TeamModule } from './modules/team/team.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     InsightsModule,
     AccountingModule,
     ReportsModule,
+    TeamModule,
   ],
   controllers: [AppController],
   providers: [
