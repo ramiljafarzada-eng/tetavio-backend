@@ -146,7 +146,7 @@ pdfkit already in backend/package.json dependencies. authBlobRequest helper adde
 Both backend (nest build) and frontend (vite build) builds pass.
 
 Commit Reference:
-TBD
+e345131 feat(invoices): add invoice PDF generation
 
 ==================================================
 PHASE 5F — REAL EMAIL DELIVERY
