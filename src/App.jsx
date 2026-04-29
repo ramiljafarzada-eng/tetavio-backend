@@ -3031,6 +3031,7 @@ function MainApp() {
       discountAmount: 0,
       adjustment: "0",
       amount: Number(record?.totalMinor || 0) / 100,
+      paidAt: record?.paidAt ? String(record.paidAt).slice(0, 10) : null,
       createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
       lineItems: lines.length > 0
         ? lines.map((line) => {
@@ -7560,6 +7561,12 @@ function renderItemsCatalog() {
                   <span>{col("Son tarix")}</span>
                   <input type="date" value={draft.dueDate ?? today()} onChange={(event) => updateDraft("invoices", "dueDate", event.target.value)} required disabled={invoicesLoading} />
                 </label>
+                {editing.invoices && draft.paidAt ? (
+                  <label className="bill-header-field">
+                    <span>Ödəniş tarixi</span>
+                    <input type="date" value={draft.paidAt} readOnly disabled style={{ opacity: 0.7 }} />
+                  </label>
+                ) : null}
                 <label className="bill-header-field">
                   <span>{col("Müştəri")}</span>
                   <select value={draft.customerId ?? ""} onChange={(event) => {
@@ -12041,7 +12048,7 @@ function renderItemsCatalog() {
       { label: "Expected (30 days)", value: fmtMinor(summary.expectedIncomingNext30DaysMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "📅" },
       { label: "Overdue", value: fmtMinor(summary.overdueAmountMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
       { label: "Due Soon (7d)", value: fmtMinor(summary.dueSoonAmountMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏰" },
-      { label: "Recent Paid Revenue (Approx.)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: "Paid Revenue (Last 30 Days)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
       { label: "Open Invoices", value: summary.openInvoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
       {
         label: "Cashflow Status",

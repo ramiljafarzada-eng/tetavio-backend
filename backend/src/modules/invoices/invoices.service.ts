@@ -27,6 +27,7 @@ type CalculatedInvoiceTotals = {
 };
 
 const AUTO_INVOICE_NUMBER_MAX_RETRIES = 5;
+const PAID_STATUSES_SET = new Set(['PAID', 'Ödənilib']);
 
 @Injectable()
 export class InvoicesService {
@@ -354,11 +355,12 @@ export class InvoicesService {
     invoiceNumber: string,
     totals: CalculatedInvoiceTotals,
   ): Prisma.InvoiceUncheckedCreateInput {
+    const status = dto.status ?? 'DRAFT';
     return {
       accountId: user.accountId,
       customerId: dto.customerId,
       invoiceNumber,
-      status: dto.status ?? 'DRAFT',
+      status,
       issueDate: new Date(dto.issueDate),
       dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
       currency: dto.currency ?? 'AZN',
@@ -367,6 +369,7 @@ export class InvoicesService {
       discountMinor: totals.discountMinor,
       totalMinor: totals.totalMinor,
       notes: dto.notes ?? null,
+      paidAt: PAID_STATUSES_SET.has(status) ? new Date() : null,
       lines: {
         create: totals.lines,
       },
@@ -440,7 +443,7 @@ export class InvoicesService {
   }
 
   async update(user: JwtPayload, invoiceId: string, dto: UpdateInvoiceDto) {
-    await this.getById(user, invoiceId);
+    const existing = await this.getById(user, invoiceId);
 
     if (dto.customerId) {
       await this.ensureCustomerOwnership(user, dto.customerId);
@@ -462,6 +465,17 @@ export class InvoicesService {
       );
     }
 
+    let paidAtUpdate: Date | null | undefined;
+    if (dto.status !== undefined) {
+      const newStatusIsPaid = PAID_STATUSES_SET.has(dto.status);
+      const oldStatusIsPaid = PAID_STATUSES_SET.has(existing.status);
+      if (newStatusIsPaid && !existing.paidAt) {
+        paidAtUpdate = new Date();
+      } else if (!newStatusIsPaid && oldStatusIsPaid) {
+        paidAtUpdate = null;
+      }
+    }
+
     const data: Prisma.InvoiceUpdateInput = {
       ...(dto.customerId !== undefined
         ? { customer: { connect: { id: dto.customerId } } }
@@ -478,6 +492,7 @@ export class InvoicesService {
         : {}),
       ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+      ...(paidAtUpdate !== undefined ? { paidAt: paidAtUpdate } : {}),
       ...(totals
         ? {
             subTotalMinor: totals.subTotalMinor,

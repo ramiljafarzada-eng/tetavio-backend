@@ -544,6 +544,15 @@ Backend change:
   - removeModuleRecord("chartOfAccounts/manualJournals") → API delete + sync
   - Loading/error state: accountsLoading/Error, journalsLoading/Error shown in UI
 
+\- Phase 5B: Invoice paidAt Tracking (COMPLETED)
+  - Invoice.paidAt (paid_at TIMESTAMPTZ) added for accurate paid revenue timing (migration: 20260429081044_add_invoice_paid_at)
+  - Backfill: existing PAID invoices get paidAt = updatedAt as a one-time approximation (documented in migration SQL)
+  - Backend sets paidAt on status transitions: PAID with null paidAt → paidAt=now; non-PAID from PAID → paidAt=null; no status change → paidAt unchanged
+  - Create with PAID status → paidAt=now; create with non-PAID → paidAt=null
+  - Frontend must NOT directly control paidAt; backend is sole source of truth
+  - Insights/cashflow/trends use paidAt (not issueDate/createdAt) for paid revenue timing; fallback: paidAt=null invoices excluded from period filters
+  - Frontend: shows read-only "Ödəniş tarixi" on paid invoices in edit form; cashflow label renamed "Paid Revenue (Last 30 Days)"
+
 \- Phase 1 ERP full-stack persistence is now in place for:
   - Company Settings
   - Customers

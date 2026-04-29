@@ -22,7 +22,7 @@ export class InsightsService {
           status: true,
           totalMinor: true,
           dueDate: true,
-          createdAt: true,
+          paidAt: true,
         },
       }),
       this.prisma.customer.count({
@@ -49,7 +49,7 @@ export class InsightsService {
     const outstandingRevenueMinor = sum(outstandingInvoices);
 
     const recentPaidInvoices = paidInvoices.filter(
-      (inv) => new Date(inv.createdAt) >= thirtyDaysAgo,
+      (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= thirtyDaysAgo,
     );
 
     const paidByCustomer = new Map<string, number>();
@@ -168,7 +168,7 @@ export class InsightsService {
         status: true,
         totalMinor: true,
         dueDate: true,
-        issueDate: true,
+        paidAt: true,
         customer: {
           select: { displayName: true, companyName: true },
         },
@@ -200,9 +200,8 @@ export class InsightsService {
       const d = dueDateOf(inv);
       return d !== null && d >= now && d <= in30Days;
     });
-    // No paidAt field exists — use issueDate as the best proxy for cash inflow date
     const paidLast30Invoices = invoices.filter(
-      (inv) => isPaid(inv) && new Date(inv.issueDate) >= thirtyDaysAgo,
+      (inv) => isPaid(inv) && inv.paidAt !== null && new Date(inv.paidAt) >= thirtyDaysAgo,
     );
 
     const sumMinor = (list: { totalMinor: number }[]) =>
@@ -301,10 +300,19 @@ export class InsightsService {
     const currentEnd = now;
     const previousEnd = currentStart;
 
-    const [invoices, currentCustomerCount, previousCustomerCount] = await Promise.all([
+    const [invoices, paidInvoicesByPaidAt, currentCustomerCount, previousCustomerCount] = await Promise.all([
       this.prisma.invoice.findMany({
         where: { accountId, deletedAt: null, issueDate: { gte: previousStart } },
         select: { status: true, totalMinor: true, issueDate: true },
+      }),
+      this.prisma.invoice.findMany({
+        where: {
+          accountId,
+          deletedAt: null,
+          status: { in: PAID_STATUSES },
+          paidAt: { gte: previousStart },
+        },
+        select: { totalMinor: true, paidAt: true },
       }),
       this.prisma.customer.count({
         where: { accountId, deletedAt: null, createdAt: { gte: currentStart, lt: currentEnd } },
@@ -329,8 +337,16 @@ export class InsightsService {
     const sumMinor = (list: { totalMinor: number }[]) =>
       list.reduce((acc, inv) => acc + inv.totalMinor, 0);
 
-    const currentRevenueMinor = sumMinor(curInvoices.filter(isPaid));
-    const previousRevenueMinor = sumMinor(prevInvoices.filter(isPaid));
+    const currentRevenueMinor = sumMinor(
+      paidInvoicesByPaidAt.filter(
+        (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= currentStart && new Date(inv.paidAt) < currentEnd,
+      ),
+    );
+    const previousRevenueMinor = sumMinor(
+      paidInvoicesByPaidAt.filter(
+        (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= previousStart && new Date(inv.paidAt) < previousEnd,
+      ),
+    );
     const currentOutstandingMinor = sumMinor(curInvoices.filter(isOpen));
     const previousOutstandingMinor = sumMinor(prevInvoices.filter(isOpen));
 
