@@ -310,7 +310,7 @@ a320763 feat(audit): add ERP user audit trail
 
 ==================================================
 PHASE 6A — BILLS / PURCHASES BACKEND
-Status: NOT STARTED
+Status: COMPLETE
 
 Goal:
 Persist vendor bills and purchase documents in backend.
@@ -332,12 +332,17 @@ Frontend:
 - Remove local-only persistence
 
 Completion Checklist:
-[ ] Bills backend added
+[x] Bills backend added
 [ ] Frontend wired
-[ ] Totals backend-calculated
-[ ] Build passes
-[ ] Commit pushed
-[ ] plan.txt updated
+[x] Totals backend-calculated
+[x] Build passes
+[x] Commit pushed
+[x] plan.txt updated
+
+Completion Note:
+Bills/Purchases backend added with Bill and BillLine models, safe additive migration, JWT/account-scoped CRUD endpoints, backend-calculated totals, vendor ownership validation, pagination, and soft delete. No frontend changes were required.
+
+Commit Reference:
 
 ==================================================
 PHASE 6B — BANKING BACKEND

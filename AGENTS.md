@@ -618,6 +618,27 @@ Backend change:
   - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
   - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
 
+\- Phase 6A: Bills / Purchases Backend (COMPLETED)
+  - Migration: 20260429160000_add_bills_module — creates `bills` and `bill_lines` tables
+  - Prisma models: Bill (accountId, vendorId, billNumber unique per account, status, issueDate, dueDate, currency, totalMinor, notes, soft delete), BillLine (billId, itemName, description, quantity, unitPriceMinor, lineTotalMinor, soft delete)
+  - Module: backend/src/modules/bills/ (BillsService, BillsController, BillsModule)
+  - Imports: PrismaModule, AuditModule
+  - Endpoints (all JWT-protected, accountId from token only):
+    - GET    /api/v1/bills            — paginated list; query params: page, limit, search, status, vendorId, issueDateFrom, issueDateTo, dueDateFrom, dueDateTo, sortBy, sortOrder
+    - GET    /api/v1/bills/:id        — detail with vendor + active lines
+    - POST   /api/v1/bills            — create bill
+    - PATCH  /api/v1/bills/:id        — update bill
+    - DELETE /api/v1/bills/:id        — soft delete bill and lines
+  - billNumber auto-generated as BILL-000001 style if omitted; unique per accountId
+  - Audit trail: bill.created / bill.updated / bill.deleted logged via AuditService (fire-and-forget)
+  - Rules that must never be violated:
+    - accountId must come from JWT only — never from frontend
+    - vendorId must belong to the same accountId (ensureVendorOwnership check)
+    - totalMinor and lineTotalMinor are backend-calculated only — frontend must never send these fields
+    - lineTotalMinor = Math.round(quantity × unitPriceMinor); totalMinor = sum(lineTotalMinor)
+    - bills use soft delete only (deletedAt); hard deletes are not allowed
+    - payments are not yet implemented — do not add payment logic to bills without explicit spec
+
 \- Phase 5I: ERP User Audit Trail (COMPLETED)
   - Prisma model: AuditLog (migration: 20260429150000_add_audit_log_model) — table: audit_logs; fields: id, accountId, actorUserId, action, entityType, entityId, metadata (nullable JSON), createdAt; indexes on accountId, (accountId+entityType), actorUserId
   - No Prisma relations on AuditLog — stores raw UUID strings to survive user deactivation/deletion

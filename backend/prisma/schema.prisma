@@ -82,6 +82,7 @@ model Account {
   anomalyReviews     AdminAnomalyReview[]
   accountingAccounts AccountingAccount[]
   journalEntries     JournalEntry[]
+  bills              Bill[]
 
   @@map("accounts")
 }
@@ -307,6 +308,7 @@ model Vendor {
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bills          Bill[]
 
   @@index([accountId])
   @@index([accountId, vendorName])
@@ -511,4 +513,45 @@ model JournalEntryLine {
   @@index([journalEntryId])
   @@index([accountingAccountId])
   @@map("journal_entry_lines")
+}
+
+model Bill {
+  id          String     @id @default(uuid()) @db.Uuid
+  accountId   String     @map("account_id") @db.Uuid
+  account     Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  vendorId    String     @map("vendor_id") @db.Uuid
+  vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  billNumber  String     @map("bill_number")
+  status      String     @default("DRAFT")
+  issueDate   DateTime   @map("issue_date") @db.Date
+  dueDate     DateTime?  @map("due_date") @db.Date
+  currency    String     @default("AZN") @db.Char(3)
+  totalMinor  Int        @default(0) @map("total_minor")
+  notes       String?
+  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines       BillLine[]
+
+  @@index([accountId])
+  @@index([vendorId])
+  @@unique([accountId, billNumber])
+  @@map("bills")
+}
+
+model BillLine {
+  id             String    @id @default(uuid()) @db.Uuid
+  billId         String    @map("bill_id") @db.Uuid
+  bill           Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  itemName       String    @map("item_name")
+  description    String?
+  quantity       Decimal   @default(1) @db.Decimal(18, 4)
+  unitPriceMinor Int       @default(0) @map("unit_price_minor")
+  lineTotalMinor Int       @default(0) @map("line_total_minor")
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([billId])
+  @@map("bill_lines")
 }

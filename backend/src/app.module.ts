@@ -18,6 +18,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { TeamModule } from './modules/team/team.module';
+import { BillsModule } from './modules/bills/bills.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { TeamModule } from './modules/team/team.module';
     AccountingModule,
     ReportsModule,
     TeamModule,
+    BillsModule,
   ],
   controllers: [AppController],
   providers: [
