@@ -153,4 +153,144 @@ export class InsightsService {
 
     return { summary, insights };
   }
+
+  async getCashflowForecast(accountId: string) {
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { accountId, deletedAt: null },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        totalMinor: true,
+        dueDate: true,
+        updatedAt: true,
+        createdAt: true,
+        customer: {
+          select: { displayName: true, companyName: true },
+        },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+
+    const isPaid = (inv: { status: string }) => PAID_STATUSES.includes(inv.status);
+    const isCancelled = (inv: { status: string }) => CANCELLED_STATUSES.includes(inv.status);
+    const isOpen = (inv: { status: string }) => !isPaid(inv) && !isCancelled(inv);
+
+    const dueDateOf = (inv: { dueDate: Date | null }) =>
+      inv.dueDate ? new Date(inv.dueDate) : null;
+
+    const openInvoices = invoices.filter(isOpen);
+    const overdueInvoices = openInvoices.filter((inv) => {
+      const d = dueDateOf(inv);
+      return d !== null && d < now;
+    });
+    const dueSoonInvoices = openInvoices.filter((inv) => {
+      const d = dueDateOf(inv);
+      return d !== null && d >= now && d <= in7Days;
+    });
+    const due8to30Invoices = openInvoices.filter((inv) => {
+      const d = dueDateOf(inv);
+      return d !== null && d > in7Days && d <= in30Days;
+    });
+    const expectedNext30Invoices = openInvoices.filter((inv) => {
+      const d = dueDateOf(inv);
+      return d !== null && d >= now && d <= in30Days;
+    });
+    const paidLast30Invoices = invoices.filter(
+      (inv) => isPaid(inv) && new Date(inv.updatedAt) >= thirtyDaysAgo,
+    );
+
+    const sumMinor = (list: { totalMinor: number }[]) =>
+      list.reduce((acc, inv) => acc + inv.totalMinor, 0);
+
+    const expectedIncomingNext30DaysMinor = sumMinor(expectedNext30Invoices);
+    const overdueAmountMinor = sumMinor(overdueInvoices);
+    const dueSoonAmountMinor = sumMinor(dueSoonInvoices);
+    const paidLast30DaysMinor = sumMinor(paidLast30Invoices);
+
+    let cashflowStatus: 'HEALTHY' | 'WATCH' | 'RISK' = 'HEALTHY';
+    if (overdueAmountMinor > expectedIncomingNext30DaysMinor) {
+      cashflowStatus = 'RISK';
+    } else if (overdueInvoices.length > 0 || dueSoonInvoices.length > 0) {
+      cashflowStatus = 'WATCH';
+    }
+
+    const summary = {
+      expectedIncomingNext30DaysMinor,
+      overdueAmountMinor,
+      dueSoonAmountMinor,
+      paidLast30DaysMinor,
+      openInvoiceCount: openInvoices.length,
+      overdueInvoiceCount: overdueInvoices.length,
+      dueSoonInvoiceCount: dueSoonInvoices.length,
+      cashflowStatus,
+    };
+
+    const buckets = [
+      { label: 'Overdue', amountMinor: overdueAmountMinor, invoiceCount: overdueInvoices.length },
+      { label: 'Due next 7 days', amountMinor: dueSoonAmountMinor, invoiceCount: dueSoonInvoices.length },
+      { label: 'Due 8–30 days', amountMinor: sumMinor(due8to30Invoices), invoiceCount: due8to30Invoices.length },
+      { label: 'Paid last 30 days', amountMinor: paidLast30DaysMinor, invoiceCount: paidLast30Invoices.length },
+    ];
+
+    const recommendations: {
+      id: string;
+      severity: string;
+      title: string;
+      description: string;
+      recommendation: string;
+    }[] = [];
+
+    if (overdueAmountMinor > 0) {
+      recommendations.push({
+        id: 'OVERDUE_COLLECTION_RISK',
+        severity: overdueAmountMinor > expectedIncomingNext30DaysMinor ? 'HIGH' : 'MEDIUM',
+        title: 'Overdue Collection Risk',
+        description: `${overdueInvoices.length} invoice${overdueInvoices.length !== 1 ? 's are' : ' is'} past due. Delayed collection affects your cashflow predictability.`,
+        recommendation: 'Contact overdue customers immediately and establish a clear payment deadline to protect your cashflow.',
+      });
+    }
+
+    if (dueSoonAmountMinor > 0) {
+      recommendations.push({
+        id: 'UPCOMING_COLLECTION_FOCUS',
+        severity: 'MEDIUM',
+        title: 'Upcoming Collection Focus',
+        description: `${dueSoonInvoices.length} invoice${dueSoonInvoices.length !== 1 ? 's' : ''} are due within the next 7 days.`,
+        recommendation: 'Send payment reminders now to ensure timely collection and reduce the risk of new overdue items.',
+      });
+    }
+
+    if (cashflowStatus === 'HEALTHY') {
+      recommendations.push({
+        id: 'HEALTHY_CASHFLOW',
+        severity: 'LOW',
+        title: 'Cashflow Looks Healthy',
+        description: 'No overdue invoices detected and your expected income is on track.',
+        recommendation: 'Continue issuing invoices promptly and following up early to maintain this position.',
+      });
+    }
+
+    const upcomingInvoices = openInvoices
+      .filter((inv) => {
+        const d = dueDateOf(inv);
+        return d !== null && d <= in30Days;
+      })
+      .slice(0, 10)
+      .map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        customerName: inv.customer.displayName || inv.customer.companyName || '—',
+        dueDate: inv.dueDate,
+        totalMinor: inv.totalMinor,
+        status: inv.status,
+      }));
+
+    return { summary, buckets, recommendations, upcomingInvoices };
+  }
 }

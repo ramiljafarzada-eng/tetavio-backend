@@ -14,6 +14,7 @@ import {
   apiAdminUnflagAccount,
   apiAdminReviewAnomaly,
   apiGetFinancialInsights,
+  apiGetCashflowForecast,
   apiGetAdminAccountDetail,
   apiGetAdminAccounts,
   apiGetAdminAnomalies,
@@ -2349,6 +2350,10 @@ function MainApp() {
   const [financialInsightsLoading, setFinancialInsightsLoading] = useState(false);
   const [financialInsightsError, setFinancialInsightsError] = useState("");
 
+  const [cashflowData, setCashflowData] = useState(null);
+  const [cashflowLoading, setCashflowLoading] = useState(false);
+  const [cashflowError, setCashflowError] = useState("");
+
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3366,6 +3371,21 @@ function MainApp() {
       .catch((err) => {
         setFinancialInsightsError(err?.message || "Financial insights could not be loaded.");
         setFinancialInsightsLoading(false);
+      });
+  }, [currentUser, activeSection]);
+
+  useEffect(() => {
+    if (!currentUser || activeSection !== "home") return;
+    setCashflowLoading(true);
+    setCashflowError("");
+    apiGetCashflowForecast(updateBackendSession)
+      .then((data) => {
+        setCashflowData(data);
+        setCashflowLoading(false);
+      })
+      .catch((err) => {
+        setCashflowError(err?.message || "Cashflow forecast could not be loaded.");
+        setCashflowLoading(false);
       });
   }, [currentUser, activeSection]);
 
@@ -11602,6 +11622,8 @@ function renderItemsCatalog() {
 
         {renderFinancialInsights()}
 
+        {renderCashflowForecast()}
+
       </section>
     );
   }
@@ -11708,6 +11730,184 @@ function renderItemsCatalog() {
                 </p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderCashflowForecast() {
+    const cur = state.settings.currency || "AZN";
+    const fmtMinor = (minor) => currency((minor || 0) / 100, cur);
+
+    const STATUS_COLOR = { HEALTHY: "#10b981", WATCH: "#f59e0b", RISK: "#ef4444" };
+    const SEV_COLOR = { HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#10b981" };
+    const SEV_BG = { HIGH: "rgba(239,68,68,0.08)", MEDIUM: "rgba(245,158,11,0.08)", LOW: "rgba(16,185,129,0.08)" };
+
+    if (cashflowLoading) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Cashflow Forecast</h3><p className="panel-copy">Loading…</p></div></div>
+        </div>
+      );
+    }
+
+    if (cashflowError) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Cashflow Forecast</h3></div></div>
+          <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{cashflowError}</p>
+        </div>
+      );
+    }
+
+    if (!cashflowData) return null;
+
+    const { summary, buckets, recommendations, upcomingInvoices } = cashflowData;
+
+    const statusColor = STATUS_COLOR[summary.cashflowStatus] ?? "#94a3b8";
+
+    const kpis = [
+      { label: "Expected (30 days)", value: fmtMinor(summary.expectedIncomingNext30DaysMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "📅" },
+      { label: "Overdue", value: fmtMinor(summary.overdueAmountMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
+      { label: "Due Soon (7d)", value: fmtMinor(summary.dueSoonAmountMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏰" },
+      { label: "Paid (30 days)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: "Open Invoices", value: summary.openInvoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
+      {
+        label: "Cashflow Status",
+        value: summary.cashflowStatus,
+        accent: statusColor,
+        iconBg: `${statusColor}18`,
+        icon: summary.cashflowStatus === "HEALTHY" ? "📈" : summary.cashflowStatus === "RISK" ? "📉" : "⚡",
+        valueStyle: { color: statusColor },
+      },
+    ];
+
+    return (
+      <div style={{ marginTop: "var(--space-lg)" }}>
+        <p className="dash-section-label">Cashflow Forecast</p>
+
+        {/* KPI cards */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-lg)",
+        }}>
+          {kpis.map((kpi) => (
+            <div key={kpi.label} style={{
+              display: "flex", alignItems: "center", gap: "0.75rem",
+              padding: "1rem 1.25rem",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--surface)",
+              border: "1px solid rgba(255,255,255,0.92)",
+              borderLeftWidth: 4,
+              borderLeftColor: kpi.accent,
+            }}>
+              <div style={{
+                fontSize: "1.3rem", width: 40, height: 40, display: "flex",
+                alignItems: "center", justifyContent: "center",
+                borderRadius: 10, background: kpi.iconBg, flexShrink: 0,
+              }}>{kpi.icon}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", minWidth: 0 }}>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", whiteSpace: "nowrap" }}>{kpi.label}</span>
+                <strong style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "clamp(0.9rem,1.2vw,1.25rem)", fontWeight: 800, lineHeight: 1, whiteSpace: "nowrap", ...(kpi.valueStyle || { color: "var(--text)" }) }}>{kpi.value}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Buckets */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-lg)",
+        }}>
+          {buckets.map((bucket) => {
+            const bucketAccent = bucket.label === "Overdue" ? "#ef4444" : bucket.label === "Due next 7 days" ? "#f59e0b" : bucket.label === "Due 8–30 days" ? "#6366f1" : "#10b981";
+            return (
+              <div key={bucket.label} style={{
+                padding: "1rem 1.25rem",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--surface)",
+                border: "1px solid rgba(255,255,255,0.92)",
+                borderTopWidth: 3,
+                borderTopColor: bucketAccent,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: bucketAccent, marginBottom: 6 }}>{bucket.label}</div>
+                <div style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", lineHeight: 1 }}>{fmtMinor(bucket.amountMinor)}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{bucket.invoiceCount} invoice{bucket.invoiceCount !== 1 ? "s" : ""}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recommendations */}
+        {recommendations.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)", marginBottom: "var(--space-lg)" }}>
+            {recommendations.map((rec) => (
+              <div key={rec.id} style={{
+                padding: "1.1rem 1.4rem",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--surface)",
+                border: `1px solid ${SEV_COLOR[rec.severity] ?? "#334155"}`,
+                borderLeftWidth: 4,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[rec.severity], background: SEV_BG[rec.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{rec.severity}</span>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{rec.title}</strong>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{rec.description}</p>
+                <p style={{ fontSize: 12, color: SEV_COLOR[rec.severity] ?? "var(--muted)", fontWeight: 500 }}>Recommendation: {rec.recommendation}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Upcoming invoices */}
+        {upcomingInvoices.length > 0 && (
+          <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+            <div className="panel-head" style={{ padding: "1rem 1.5rem" }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Upcoming Invoices</h3>
+                <p className="panel-copy" style={{ margin: 0 }}>Open invoices due in the next 30 days</p>
+              </div>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="internal-admin-table">
+                <thead>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingInvoices.map((inv) => {
+                    const isOverdueRow = inv.dueDate && new Date(inv.dueDate) < new Date();
+                    return (
+                      <tr key={inv.id}>
+                        <td style={{ fontWeight: 600 }}>{inv.invoiceNumber}</td>
+                        <td>{inv.customerName}</td>
+                        <td style={{ color: isOverdueRow ? "#ef4444" : "var(--text)" }}>{fmtDate(inv.dueDate)}</td>
+                        <td style={{ fontWeight: 600 }}>{fmtMinor(inv.totalMinor)}</td>
+                        <td>
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                            background: isOverdueRow ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                            color: isOverdueRow ? "#ef4444" : "#f59e0b",
+                            textTransform: "uppercase", letterSpacing: "0.05em",
+                          }}>{inv.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

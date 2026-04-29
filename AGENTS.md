@@ -472,6 +472,17 @@ Backend change:
   - Filters: severity, type, search; pagination; summary KPIs always reflect unfiltered totals
   - No admin mutations yet
 
+\- Phase 4B: Cashflow Forecast Lite (customer-facing, read-only)
+  - Endpoint: GET /api/v1/insights/cashflow (JWT required, no accountId from frontend)
+  - Scoped entirely by user.accountId from JWT payload
+  - Returns: summary KPIs, 4 time buckets, recommendations, upcoming invoices (next 30d, limit 10)
+  - Buckets: Overdue / Due next 7 days / Due 8-30 days / Paid last 30 days
+  - Cashflow status: HEALTHY | WATCH | RISK computed server-side
+  - Recommendations: OVERDUE_COLLECTION_RISK, UPCOMING_COLLECTION_FOCUS, HEALTHY_CASHFLOW
+  - Query: single invoice findMany with customer select + in-memory bucketing — no N+1
+  - Frontend: renderCashflowForecast() on home dashboard below Financial Insights
+  - Admin Settings tab (/internal) is intentionally empty — reserved for future safe operational config (do not implement mutations without explicit spec)
+
 \- Phase 4A: Financial Insight Engine (customer-facing, read-only)
   - Endpoint: GET /api/v1/insights/financial (JWT required, no accountId from frontend)
   - Scoped entirely by authenticated user.accountId from JWT payload

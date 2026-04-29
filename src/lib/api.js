@@ -274,6 +274,10 @@ export function apiGetFinancialInsights(onSessionUpdate) {
   return authRequest("/insights/financial", { method: "GET" }, onSessionUpdate);
 }
 
+export function apiGetCashflowForecast(onSessionUpdate) {
+  return authRequest("/insights/cashflow", { method: "GET" }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",

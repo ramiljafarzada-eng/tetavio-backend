@@ -17,4 +17,10 @@ export class InsightsController {
   getFinancialInsights(@CurrentUser() user: JwtPayload) {
     return this.insightsService.getFinancialInsights(user.accountId);
   }
+
+  @Get('cashflow')
+  @ApiOperation({ summary: 'Cashflow forecast for the authenticated account' })
+  getCashflowForecast(@CurrentUser() user: JwtPayload) {
+    return this.insightsService.getCashflowForecast(user.accountId);
+  }
 }
