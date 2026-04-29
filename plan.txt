@@ -347,7 +347,7 @@ Commit Reference:
 
 ==================================================
 PHASE 6B — BANKING BACKEND
-Status: NOT STARTED
+Status: COMPLETE
 
 Goal:
 Persist bank accounts and bank transactions.
@@ -364,11 +364,16 @@ Frontend:
 - Keep simple manual entry first
 
 Completion Checklist:
-[ ] Banking backend added
+[x] Banking backend added
 [ ] Banking UI wired
-[ ] Build passes
-[ ] Commit pushed
-[ ] plan.txt updated
+[x] Build passes
+[x] Commit pushed
+[x] plan.txt updated
+
+Completion Note:
+Banking backend added with BankAccount and BankTransaction models, JWT/account-scoped banking endpoints, atomic balance updates on transaction create/delete, soft delete, and no frontend accountId usage.
+
+Commit Reference:
 
 ==================================================
 PHASE 6C — REPORTS BACKEND UPGRADE

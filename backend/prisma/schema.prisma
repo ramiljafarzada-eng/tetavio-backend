@@ -46,6 +46,11 @@ enum OrderStatus {
   CANCELED
 }
 
+enum BankTransactionType {
+  INFLOW
+  OUTFLOW
+}
+
 enum PaymentGateway {
   MOCK
   PASHA
@@ -83,6 +88,8 @@ model Account {
   accountingAccounts AccountingAccount[]
   journalEntries     JournalEntry[]
   bills              Bill[]
+  bankAccounts       BankAccount[]
+  bankTransactions   BankTransaction[]
 
   @@map("accounts")
 }
@@ -554,4 +561,39 @@ model BillLine {
 
   @@index([billId])
   @@map("bill_lines")
+}
+
+model BankAccount {
+  id            String            @id @default(uuid()) @db.Uuid
+  accountId     String            @map("account_id") @db.Uuid
+  account       Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name          String
+  currency      String            @default("AZN") @db.Char(3)
+  balanceMinor  Int               @default(0) @map("balance_minor")
+  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  transactions  BankTransaction[]
+
+  @@index([accountId])
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id              String              @id @default(uuid()) @db.Uuid
+  accountId       String              @map("account_id") @db.Uuid
+  account         Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  bankAccountId   String              @map("bank_account_id") @db.Uuid
+  bankAccount     BankAccount         @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  type            BankTransactionType
+  amountMinor     Int                 @map("amount_minor")
+  description     String?
+  reference       String?
+  transactionDate DateTime            @map("transaction_date") @db.Date
+  deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([accountId])
+  @@index([bankAccountId])
+  @@map("bank_transactions")
 }

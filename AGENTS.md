@@ -618,6 +618,29 @@ Backend change:
   - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
   - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
 
+\- Phase 6B: Banking Backend (COMPLETED)
+  - Migration: 20260429170000_add_banking_module — creates `bank_accounts` and `bank_transactions` tables; adds `BankTransactionType` enum (INFLOW | OUTFLOW)
+  - Prisma models: BankAccount (accountId, name, currency, balanceMinor, soft delete), BankTransaction (accountId, bankAccountId, type, amountMinor, description, reference, transactionDate, soft delete — no updatedAt)
+  - Module: backend/src/modules/banking/ (BankingService, BankingController, BankingModule)
+  - Imports: PrismaModule, AuditModule
+  - Endpoints (all JWT-protected, accountId from token only):
+    - GET    /api/v1/banking/accounts            — paginated list with optional name search
+    - POST   /api/v1/banking/accounts            — create bank account (optional openingBalanceMinor)
+    - PATCH  /api/v1/banking/accounts/:id        — update name or currency only
+    - DELETE /api/v1/banking/accounts/:id        — soft delete; blocked if active transactions exist
+    - GET    /api/v1/banking/transactions        — paginated list; filters: bankAccountId, type, dateFrom, dateTo
+    - POST   /api/v1/banking/transactions        — create transaction + atomically update balance
+    - DELETE /api/v1/banking/transactions/:id    — soft delete + atomically reverse balance
+  - Audit trail: bank_account.created/updated/deleted, bank_transaction.created/deleted logged via AuditService (fire-and-forget)
+  - Rules that must never be violated:
+    - accountId must come from JWT only — never from frontend
+    - balanceMinor is backend-controlled — never accept it directly from frontend except as openingBalanceMinor on account creation
+    - balance updates are atomic: transaction create and balance increment run inside the same Prisma $transaction; same for delete + reversal
+    - INFLOW increments balanceMinor; OUTFLOW decrements balanceMinor; delete reverses the effect
+    - updateAccount accepts only name and currency — balance cannot be changed directly after creation
+    - no integration with invoices, bills, or reconciliation logic yet; do not add that without explicit spec
+    - soft delete only; hard deletes are not allowed
+
 \- Phase 6A: Bills / Purchases Backend (COMPLETED)
   - Migration: 20260429160000_add_bills_module — creates `bills` and `bill_lines` tables
   - Prisma models: Bill (accountId, vendorId, billNumber unique per account, status, issueDate, dueDate, currency, totalMinor, notes, soft delete), BillLine (billId, itemName, description, quantity, unitPriceMinor, lineTotalMinor, soft delete)
