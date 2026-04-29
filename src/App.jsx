@@ -15,6 +15,7 @@ import {
   apiAdminReviewAnomaly,
   apiGetFinancialInsights,
   apiGetCashflowForecast,
+  apiGetFinancialTrends,
   apiGetAdminAccountDetail,
   apiGetAdminAccounts,
   apiGetAdminAnomalies,
@@ -2354,6 +2355,10 @@ function MainApp() {
   const [cashflowLoading, setCashflowLoading] = useState(false);
   const [cashflowError, setCashflowError] = useState("");
 
+  const [trendsData, setTrendsData] = useState(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [trendsError, setTrendsError] = useState("");
+
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
     email: "",
@@ -3386,6 +3391,21 @@ function MainApp() {
       .catch((err) => {
         setCashflowError(err?.message || "Cashflow forecast could not be loaded.");
         setCashflowLoading(false);
+      });
+  }, [currentUser, activeSection]);
+
+  useEffect(() => {
+    if (!currentUser || activeSection !== "home") return;
+    setTrendsLoading(true);
+    setTrendsError("");
+    apiGetFinancialTrends(updateBackendSession)
+      .then((data) => {
+        setTrendsData(data);
+        setTrendsLoading(false);
+      })
+      .catch((err) => {
+        setTrendsError(err?.message || "Trend data could not be loaded.");
+        setTrendsLoading(false);
       });
   }, [currentUser, activeSection]);
 
@@ -11624,6 +11644,8 @@ function renderItemsCatalog() {
 
         {renderCashflowForecast()}
 
+        {renderFinancialTrends()}
+
       </section>
     );
   }
@@ -11771,7 +11793,7 @@ function renderItemsCatalog() {
       { label: "Expected (30 days)", value: fmtMinor(summary.expectedIncomingNext30DaysMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "📅" },
       { label: "Overdue", value: fmtMinor(summary.overdueAmountMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
       { label: "Due Soon (7d)", value: fmtMinor(summary.dueSoonAmountMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏰" },
-      { label: "Paid (30 days)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: "Recent Paid Revenue (Approx.)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
       { label: "Open Invoices", value: summary.openInvoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
       {
         label: "Cashflow Status",
@@ -11908,6 +11930,129 @@ function renderItemsCatalog() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderFinancialTrends() {
+    const cur = state.settings.currency || "AZN";
+    const fmtMinor = (minor) => currency((minor || 0) / 100, cur);
+
+    const SEV_COLOR = { HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#10b981" };
+    const SEV_BG = { HIGH: "rgba(239,68,68,0.08)", MEDIUM: "rgba(245,158,11,0.08)", LOW: "rgba(16,185,129,0.08)" };
+    const DIR_ICON = { UP: "↑", DOWN: "↓", FLAT: "→", STABLE: "—" };
+
+    if (trendsLoading) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Trend Comparison</h3><p className="panel-copy">Loading…</p></div></div>
+        </div>
+      );
+    }
+
+    if (trendsError) {
+      return (
+        <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
+          <div className="panel-head"><div><h3>Trend Comparison</h3></div></div>
+          <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{trendsError}</p>
+        </div>
+      );
+    }
+
+    if (!trendsData) return null;
+
+    const { summary, trends } = trendsData;
+
+    const fmtPct = (pct) => {
+      const sign = pct > 0 ? "+" : "";
+      return `${sign}${pct}%`;
+    };
+
+    const comparisonCards = [
+      {
+        label: "Revenue",
+        current: fmtMinor(summary.currentRevenueMinor),
+        previous: fmtMinor(summary.previousRevenueMinor),
+        changePct: summary.revenueChangePercent,
+        accent: summary.revenueChangePercent >= 0 ? "#10b981" : "#ef4444",
+      },
+      {
+        label: "Invoice Count",
+        current: summary.currentInvoiceCount,
+        previous: summary.previousInvoiceCount,
+        changePct: summary.invoiceCountChangePercent,
+        accent: summary.invoiceCountChangePercent >= 0 ? "#10b981" : "#ef4444",
+      },
+      {
+        label: "New Customers",
+        current: summary.currentCustomerCount,
+        previous: summary.previousCustomerCount,
+        changePct: summary.customerCountChangePercent,
+        accent: summary.customerCountChangePercent >= 0 ? "#10b981" : "#ef4444",
+      },
+      {
+        label: "Outstanding",
+        current: fmtMinor(summary.currentOutstandingMinor),
+        previous: fmtMinor(summary.previousOutstandingMinor),
+        changePct: summary.outstandingChangePercent,
+        accent: summary.outstandingChangePercent <= 0 ? "#10b981" : "#ef4444",
+      },
+    ];
+
+    return (
+      <div style={{ marginTop: "var(--space-lg)" }}>
+        <p className="dash-section-label">Trend Comparison · Last 30 days vs. Previous 30 days</p>
+
+        {/* KPI comparison cards */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-lg)",
+        }}>
+          {comparisonCards.map((card) => (
+            <div key={card.label} style={{
+              padding: "1.1rem 1.25rem",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--surface)",
+              border: "1px solid rgba(255,255,255,0.92)",
+              borderLeftWidth: 4,
+              borderLeftColor: card.accent,
+            }}>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", marginBottom: 8 }}>{card.label}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+                <strong style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "clamp(1rem,1.4vw,1.35rem)", fontWeight: 800, color: "var(--text)", lineHeight: 1 }}>{card.current}</strong>
+                <span style={{ fontSize: 13, color: card.accent, fontWeight: 700 }}>
+                  {DIR_ICON[card.changePct > 0 ? "UP" : card.changePct < 0 ? "DOWN" : "FLAT"]} {fmtPct(card.changePct)}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Prev: {card.previous}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trend insight cards */}
+        {trends.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+            {trends.map((trend) => (
+              <div key={trend.id} style={{
+                padding: "1.1rem 1.4rem",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--surface)",
+                border: `1px solid ${SEV_COLOR[trend.severity] ?? "#334155"}`,
+                borderLeftWidth: 4,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[trend.severity], background: SEV_BG[trend.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{trend.severity}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: SEV_COLOR[trend.severity] ?? "var(--muted)", marginRight: 4 }}>{DIR_ICON[trend.direction]}</span>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{trend.title}</strong>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{trend.description}</p>
+                <p style={{ fontSize: 12, color: SEV_COLOR[trend.severity] ?? "var(--muted)", fontWeight: 500 }}>Recommendation: {trend.recommendation}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>

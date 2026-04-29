@@ -293,4 +293,188 @@ export class InsightsService {
 
     return { summary, buckets, recommendations, upcomingInvoices };
   }
+
+  async getTrends(accountId: string) {
+    const now = new Date();
+    const currentStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const previousStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const currentEnd = now;
+    const previousEnd = currentStart;
+
+    const [invoices, currentCustomerCount, previousCustomerCount] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where: { accountId, deletedAt: null, issueDate: { gte: previousStart } },
+        select: { status: true, totalMinor: true, issueDate: true },
+      }),
+      this.prisma.customer.count({
+        where: { accountId, deletedAt: null, createdAt: { gte: currentStart, lt: currentEnd } },
+      }),
+      this.prisma.customer.count({
+        where: { accountId, deletedAt: null, createdAt: { gte: previousStart, lt: previousEnd } },
+      }),
+    ]);
+
+    const isPaid = (inv: { status: string }) => PAID_STATUSES.includes(inv.status);
+    const isOpen = (inv: { status: string }) =>
+      !isPaid(inv) && !CANCELLED_STATUSES.includes(inv.status);
+
+    const inCurrent = (inv: { issueDate: Date }) =>
+      new Date(inv.issueDate) >= currentStart && new Date(inv.issueDate) < currentEnd;
+    const inPrevious = (inv: { issueDate: Date }) =>
+      new Date(inv.issueDate) >= previousStart && new Date(inv.issueDate) < previousEnd;
+
+    const curInvoices = invoices.filter(inCurrent);
+    const prevInvoices = invoices.filter(inPrevious);
+
+    const sumMinor = (list: { totalMinor: number }[]) =>
+      list.reduce((acc, inv) => acc + inv.totalMinor, 0);
+
+    const currentRevenueMinor = sumMinor(curInvoices.filter(isPaid));
+    const previousRevenueMinor = sumMinor(prevInvoices.filter(isPaid));
+    const currentOutstandingMinor = sumMinor(curInvoices.filter(isOpen));
+    const previousOutstandingMinor = sumMinor(prevInvoices.filter(isOpen));
+
+    const pctChange = (current: number, previous: number): number => {
+      if (previous === 0 && current > 0) return 100;
+      if (previous === 0) return 0;
+      return Math.round(((current - previous) / previous) * 1000) / 10;
+    };
+
+    const summary = {
+      currentRevenueMinor,
+      previousRevenueMinor,
+      revenueChangePercent: pctChange(currentRevenueMinor, previousRevenueMinor),
+      currentInvoiceCount: curInvoices.length,
+      previousInvoiceCount: prevInvoices.length,
+      invoiceCountChangePercent: pctChange(curInvoices.length, prevInvoices.length),
+      currentCustomerCount,
+      previousCustomerCount,
+      customerCountChangePercent: pctChange(currentCustomerCount, previousCustomerCount),
+      currentOutstandingMinor,
+      previousOutstandingMinor,
+      outstandingChangePercent: pctChange(currentOutstandingMinor, previousOutstandingMinor),
+    };
+
+    const period = {
+      currentStart: currentStart.toISOString(),
+      currentEnd: currentEnd.toISOString(),
+      previousStart: previousStart.toISOString(),
+      previousEnd: previousEnd.toISOString(),
+    };
+
+    const trends: {
+      id: string;
+      type: string;
+      direction: string;
+      severity: string;
+      title: string;
+      description: string;
+      recommendation: string;
+      currentValue: number;
+      previousValue: number;
+      changePercent: number;
+    }[] = [];
+
+    let hasNegativeTrend = false;
+
+    if (currentRevenueMinor > previousRevenueMinor) {
+      trends.push({
+        id: 'REVENUE_GROWTH',
+        type: 'REVENUE_GROWTH',
+        direction: 'UP',
+        severity: 'LOW',
+        title: 'Revenue Growth',
+        description: `Paid revenue increased by ${summary.revenueChangePercent}% compared to the previous 30 days.`,
+        recommendation: 'Maintain your sales and collection discipline to sustain this growth.',
+        currentValue: currentRevenueMinor,
+        previousValue: previousRevenueMinor,
+        changePercent: summary.revenueChangePercent,
+      });
+    }
+
+    if (currentRevenueMinor < previousRevenueMinor) {
+      const dropPct = Math.abs(summary.revenueChangePercent);
+      const severity = dropPct >= 50 ? 'HIGH' : 'MEDIUM';
+      hasNegativeTrend = true;
+      trends.push({
+        id: 'REVENUE_DROP',
+        type: 'REVENUE_DROP',
+        direction: 'DOWN',
+        severity,
+        title: 'Revenue Decline',
+        description: `Paid revenue dropped by ${dropPct}% compared to the previous 30 days.`,
+        recommendation: 'Review your sales pipeline, overdue invoices, and customer concentration.',
+        currentValue: currentRevenueMinor,
+        previousValue: previousRevenueMinor,
+        changePercent: summary.revenueChangePercent,
+      });
+    }
+
+    if (curInvoices.length < prevInvoices.length) {
+      hasNegativeTrend = true;
+      trends.push({
+        id: 'INVOICE_VOLUME_DROP',
+        type: 'INVOICE_VOLUME_DROP',
+        direction: 'DOWN',
+        severity: 'MEDIUM',
+        title: 'Invoice Volume Decline',
+        description: `Invoice issuance dropped from ${prevInvoices.length} to ${curInvoices.length} this period.`,
+        recommendation: 'Check sales activity and your quote-to-invoice conversion flow.',
+        currentValue: curInvoices.length,
+        previousValue: prevInvoices.length,
+        changePercent: summary.invoiceCountChangePercent,
+      });
+    }
+
+    if (currentCustomerCount === 0 && previousCustomerCount > 0) {
+      hasNegativeTrend = true;
+      trends.push({
+        id: 'CUSTOMER_GROWTH_STALLED',
+        type: 'CUSTOMER_GROWTH_STALLED',
+        direction: 'FLAT',
+        severity: 'MEDIUM',
+        title: 'Customer Acquisition Stalled',
+        description: 'No new customers were added this period while the previous period had new customer activity.',
+        recommendation: 'Review customer acquisition activity and consider reaching out to prospects.',
+        currentValue: currentCustomerCount,
+        previousValue: previousCustomerCount,
+        changePercent: summary.customerCountChangePercent,
+      });
+    }
+
+    if (currentOutstandingMinor > previousOutstandingMinor) {
+      const increasePct = Math.abs(summary.outstandingChangePercent);
+      const severity = increasePct >= 50 ? 'HIGH' : 'MEDIUM';
+      hasNegativeTrend = true;
+      trends.push({
+        id: 'OUTSTANDING_INCREASE',
+        type: 'OUTSTANDING_INCREASE',
+        direction: 'UP',
+        severity,
+        title: 'Outstanding Balance Increasing',
+        description: `Unpaid invoice balance grew by ${increasePct}% compared to the previous period.`,
+        recommendation: 'Follow up on unpaid invoices earlier in the payment cycle.',
+        currentValue: currentOutstandingMinor,
+        previousValue: previousOutstandingMinor,
+        changePercent: summary.outstandingChangePercent,
+      });
+    }
+
+    if (!hasNegativeTrend) {
+      trends.push({
+        id: 'STABLE_OR_HEALTHY_TREND',
+        type: 'STABLE_OR_HEALTHY_TREND',
+        direction: 'STABLE',
+        severity: 'LOW',
+        title: 'Stable Financial Trend',
+        description: 'No significant negative trends detected in this period.',
+        recommendation: 'Continue monitoring revenue, collections, and customer activity regularly.',
+        currentValue: 0,
+        previousValue: 0,
+        changePercent: 0,
+      });
+    }
+
+    return { period, summary, trends };
+  }
 }

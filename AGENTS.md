@@ -472,6 +472,16 @@ Backend change:
   - Filters: severity, type, search; pagination; summary KPIs always reflect unfiltered totals
   - No admin mutations yet
 
+\- Phase 4C: Trend & Comparison Engine (customer-facing, read-only)
+  - Endpoint: GET /api/v1/insights/trends (JWT required, no accountId from frontend)
+  - Compares last 30 days vs. previous 30 days (60-day window, in-memory split by issueDate)
+  - Summary fields: revenue, invoice count, customer count, outstanding — each with changePercent
+  - Percentage rule: if previous=0 and current>0 → 100; both 0 → 0; else round((cur-prev)/prev*100, 1dp)
+  - Trend rules: REVENUE_GROWTH, REVENUE_DROP, INVOICE_VOLUME_DROP, CUSTOMER_GROWTH_STALLED, OUTSTANDING_INCREASE, STABLE_OR_HEALTHY_TREND
+  - Query: single invoice findMany (60d window) + 2 customer counts via Promise.all — no N+1
+  - Frontend: renderFinancialTrends() on home dashboard — 4 comparison KPI cards + trend insight cards
+  - Cashflow KPI label fix: "Paid (30 days)" → "Recent Paid Revenue (Approx.)" for accuracy
+
 \- Phase 4B: Cashflow Forecast Lite (customer-facing, read-only)
   - Endpoint: GET /api/v1/insights/cashflow (JWT required, no accountId from frontend)
   - Scoped entirely by user.accountId from JWT payload

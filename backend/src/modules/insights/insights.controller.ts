@@ -23,4 +23,10 @@ export class InsightsController {
   getCashflowForecast(@CurrentUser() user: JwtPayload) {
     return this.insightsService.getCashflowForecast(user.accountId);
   }
+
+  @Get('trends')
+  @ApiOperation({ summary: 'Financial trend comparison for the authenticated account' })
+  getTrends(@CurrentUser() user: JwtPayload) {
+    return this.insightsService.getTrends(user.accountId);
+  }
 }
