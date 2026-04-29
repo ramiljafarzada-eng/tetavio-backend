@@ -512,6 +512,10 @@ export function apiDownloadInvoicePdf(invoiceId, onSessionUpdate) {
   return authBlobRequest(`/invoices/${invoiceId}/pdf`, { method: "GET" }, onSessionUpdate);
 }
 
+export function apiSendInvoiceEmail(invoiceId, onSessionUpdate) {
+  return authRequest(`/invoices/${invoiceId}/send`, { method: "POST" }, onSessionUpdate);
+}
+
 export function apiListAccountingAccounts(query = {}, onSessionUpdate) {
   return authRequest(`/accounting/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
 }

@@ -605,6 +605,19 @@ Backend change:
     - Email links use FRONTEND_PRODUCTION_URL only — no hardcoded URLs in link-building logic
   - Email links format: {FRONTEND_PRODUCTION_URL}?verifyToken={token} and {FRONTEND_PRODUCTION_URL}?resetToken={token}
 
+\- Phase 5G: Invoice Email Sending (COMPLETED)
+  - Endpoint: POST /api/v1/invoices/:id/send — JWT-scoped by user.accountId; never accepts accountId from frontend
+  - PDF reuse: calls the same private buildInvoicePdf() used by GET /api/v1/invoices/:id/pdf — no duplication
+  - Email method: EmailService.sendInvoiceEmail(to, invoiceData, pdfBuffer) — attaches PDF via nodemailer attachments[]
+  - Subject: "Invoice {invoiceNumber} from Tetavio"
+  - Body: invoice number, total amount, optional notes; PDF attached as invoice-{invoiceNumber}.pdf
+  - Validation: returns BadRequestException if customer.email is missing; NotFoundException if invoice not in account
+  - EmailModule imported into InvoicesModule to provide EmailService to InvoicesService
+  - Response: { success: true }
+  - Frontend: apiSendInvoiceEmail(invoiceId, onSessionUpdate) — POST with no body, no accountId
+  - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
+  - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
+
 \- Phase 1 ERP full-stack persistence is now in place for:
   - Company Settings
   - Customers

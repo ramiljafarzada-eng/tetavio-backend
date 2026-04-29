@@ -2,12 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateInvoicePaymentDto } from './dto/create-invoice-payment.dto';
 import { InvoiceLineDto } from './dto/invoice-line.dto';
@@ -51,7 +53,12 @@ function attachPaymentDerived(invoice: InvoiceWithPayments) {
 
 @Injectable()
 export class InvoicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(InvoicesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   private getInvoiceOrderBy(
     sortBy?: InvoiceSortField,
@@ -642,6 +649,41 @@ export class InvoicesService {
 
     const buffer = await this.buildInvoicePdf(invoice, companyName, taxId, phone, currency);
     return { buffer, invoiceNumber: invoice.invoiceNumber };
+  }
+
+  async sendInvoice(user: JwtPayload, invoiceId: string): Promise<{ success: true }> {
+    const invoice = await this.getById(user, invoiceId);
+
+    if (!invoice.customer?.email) {
+      throw new BadRequestException('Customer does not have an email address');
+    }
+
+    const account = await this.prisma.account.findUnique({
+      where: { id: user.accountId },
+      include: { companyProfile: true },
+    });
+
+    const profile = account?.companyProfile;
+    const companyName = profile?.companyName ?? account?.name ?? '';
+    const taxId = profile?.taxId ?? null;
+    const phone = profile?.mobilePhone ?? null;
+
+    const buffer = await this.buildInvoicePdf(invoice, companyName, taxId, phone, invoice.currency);
+
+    this.logger.log(`Sending invoice ${invoice.invoiceNumber} to customer (${invoice.customer.email.slice(0, 3)}***)`);
+
+    await this.emailService.sendInvoiceEmail(
+      invoice.customer.email,
+      {
+        invoiceNumber: invoice.invoiceNumber,
+        totalMinor: invoice.totalMinor,
+        currency: invoice.currency,
+        notes: invoice.notes,
+      },
+      buffer,
+    );
+
+    return { success: true };
   }
 
   private buildInvoicePdf(

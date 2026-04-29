@@ -74,6 +74,15 @@ export class InvoicesController {
     res.end(buffer);
   }
 
+  @Post(':id/send')
+  @ApiOperation({ summary: 'Send invoice to customer via email for authenticated account' })
+  sendInvoice(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) invoiceId: string,
+  ) {
+    return this.invoicesService.sendInvoice(user, invoiceId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create invoice for authenticated account' })
   @ApiBody({ type: CreateInvoiceDto })

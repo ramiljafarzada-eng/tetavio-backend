@@ -55,6 +55,27 @@ export class EmailService implements OnModuleInit {
     );
   }
 
+  async sendInvoiceEmail(
+    to: string,
+    invoiceData: { invoiceNumber: string; totalMinor: number; currency: string; notes?: string | null },
+    pdfBuffer: Buffer,
+  ): Promise<void> {
+    const total = `${(invoiceData.totalMinor / 100).toFixed(2)} ${invoiceData.currency}`;
+    const subject = `Invoice ${invoiceData.invoiceNumber} from Tetavio`;
+    const notesHtml = invoiceData.notes
+      ? `<p style="margin:12px 0 0;font-size:14px;color:#374151;"><strong>Notes:</strong> ${invoiceData.notes}</p>`
+      : '';
+    const html = this.renderEmail({
+      title: `Invoice ${invoiceData.invoiceNumber}`,
+      preheader: `Invoice ${invoiceData.invoiceNumber} — ${total}`,
+      body: `Please find attached invoice <strong>${invoiceData.invoiceNumber}</strong> for a total of <strong>${total}</strong>.${notesHtml ? ' See notes below.' : ''} If you have any questions, please contact us.${notesHtml}`,
+      buttonText: 'View Invoice',
+      buttonHref: this.frontendUrl,
+    });
+
+    await this.dispatchWithAttachment(to, subject, html, pdfBuffer, `invoice-${invoiceData.invoiceNumber}.pdf`);
+  }
+
   async sendPasswordResetEmail(to: string, rawToken: string): Promise<void> {
     const link = `${this.frontendUrl}?resetToken=${encodeURIComponent(rawToken)}`;
     await this.dispatch(
@@ -68,6 +89,35 @@ export class EmailService implements OnModuleInit {
         buttonHref: link,
       }),
     );
+  }
+
+  private async dispatchWithAttachment(
+    to: string,
+    subject: string,
+    html: string,
+    attachmentBuffer: Buffer,
+    attachmentFilename: string,
+  ): Promise<void> {
+    if (!this.transporter) {
+      this.logger.warn(`Email skipped (${this.maskEmail(to)}): service not configured`);
+      return;
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject,
+        html,
+        attachments: [{ filename: attachmentFilename, content: attachmentBuffer, contentType: 'application/pdf' }],
+      });
+      this.logger.log(`Email sent → ${this.maskEmail(to)} | "${subject}"`);
+    } catch (err) {
+      this.logger.error(
+        `Email failed → ${this.maskEmail(to)} | "${subject}" | ${err instanceof Error ? err.message : 'unknown error'}`,
+      );
+      // Do not rethrow — email failure must not break the caller flow
+    }
   }
 
   private async dispatch(to: string, subject: string, html: string): Promise<void> {

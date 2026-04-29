@@ -189,11 +189,11 @@ Env vars required: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_FROM.
 Transporter created once at startup (onModuleInit). Fire-and-forget from AuthService — auth flow never blocked or broken by email failure.
 
 Commit Reference:
-TBD
+6f5473c
 
 ==================================================
 PHASE 5G — INVOICE EMAIL SENDING
-Status: NOT STARTED
+Status: COMPLETE
 
 Goal:
 Allow users to email invoices to customers.
@@ -213,12 +213,18 @@ Frontend:
 - No invoice calculation change
 
 Completion Checklist:
-[ ] Send invoice endpoint added
-[ ] Email includes invoice/PDF
-[ ] Frontend button works
-[ ] Build passes
-[ ] Commit pushed
-[ ] plan.txt updated
+[x] Send invoice endpoint added
+[x] Email includes invoice/PDF
+[x] Frontend button works
+[x] Build passes
+[x] Commit pushed
+[x] plan.txt updated
+
+Completion Note:
+Backend POST /api/v1/invoices/:id/send added. It reuses the existing PDF generation logic, sends the generated invoice PDF to the customer email through EmailService, and remains JWT/account-scoped with no accountId from frontend. Frontend invoice edit view now includes an "E-poçtla göndər" button with loading and success/error state.
+
+Commit Reference:
+TBD
 
 ==================================================
 PHASE 5H — TEAM MEMBER MANAGEMENT

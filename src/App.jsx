@@ -41,6 +41,7 @@ import {
   apiListVendors,
   apiAddInvoicePayment,
   apiDownloadInvoicePdf,
+  apiSendInvoiceEmail,
   apiGetAccountsReceivableAging,
   apiCreateInvoice,
   apiDeleteInvoice,
@@ -2300,6 +2301,8 @@ function MainApp() {
   const [invoicePaymentDraft, setInvoicePaymentDraft] = useState({ amountMinor: "", paymentDate: "", method: "" });
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [sendEmailLoading, setSendEmailLoading] = useState(false);
+  const [sendEmailMessage, setSendEmailMessage] = useState("");
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -3300,6 +3303,19 @@ function MainApp() {
       setPdfError(error?.message || "PDF yüklənmədi.");
     } finally {
       setPdfLoading(false);
+    }
+  }
+
+  async function sendInvoiceByEmail(invoiceId) {
+    setSendEmailLoading(true);
+    setSendEmailMessage("");
+    try {
+      await apiSendInvoiceEmail(invoiceId, updateBackendSession);
+      setSendEmailMessage("Invoice göndərildi");
+    } catch (error) {
+      setSendEmailMessage(error?.message || "Göndərmə uğursuz oldu.");
+    } finally {
+      setSendEmailLoading(false);
     }
   }
 
@@ -7665,6 +7681,19 @@ function renderItemsCatalog() {
                     {pdfLoading ? "Yüklənir..." : "PDF Yüklə"}
                   </button>
                   {pdfError ? <span style={{ color: "var(--danger)", fontSize: 12 }}>{pdfError}</span> : null}
+                  <button
+                    className="ghost-btn"
+                    type="button"
+                    onClick={() => sendInvoiceByEmail(editing.invoices)}
+                    disabled={sendEmailLoading || !state.customers.find((c) => c.id === draft.customerId)?.email}
+                  >
+                    {sendEmailLoading ? "Göndərilir..." : "E-poçtla göndər"}
+                  </button>
+                  {sendEmailMessage ? (
+                    <span style={{ color: sendEmailMessage === "Invoice göndərildi" ? "var(--success, #16a34a)" : "var(--danger)", fontSize: 12 }}>
+                      {sendEmailMessage}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
             </div>
