@@ -380,6 +380,7 @@ Backend change:
   - `POST /api/v1/invoices`
   - `PATCH /api/v1/invoices/:id`
   - `DELETE /api/v1/invoices/:id`
+  - `GET /api/v1/invoices/:id/pdf` — returns PDF binary (application/pdf, Content-Disposition: attachment)
 
 \- Request body summary:
   - invoice fields: `customerId`, optional `invoiceNumber`, optional `status`, `issueDate`, optional `dueDate`, optional `currency`, optional `notes`
@@ -417,6 +418,7 @@ Backend change:
 \- Chart of Accounts frontend flow now persists through backend APIs (`apiListAccountingAccounts`, `apiCreateAccountingAccount`, `apiUpdateAccountingAccount`, `apiDeleteAccountingAccount`) and must not reintroduce localStorage-based persistence.
 \- Manual Journals frontend flow now persists through backend APIs (`apiListJournalEntries`, `apiCreateJournalEntry`, `apiUpdateJournalEntry`, `apiDeleteJournalEntry`) and must not reintroduce localStorage-based persistence.
 \- Journal entry API requires `journalLines[].accountCode` (not accountingAccountId); backend resolves the FK internally.
+\- Invoice PDF download uses `apiDownloadInvoicePdf(invoiceId, onSessionUpdate)` which calls `authBlobRequest` — a separate authenticated fetch helper that returns a Blob instead of parsed JSON. Never use `authRequest` for binary endpoints. Do not send accountId in the URL or body.
 
 \## Current Handoff State
 
@@ -565,6 +567,13 @@ Backend change:
   - Endpoints: POST/GET /invoices/:id/payments, DELETE /invoices/:id/payments/:paymentId (JWT-scoped, no accountId from frontend)
   - Invoice list and getById now include payments array and computed paidAmountMinor+outstandingMinor fields
   - insights/cashflow/trends use real payment data (paymentDate) instead of invoice totals or status
+\- Phase 5E: Invoice PDF Generation (COMPLETED)
+  - Endpoint: GET /api/v1/invoices/:id/pdf — returns binary PDF; JWT-scoped by user.accountId; never accepts accountId from frontend
+  - Library: pdfkit (already in backend/package.json); buffer built in-memory, streamed as attachment
+  - PDF content: company info (from companyProfile), customer info, invoice number/dates/status, line items table, subtotal/tax/total, paid amount, outstanding (green/red), notes
+  - All amounts use backend-stored minor units divided by 100 — no frontend calculation involved
+  - Frontend: apiDownloadInvoicePdf(invoiceId, onSessionUpdate) in api.js uses authBlobRequest (authenticated binary fetch with 401 refresh); triggers browser file download via URL.createObjectURL
+  - UI: "PDF Yüklə" button in invoice edit form header; only shown when editing (editing.invoices is set); loading/error state managed by pdfLoading/pdfError
   - Frontend: payment section in invoice edit form — list, total paid, outstanding, add/delete payment
   - Invoice list table shows "Qalıq" (outstanding) column
   - Frontend state: invoicePayments, invoicePaymentsLoading, invoicePaymentsError, invoicePaymentDraft (note: NOT paymentDraft which is used for subscription payments)

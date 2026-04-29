@@ -8,9 +8,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -55,6 +57,21 @@ export class InvoicesController {
     @Param('id', new ParseUUIDPipe()) invoiceId: string,
   ) {
     return this.invoicesService.getById(user, invoiceId);
+  }
+
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Download invoice as PDF for authenticated account' })
+  async downloadPdf(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) invoiceId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { buffer, invoiceNumber } = await this.invoicesService.generatePdf(user, invoiceId);
+    const filename = `invoice-${invoiceNumber}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
   }
 
   @Post()

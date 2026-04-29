@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import PDFDocument from 'pdfkit';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -40,6 +41,7 @@ const INVOICE_INCLUDE = {
 } satisfies Prisma.InvoiceInclude;
 
 type InvoiceWithPayments = Prisma.InvoiceGetPayload<{ include: typeof INVOICE_INCLUDE }>;
+type EnrichedInvoice = InvoiceWithPayments & { paidAmountMinor: number; outstandingMinor: number };
 
 function attachPaymentDerived(invoice: InvoiceWithPayments) {
   const paidAmountMinor = invoice.payments.reduce((sum, p) => sum + p.amountMinor, 0);
@@ -607,6 +609,198 @@ export class InvoicesService {
     ]);
 
     return { deleted: true, id: invoiceId };
+  }
+
+  // ─── PDF ───────────────────────────────────────────────────────────────────
+
+  private formatMoney(amountMinor: number, currency: string): string {
+    return `${(amountMinor / 100).toFixed(2)} ${currency}`;
+  }
+
+  private formatDate(date: Date | null | undefined): string {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  async generatePdf(user: JwtPayload, invoiceId: string): Promise<{ buffer: Buffer; invoiceNumber: string }> {
+    const invoice = await this.getById(user, invoiceId);
+
+    const account = await this.prisma.account.findUnique({
+      where: { id: user.accountId },
+      include: { companyProfile: true },
+    });
+
+    const profile = account?.companyProfile;
+    const companyName = profile?.companyName ?? account?.name ?? '';
+    const taxId = profile?.taxId ?? null;
+    const phone = profile?.mobilePhone ?? null;
+    const currency = invoice.currency;
+
+    const buffer = await this.buildInvoicePdf(invoice, companyName, taxId, phone, currency);
+    return { buffer, invoiceNumber: invoice.invoiceNumber };
+  }
+
+  private buildInvoicePdf(
+    invoice: EnrichedInvoice,
+    companyName: string,
+    taxId: string | null,
+    phone: string | null,
+    currency: string,
+  ): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const L = 50;
+      const R = 545;
+      const W = R - L;
+
+      const C_PRIMARY = '#1a56db';
+      const C_DARK    = '#111827';
+      const C_GRAY    = '#6b7280';
+      const C_LIGHT   = '#e5e7eb';
+      const C_GREEN   = '#16a34a';
+      const C_RED     = '#dc2626';
+
+      // ── Company name (left) + INVOICE title (right) ──────────
+      doc.fontSize(14).fillColor(C_PRIMARY).font('Helvetica-Bold')
+         .text(companyName, L, 50, { width: 250, lineBreak: false });
+
+      doc.fontSize(24).fillColor(C_PRIMARY).font('Helvetica-Bold')
+         .text('INVOICE', L, 44, { width: W, align: 'right' });
+
+      let companyY = 70;
+      doc.fontSize(9).font('Helvetica').fillColor(C_GRAY);
+      if (taxId) { doc.text(`Tax ID: ${taxId}`, L, companyY, { lineBreak: false }); companyY += 13; }
+      if (phone)  { doc.text(`Phone: ${phone}`,   L, companyY, { lineBreak: false }); companyY += 13; }
+
+      // ── Invoice metadata (right column) ──────────────────────
+      const META_LABEL_X = 378;
+      const META_LABEL_W = 72;
+      const META_VALUE_X = 460;
+      const META_VALUE_W = 85;
+      const metaRows: [string, string][] = [
+        ['Invoice #:', invoice.invoiceNumber],
+        ['Issue Date:', this.formatDate(invoice.issueDate)],
+        ['Due Date:', this.formatDate(invoice.dueDate)],
+        ['Status:', invoice.status],
+      ];
+      let metaY = 74;
+      for (const [label, value] of metaRows) {
+        doc.fontSize(9).fillColor(C_GRAY).font('Helvetica')
+           .text(label, META_LABEL_X, metaY, { width: META_LABEL_W, align: 'right', lineBreak: false });
+        doc.fontSize(9).fillColor(C_DARK).font('Helvetica-Bold')
+           .text(value, META_VALUE_X, metaY, { width: META_VALUE_W, lineBreak: false });
+        metaY += 16;
+      }
+
+      // ── Separator ─────────────────────────────────────────────
+      const sep1Y = Math.max(companyY, metaY) + 12;
+      doc.moveTo(L, sep1Y).lineTo(R, sep1Y).strokeColor(C_LIGHT).lineWidth(1).stroke();
+
+      // ── Bill To ───────────────────────────────────────────────
+      let billY = sep1Y + 14;
+      doc.fontSize(8).fillColor(C_GRAY).font('Helvetica')
+         .text('BILL TO', L, billY, { lineBreak: false });
+      billY += 14;
+
+      const cust = invoice.customer;
+      doc.fontSize(11).fillColor(C_DARK).font('Helvetica-Bold')
+         .text(cust.displayName, L, billY, { lineBreak: false });
+      billY += 16;
+
+      doc.fontSize(9).font('Helvetica').fillColor(C_GRAY);
+      if (cust.companyName) { doc.text(cust.companyName, L, billY, { lineBreak: false }); billY += 13; }
+      if (cust.email)       { doc.text(cust.email,       L, billY, { lineBreak: false }); billY += 13; }
+      if (cust.phone)       { doc.text(cust.phone,       L, billY, { lineBreak: false }); billY += 13; }
+      if (cust.taxId)       { doc.text(`Tax ID: ${cust.taxId}`, L, billY, { lineBreak: false }); billY += 13; }
+
+      // ── Separator ─────────────────────────────────────────────
+      const sep2Y = billY + 12;
+      doc.moveTo(L, sep2Y).lineTo(R, sep2Y).strokeColor(C_LIGHT).lineWidth(1).stroke();
+
+      // ── Line Items Table ──────────────────────────────────────
+      const TABLE_TOP = sep2Y + 8;
+      const ROW_H = 22;
+      const COL = { item: L + 4, qty: 310, price: 368, total: 460 };
+
+      doc.rect(L, TABLE_TOP, W, ROW_H).fill('#f3f4f6');
+      doc.fontSize(9).fillColor('#374151').font('Helvetica-Bold');
+      doc.text('Item',       COL.item,  TABLE_TOP + 7, { width: 246, lineBreak: false });
+      doc.text('Qty',        COL.qty,   TABLE_TOP + 7, { width:  50, lineBreak: false });
+      doc.text('Unit Price', COL.price, TABLE_TOP + 7, { width:  87, lineBreak: false });
+      doc.text('Total',      COL.total, TABLE_TOP + 7, { width:  85, align: 'right', lineBreak: false });
+
+      let rowY = TABLE_TOP + ROW_H;
+      for (const line of invoice.lines) {
+        const qty = Number(line.quantity);
+        const qtyStr = qty % 1 === 0 ? String(qty) : qty.toFixed(2);
+
+        doc.fontSize(9).fillColor(C_DARK).font('Helvetica');
+        doc.text(line.itemName,                                          COL.item,  rowY + 6, { width: 246, lineBreak: false });
+        doc.text(qtyStr,                                                 COL.qty,   rowY + 6, { width:  50, lineBreak: false });
+        doc.text(this.formatMoney(line.unitPriceMinor, currency),        COL.price, rowY + 6, { width:  87, lineBreak: false });
+        doc.text(this.formatMoney(line.lineTotalMinor, currency),        COL.total, rowY + 6, { width:  85, align: 'right', lineBreak: false });
+
+        rowY += ROW_H;
+        doc.moveTo(L, rowY).lineTo(R, rowY).strokeColor(C_LIGHT).lineWidth(0.5).stroke();
+      }
+
+      // ── Totals ────────────────────────────────────────────────
+      const TOT_LBL_X = 370;
+      const TOT_LBL_W = 80;
+      const TOT_VAL_X = 460;
+      const TOT_VAL_W = 85;
+      let totY = rowY + 16;
+
+      const drawTotalRow = (label: string, amount: number, color = C_DARK, bold = false) => {
+        doc.fontSize(9).fillColor(C_GRAY).font('Helvetica')
+           .text(label, TOT_LBL_X, totY, { width: TOT_LBL_W, align: 'right', lineBreak: false });
+        doc.fillColor(color).font(bold ? 'Helvetica-Bold' : 'Helvetica')
+           .text(this.formatMoney(amount, currency), TOT_VAL_X, totY, { width: TOT_VAL_W, align: 'right', lineBreak: false });
+        totY += 15;
+      };
+
+      drawTotalRow('Subtotal:', invoice.subTotalMinor);
+      if (invoice.taxMinor > 0) drawTotalRow('Tax:', invoice.taxMinor);
+
+      doc.moveTo(TOT_LBL_X, totY).lineTo(R, totY).strokeColor(C_GRAY).lineWidth(0.5).stroke();
+      totY += 8;
+
+      doc.fontSize(11).fillColor(C_DARK).font('Helvetica-Bold')
+         .text('Total:', TOT_LBL_X, totY, { width: TOT_LBL_W, align: 'right', lineBreak: false });
+      doc.text(this.formatMoney(invoice.totalMinor, currency), TOT_VAL_X, totY, { width: TOT_VAL_W, align: 'right', lineBreak: false });
+      totY += 22;
+
+      if (invoice.paidAmountMinor > 0) {
+        drawTotalRow('Paid:', invoice.paidAmountMinor, C_GREEN, true);
+      }
+
+      const outColor = invoice.outstandingMinor <= 0 ? C_GREEN : C_RED;
+      doc.fontSize(9).fillColor(C_GRAY).font('Helvetica')
+         .text('Outstanding:', TOT_LBL_X, totY, { width: TOT_LBL_W, align: 'right', lineBreak: false });
+      doc.fillColor(outColor).font('Helvetica-Bold')
+         .text(this.formatMoney(invoice.outstandingMinor, currency), TOT_VAL_X, totY, { width: TOT_VAL_W, align: 'right', lineBreak: false });
+
+      // ── Notes ─────────────────────────────────────────────────
+      if (invoice.notes) {
+        const notesY = totY + 28;
+        doc.moveTo(L, notesY).lineTo(R, notesY).strokeColor(C_LIGHT).lineWidth(0.5).stroke();
+        doc.fontSize(9).fillColor(C_GRAY).font('Helvetica')
+           .text('Notes:', L, notesY + 12, { lineBreak: false });
+        doc.fillColor(C_DARK)
+           .text(invoice.notes, L, notesY + 26, { width: W });
+      }
+
+      doc.end();
+    });
   }
 
   // ─── Payments ──────────────────────────────────────────────────────────────

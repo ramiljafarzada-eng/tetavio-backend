@@ -461,6 +461,57 @@ export function apiDeleteInvoicePayment(invoiceId, paymentId, onSessionUpdate) {
   return authRequest(`/invoices/${invoiceId}/payments/${paymentId}`, { method: "DELETE" }, onSessionUpdate);
 }
 
+async function authBlobRequest(path, options = {}, onSessionUpdate) {
+  if (!activeSession?.accessToken) {
+    throw new Error("Not authenticated");
+  }
+
+  const attempt = async (token) => {
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      const networkErr = new Error("Backend server is not reachable. Please make sure backend is running.");
+      networkErr.code = "BACKEND_UNREACHABLE";
+      networkErr.cause = err;
+      throw networkErr;
+    }
+
+    if (!response.ok) {
+      const isJson = response.headers.get("content-type")?.includes("application/json");
+      let message = `HTTP ${response.status}`;
+      if (isJson) {
+        try { message = (await response.json()).message || message; } catch (_) { /* ignore */ }
+      }
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
+    }
+
+    return response.blob();
+  };
+
+  try {
+    return await attempt(activeSession.accessToken);
+  } catch (error) {
+    if (error.status !== 401 || !activeSession?.refreshToken) throw error;
+
+    const rotated = await refreshTokens(activeSession.refreshToken);
+    const nextSession = { ...activeSession, accessToken: rotated.accessToken, refreshToken: rotated.refreshToken };
+    activeSession = nextSession;
+    if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
+
+    return attempt(nextSession.accessToken);
+  }
+}
+
+export function apiDownloadInvoicePdf(invoiceId, onSessionUpdate) {
+  return authBlobRequest(`/invoices/${invoiceId}/pdf`, { method: "GET" }, onSessionUpdate);
+}
+
 export function apiListAccountingAccounts(query = {}, onSessionUpdate) {
   return authRequest(`/accounting/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
 }

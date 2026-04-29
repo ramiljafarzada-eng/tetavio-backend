@@ -40,6 +40,7 @@ import {
   apiListInvoices,
   apiListVendors,
   apiAddInvoicePayment,
+  apiDownloadInvoicePdf,
   apiGetAccountsReceivableAging,
   apiCreateInvoice,
   apiDeleteInvoice,
@@ -2297,6 +2298,8 @@ function MainApp() {
   const [invoicePaymentsLoading, setInvoicePaymentsLoading] = useState(false);
   const [invoicePaymentsError, setInvoicePaymentsError] = useState("");
   const [invoicePaymentDraft, setInvoicePaymentDraft] = useState({ amountMinor: "", paymentDate: "", method: "" });
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -3277,6 +3280,26 @@ function MainApp() {
       setInvoicePaymentsError(error?.message || "Ödəniş silinmədi.");
     } finally {
       setInvoicePaymentsLoading(false);
+    }
+  }
+
+  async function downloadInvoicePdf(invoiceId, invoiceNumber) {
+    setPdfLoading(true);
+    setPdfError("");
+    try {
+      const blob = await apiDownloadInvoicePdf(invoiceId, updateBackendSession);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = invoiceNumber ? `invoice-${invoiceNumber}.pdf` : `invoice-${invoiceId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setPdfError(error?.message || "PDF yüklənmədi.");
+    } finally {
+      setPdfLoading(false);
     }
   }
 
@@ -7631,6 +7654,19 @@ function renderItemsCatalog() {
             <button className="bill-back-btn" type="button" onClick={() => cancelEdit("invoices")}>{at.back}</button>
             <div className="bill-journal-title-row">
               <h2>{editing.invoices ? at.formTitle_editInvoice : at.formTitle_newInvoice}</h2>
+              {editing.invoices ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    className="ghost-btn"
+                    type="button"
+                    onClick={() => downloadInvoicePdf(editing.invoices, draft.invoiceNumber)}
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? "Yüklənir..." : "PDF Yüklə"}
+                  </button>
+                  {pdfError ? <span style={{ color: "var(--danger)", fontSize: 12 }}>{pdfError}</span> : null}
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="bill-form-panel">
