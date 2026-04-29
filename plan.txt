@@ -306,6 +306,7 @@ Completion Note:
 ERP user audit trail added with AuditLog model and AuditService. Critical customer, vendor, invoice, payment, and journal actions are logged with accountId and actorUserId from JWT only. Metadata is minimal and non-sensitive. No frontend changes were required.
 
 Commit Reference:
+a320763 feat(audit): add ERP user audit trail
 
 ==================================================
 PHASE 6A — BILLS / PURCHASES BACKEND
