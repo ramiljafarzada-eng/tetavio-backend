@@ -19,6 +19,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { EmailService } from '../email/email.service';
 import { EmailVerificationRequestDto } from './dto/email-verification-request.dto';
 import { EmailVerificationConfirmDto } from './dto/email-verification-confirm.dto';
 import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
@@ -42,6 +43,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto, meta: RequestMeta) {
@@ -262,6 +264,10 @@ export class AuthService {
       },
     });
 
+    this.emailService.sendVerificationEmail(user.email, rawToken).catch(() => {
+      // Errors are already logged inside EmailService; this prevents unhandled rejections
+    });
+
     return {
       message: 'Verification token created',
       verificationToken: this.shouldExposeDevTokens() ? rawToken : undefined,
@@ -311,6 +317,10 @@ export class AuthService {
         tokenHash,
         expiresAt,
       },
+    });
+
+    this.emailService.sendPasswordResetEmail(user.email, rawToken).catch(() => {
+      // Errors are already logged inside EmailService; this prevents unhandled rejections
     });
 
     return {

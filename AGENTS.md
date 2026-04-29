@@ -587,6 +587,24 @@ Backend change:
   - Insights/cashflow/trends use paidAt (not issueDate/createdAt) for paid revenue timing; fallback: paidAt=null invoices excluded from period filters
   - Frontend: shows read-only "Ödəniş tarixi" on paid invoices in edit form; cashflow label renamed "Paid Revenue (Last 30 Days)"
 
+\- Phase 5F: Real Email Delivery (COMPLETED)
+  - Module: backend/src/modules/email/ (EmailService, EmailModule)
+  - Library: nodemailer (SMTP transport — provider-agnostic: works with SendGrid, Postmark, Gmail, SMTP2GO, etc.)
+  - Trigger points: POST /auth/email-verification/request and POST /auth/password-reset/request
+  - EmailService is injected into AuthService; fire-and-forget (.catch) so auth flow is never blocked or broken
+  - Transporter created once in onModuleInit() — not per request
+  - Required env vars: EMAIL_HOST, EMAIL_PORT (default 587), EMAIL_USER, EMAIL_PASS, EMAIL_FROM (default noreply@tetavio.com)
+  - FRONTEND_PRODUCTION_URL (already required) is used to build action links in emails
+  - If EMAIL_HOST / EMAIL_USER / EMAIL_PASS are absent: logger.warn at startup, all sends silently skipped — no crash
+  - If sendMail fails at runtime: logger.error with masked email + error message; does NOT rethrow
+  - Security rules that must never be violated:
+    - Raw tokens must NEVER appear in any logger call (log, warn, error, debug)
+    - SMTP credentials (EMAIL_PASS) must NEVER be logged
+    - Email subjects must never contain tokens
+    - Email body must never contain passwordHash, JWT secrets, or any env variable values
+    - Email links use FRONTEND_PRODUCTION_URL only — no hardcoded URLs in link-building logic
+  - Email links format: {FRONTEND_PRODUCTION_URL}?verifyToken={token} and {FRONTEND_PRODUCTION_URL}?resetToken={token}
+
 \- Phase 1 ERP full-stack persistence is now in place for:
   - Company Settings
   - Customers
