@@ -168,8 +168,7 @@ export class InsightsService {
         status: true,
         totalMinor: true,
         dueDate: true,
-        updatedAt: true,
-        createdAt: true,
+        issueDate: true,
         customer: {
           select: { displayName: true, companyName: true },
         },
@@ -201,8 +200,9 @@ export class InsightsService {
       const d = dueDateOf(inv);
       return d !== null && d >= now && d <= in30Days;
     });
+    // No paidAt field exists — use issueDate as the best proxy for cash inflow date
     const paidLast30Invoices = invoices.filter(
-      (inv) => isPaid(inv) && new Date(inv.updatedAt) >= thirtyDaysAgo,
+      (inv) => isPaid(inv) && new Date(inv.issueDate) >= thirtyDaysAgo,
     );
 
     const sumMinor = (list: { totalMinor: number }[]) =>
