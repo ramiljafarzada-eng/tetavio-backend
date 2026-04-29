@@ -71,6 +71,7 @@ model Account {
   customers          Customer[]
   vendors            Vendor[]
   invoices           Invoice[]
+  invoicePayments    InvoicePayment[]
   createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   adminNotes         AdminAccountNote[]
@@ -330,6 +331,7 @@ model Invoice {
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   lines          InvoiceLine[]
+  payments       InvoicePayment[]
 
   @@index([accountId])
   @@index([customerId])
@@ -354,6 +356,26 @@ model InvoiceLine {
 
   @@index([invoiceId])
   @@map("invoice_lines")
+}
+
+model InvoicePayment {
+  id          String    @id @default(uuid()) @db.Uuid
+  accountId   String    @map("account_id") @db.Uuid
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  invoiceId   String    @map("invoice_id") @db.Uuid
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amountMinor Int       @map("amount_minor")
+  paymentDate DateTime  @map("payment_date") @db.Date
+  method      String?
+  reference   String?
+  note        String?
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([accountId])
+  @@index([invoiceId])
+  @@map("invoice_payments")
 }
 
 model AdminAccountNote {

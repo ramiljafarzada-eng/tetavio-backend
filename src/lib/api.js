@@ -441,6 +441,22 @@ export function apiDeleteInvoice(invoiceId, onSessionUpdate) {
   return authRequest(`/invoices/${invoiceId}`, { method: "DELETE" }, onSessionUpdate);
 }
 
+export function apiListInvoicePayments(invoiceId, onSessionUpdate) {
+  return authRequest(`/invoices/${invoiceId}/payments`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiAddInvoicePayment(invoiceId, payload, onSessionUpdate) {
+  return authRequest(
+    `/invoices/${invoiceId}/payments`,
+    { method: "POST", body: JSON.stringify(payload) },
+    onSessionUpdate,
+  );
+}
+
+export function apiDeleteInvoicePayment(invoiceId, paymentId, onSessionUpdate) {
+  return authRequest(`/invoices/${invoiceId}/payments/${paymentId}`, { method: "DELETE" }, onSessionUpdate);
+}
+
 export function apiListAccountingAccounts(query = {}, onSessionUpdate) {
   return authRequest(`/accounting/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
 }

@@ -15,6 +15,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { CreateInvoicePaymentDto } from './dto/create-invoice-payment.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoicesService } from './invoices.service';
 import { ListInvoicesQueryDto } from './dto/list-invoices-query.dto';
@@ -81,5 +82,37 @@ export class InvoicesController {
     @Param('id', new ParseUUIDPipe()) invoiceId: string,
   ) {
     return this.invoicesService.remove(user, invoiceId);
+  }
+
+  // ─── Payment sub-resource ──────────────────────────────────────────────────
+
+  @Get(':id/payments')
+  @ApiOperation({ summary: 'List payments for an invoice' })
+  listPayments(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) invoiceId: string,
+  ) {
+    return this.invoicesService.listPayments(user, invoiceId);
+  }
+
+  @Post(':id/payments')
+  @ApiOperation({ summary: 'Add a payment to an invoice' })
+  @ApiBody({ type: CreateInvoicePaymentDto })
+  addPayment(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) invoiceId: string,
+    @Body() dto: CreateInvoicePaymentDto,
+  ) {
+    return this.invoicesService.addPayment(user, invoiceId, dto);
+  }
+
+  @Delete(':id/payments/:paymentId')
+  @ApiOperation({ summary: 'Delete a payment from an invoice' })
+  removePayment(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) invoiceId: string,
+    @Param('paymentId', new ParseUUIDPipe()) paymentId: string,
+  ) {
+    return this.invoicesService.removePayment(user, invoiceId, paymentId);
   }
 }

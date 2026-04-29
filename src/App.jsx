@@ -39,8 +39,11 @@ import {
   apiListCustomers,
   apiListInvoices,
   apiListVendors,
+  apiAddInvoicePayment,
   apiCreateInvoice,
   apiDeleteInvoice,
+  apiDeleteInvoicePayment,
+  apiListInvoicePayments,
   apiLogin,
   apiLogout,
   apiMe,
@@ -1244,7 +1247,7 @@ const MODULES_BASE = {
   },
   invoices: {
     title: "Satış qaimələri", singular: "Satış qaiməsi", collection: "invoices", summary: "Satış qaimələri.",
-    columns: [["invoiceNumber", "Faktura #"], ["customerName", "Müştəri"], ["status", "Status", "status"], ["dueDate", "Son tarix", "date"], ["amount", "Məbləğ", "currency"]],
+    columns: [["invoiceNumber", "Faktura #"], ["customerName", "Müştəri"], ["status", "Status", "status"], ["dueDate", "Son tarix", "date"], ["amount", "Məbləğ", "currency"], ["outstanding", "Qalıq", "currency"]],
     form: [["invoiceNumber", "Faktura #"], ["customerName", "Müştəri"], ["status", "Status", "select", "Qaralama", ["Qaralama", "Göndərilib", "Gecikib", "Ödənilib"]], ["dueDate", "Son tarix", "date", today()], ["amount", "Məbləğ", "number", "0"]]
   },
   salesReceipts: {
@@ -1358,7 +1361,7 @@ function getModules(at) {
     },
     invoices: {
       title: at.mod_invoices, singular: at.mod_invoicesSingular, collection: "invoices", summary: at.mod_invoicesSummary,
-      columns: [["invoiceNumber", at.col["Faktura #"]], ["customerName", "Müştəri"], ["status", "Status", "status"], ["dueDate", at.col["Son tarix"], "date"], ["amount", at.col["Məbləğ"], "currency"]],
+      columns: [["invoiceNumber", at.col["Faktura #"]], ["customerName", "Müştəri"], ["status", "Status", "status"], ["dueDate", at.col["Son tarix"], "date"], ["amount", at.col["Məbləğ"], "currency"], ["outstanding", "Qalıq", "currency"]],
       form: [["invoiceNumber", at.col["Faktura #"]], ["customerName", "Müştəri"], ["status", "Status", "select", at.statusDraft, [at.statusDraft, at.statusSent, at.statusOverdue, at.statusPaid]], ["dueDate", at.col["Son tarix"], "date", today()], ["amount", at.col["Məbləğ"], "number", "0"]]
     },
     salesReceipts: {
@@ -2286,6 +2289,10 @@ function MainApp() {
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [invoicesError, setInvoicesError] = useState("");
   const [invoicesMeta, setInvoicesMeta] = useState(null);
+  const [invoicePayments, setInvoicePayments] = useState([]);
+  const [invoicePaymentsLoading, setInvoicePaymentsLoading] = useState(false);
+  const [invoicePaymentsError, setInvoicePaymentsError] = useState("");
+  const [invoicePaymentDraft, setInvoicePaymentDraft] = useState({ amountMinor: "", paymentDate: "", method: "" });
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -3031,7 +3038,11 @@ function MainApp() {
       discountAmount: 0,
       adjustment: "0",
       amount: Number(record?.totalMinor || 0) / 100,
+      outstanding: Number(record?.outstandingMinor ?? record?.totalMinor ?? 0) / 100,
       paidAt: record?.paidAt ? String(record.paidAt).slice(0, 10) : null,
+      paidAmountMinor: Number(record?.paidAmountMinor || 0),
+      outstandingMinor: Number(record?.outstandingMinor ?? record?.totalMinor ?? 0),
+      payments: Array.isArray(record?.payments) ? record.payments : [],
       createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
       lineItems: lines.length > 0
         ? lines.map((line) => {
@@ -3213,6 +3224,52 @@ function MainApp() {
       setInvoicesError(error?.message || "Faktura silinmədi.");
     } finally {
       setInvoicesLoading(false);
+    }
+  }
+
+  async function submitInvoicePayment(invoiceId) {
+    const amountMinor = Math.round(Number(invoicePaymentDraft.amountMinor) * 100);
+    if (!amountMinor || amountMinor <= 0) {
+      setInvoicePaymentsError("Məbləğ sıfırdan böyük olmalıdır.");
+      return;
+    }
+    if (!invoicePaymentDraft.paymentDate) {
+      setInvoicePaymentsError("Ödəniş tarixi daxil edin.");
+      return;
+    }
+    setInvoicePaymentsLoading(true);
+    setInvoicePaymentsError("");
+    try {
+      const result = await apiAddInvoicePayment(
+        invoiceId,
+        {
+          amountMinor,
+          paymentDate: invoicePaymentDraft.paymentDate,
+          method: invoicePaymentDraft.method || undefined,
+        },
+        updateBackendSession,
+      );
+      setInvoicePayments(Array.isArray(result?.payments) ? result.payments : []);
+      setInvoicePaymentDraft({ amountMinor: "", paymentDate: "", method: "" });
+      await syncInvoicesFromBackend();
+    } catch (error) {
+      setInvoicePaymentsError(error?.message || "Ödəniş əlavə edilmədi.");
+    } finally {
+      setInvoicePaymentsLoading(false);
+    }
+  }
+
+  async function deleteInvoicePaymentRecord(invoiceId, paymentId) {
+    setInvoicePaymentsLoading(true);
+    setInvoicePaymentsError("");
+    try {
+      const result = await apiDeleteInvoicePayment(invoiceId, paymentId, updateBackendSession);
+      setInvoicePayments(Array.isArray(result?.payments) ? result.payments : []);
+      await syncInvoicesFromBackend();
+    } catch (error) {
+      setInvoicePaymentsError(error?.message || "Ödəniş silinmədi.");
+    } finally {
+      setInvoicePaymentsLoading(false);
     }
   }
 
@@ -6450,7 +6507,12 @@ function MainApp() {
     if (moduleId === "chartOfAccounts") setChartView("form");
     if (moduleId === "vendors") setVendorView("form");
     if (moduleId === "goods") setGoodsView("form");
-    if (moduleId === "invoices") setInvoiceView("form");
+    if (moduleId === "invoices") {
+      setInvoiceView("form");
+      setInvoicePaymentDraft({ amountMinor: "", paymentDate: "", method: "" });
+      setInvoicePayments(Array.isArray(record.payments) ? record.payments : []);
+      setInvoicePaymentsError("");
+    }
     if (moduleId === "customers") setCustomerView("form");
     setDrafts((current) => ({ ...current, [moduleId]: createModuleDraft(moduleId, record) }));
     setEditing((current) => ({ ...current, [moduleId]: record.id }));
@@ -6465,7 +6527,7 @@ function MainApp() {
     if (moduleId === "chartOfAccounts") setChartView("journal");
     if (moduleId === "vendors") setVendorView("journal");
     if (moduleId === "goods") setGoodsView("journal");
-    if (moduleId === "invoices") setInvoiceView("journal");
+    if (moduleId === "invoices") { setInvoiceView("journal"); setInvoicePayments([]); setInvoicePaymentsError(""); }
     if (moduleId === "customers") setCustomerView("journal");
   }
 
@@ -7662,6 +7724,113 @@ function renderItemsCatalog() {
                 <button className="ghost-btn" type="button" onClick={() => cancelEdit("invoices")} disabled={invoicesLoading}>{at.cancel}</button>
               </div>
             </form>
+
+            {editing.invoices ? (() => {
+              const editedInvoice = state.invoices.find((inv) => inv.id === editing.invoices);
+              const totalAmount = editedInvoice?.amount ?? invoiceTotals.totalAmount ?? 0;
+              const paidAmountMinor = invoicePayments.filter((p) => !p.deletedAt).reduce((s, p) => s + (p.amountMinor || 0), 0);
+              const outstandingMinor = Math.round(totalAmount * 100) - paidAmountMinor;
+              const cur = state.settings.currency || "AZN";
+              return (
+                <div className="panel" style={{ margin: "1.5rem 0 0", padding: "1.25rem 1.5rem" }}>
+                  <div className="panel-head" style={{ marginBottom: "1rem" }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Ödənişlər</h3>
+                      <p className="panel-copy" style={{ marginTop: 4 }}>
+                        Ödənilib: <strong>{currency(paidAmountMinor / 100, cur)}</strong>
+                        {" · "}Qalıq: <strong style={{ color: outstandingMinor > 0 ? "var(--danger)" : "#10b981" }}>{currency(outstandingMinor / 100, cur)}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  {invoicePaymentsError ? <p style={{ color: "var(--danger)", marginBottom: "0.75rem", fontSize: 13 }}>{invoicePaymentsError}</p> : null}
+
+                  {invoicePayments.filter((p) => !p.deletedAt).length > 0 ? (
+                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "1rem", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <th style={{ textAlign: "left", padding: "4px 8px" }}>Tarix</th>
+                          <th style={{ textAlign: "left", padding: "4px 8px" }}>Üsul</th>
+                          <th style={{ textAlign: "right", padding: "4px 8px" }}>Məbləğ</th>
+                          <th style={{ padding: "4px 8px" }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoicePayments.filter((p) => !p.deletedAt).map((p) => (
+                          <tr key={p.id} style={{ borderBottom: "1px solid var(--border-light, #f0f0f0)" }}>
+                            <td style={{ padding: "6px 8px" }}>{p.paymentDate ? String(p.paymentDate).slice(0, 10) : "—"}</td>
+                            <td style={{ padding: "6px 8px", color: "var(--text-muted)" }}>{p.method || "—"}</td>
+                            <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>{currency((p.amountMinor || 0) / 100, cur)}</td>
+                            <td style={{ padding: "6px 8px", textAlign: "center" }}>
+                              <button
+                                className="table-btn danger-btn"
+                                type="button"
+                                disabled={invoicePaymentsLoading}
+                                onClick={() => deleteInvoicePaymentRecord(editing.invoices, p.id)}
+                              >Sil</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="panel-copy" style={{ marginBottom: "1rem" }}>Hələ ödəniş yoxdur.</p>
+                  )}
+
+                  {outstandingMinor > 0 ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+                        <span>Məbləğ ({cur})</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max={(outstandingMinor / 100).toFixed(2)}
+                          value={invoicePaymentDraft.amountMinor}
+                          onChange={(e) => setInvoicePaymentDraft((d) => ({ ...d, amountMinor: e.target.value }))}
+                          disabled={invoicePaymentsLoading}
+                          style={{ width: 120, padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 6 }}
+                          placeholder="0.00"
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+                        <span>Tarix</span>
+                        <input
+                          type="date"
+                          value={invoicePaymentDraft.paymentDate}
+                          onChange={(e) => setInvoicePaymentDraft((d) => ({ ...d, paymentDate: e.target.value }))}
+                          disabled={invoicePaymentsLoading}
+                          style={{ padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 6 }}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+                        <span>Üsul</span>
+                        <select
+                          value={invoicePaymentDraft.method}
+                          onChange={(e) => setInvoicePaymentDraft((d) => ({ ...d, method: e.target.value }))}
+                          disabled={invoicePaymentsLoading}
+                          style={{ padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 6 }}
+                        >
+                          <option value="">Seçin...</option>
+                          <option value="Bank köçürməsi">Bank köçürməsi</option>
+                          <option value="Nağd">Nağd</option>
+                          <option value="Kart">Kart</option>
+                        </select>
+                      </label>
+                      <button
+                        className="primary-btn"
+                        type="button"
+                        disabled={invoicePaymentsLoading}
+                        onClick={() => submitInvoicePayment(editing.invoices)}
+                        style={{ marginBottom: 0 }}
+                      >Ödəniş əlavə et</button>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>✓ Faktura tam ödənilib.</p>
+                  )}
+                </div>
+              );
+            })() : null}
           </div>
         </div>
       </section>

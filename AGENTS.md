@@ -544,6 +544,18 @@ Backend change:
   - removeModuleRecord("chartOfAccounts/manualJournals") → API delete + sync
   - Loading/error state: accountsLoading/Error, journalsLoading/Error shown in UI
 
+\- Phase 5C: Invoice Payments & Collections Layer (COMPLETED)
+  - InvoicePayment model added (migration: 20260429084052_add_invoice_payments): accountId, invoiceId, amountMinor, paymentDate, method?, reference?, note?, soft delete
+  - Invoice status derived from payments: paidAmountMinor=sum(payments); PAID if >=total, PARTIAL if >0, SENT/prior if 0
+  - paidAt set when invoice becomes fully paid via payments; cleared if payments are removed and outstanding>0
+  - Overpayment blocked: payment.amountMinor must not exceed outstandingMinor
+  - Endpoints: POST/GET /invoices/:id/payments, DELETE /invoices/:id/payments/:paymentId (JWT-scoped, no accountId from frontend)
+  - Invoice list and getById now include payments array and computed paidAmountMinor+outstandingMinor fields
+  - insights/cashflow/trends use real payment data (paymentDate) instead of invoice totals or status
+  - Frontend: payment section in invoice edit form — list, total paid, outstanding, add/delete payment
+  - Invoice list table shows "Qalıq" (outstanding) column
+  - Frontend state: invoicePayments, invoicePaymentsLoading, invoicePaymentsError, invoicePaymentDraft (note: NOT paymentDraft which is used for subscription payments)
+
 \- Phase 5B: Invoice paidAt Tracking (COMPLETED)
   - Invoice.paidAt (paid_at TIMESTAMPTZ) added for accurate paid revenue timing (migration: 20260429081044_add_invoice_paid_at)
   - Backfill: existing PAID invoices get paidAt = updatedAt as a one-time approximation (documented in migration SQL)

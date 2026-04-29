@@ -1,9 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-const PAID_STATUSES = ['PAID', 'Ödənilib'];
+const PAID_STATUSES = ['PAID', 'Ödənilib', 'PARTIAL'];
 const OVERDUE_STATUSES = ['OVERDUE', 'Gecikib'];
 const CANCELLED_STATUSES = ['CANCELLED', 'VOID'];
+
+const INVOICE_WITH_PAYMENTS_SELECT = {
+  id: true,
+  customerId: true,
+  status: true,
+  totalMinor: true,
+  dueDate: true,
+  payments: {
+    where: { deletedAt: null as null },
+    select: { amountMinor: true, paymentDate: true },
+  },
+} as const;
+
+type InvoiceWithPaymentsRaw = {
+  id: string;
+  customerId: string;
+  status: string;
+  totalMinor: number;
+  dueDate: Date | null;
+  payments: { amountMinor: number; paymentDate: Date }[];
+};
+
+type InvoiceWithBalance = InvoiceWithPaymentsRaw & {
+  paidAmountMinor: number;
+  outstandingMinor: number;
+};
+
+function attachBalance(inv: InvoiceWithPaymentsRaw): InvoiceWithBalance {
+  const paidAmountMinor = inv.payments.reduce((s, p) => s + p.amountMinor, 0);
+  return { ...inv, paidAmountMinor, outstandingMinor: inv.totalMinor - paidAmountMinor };
+}
 
 @Injectable()
 export class InsightsService {
@@ -13,59 +44,66 @@ export class InsightsService {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const [invoices, customerCount] = await Promise.all([
+    const [rawInvoices, customerCount] = await Promise.all([
       this.prisma.invoice.findMany({
         where: { accountId, deletedAt: null },
-        select: {
-          id: true,
-          customerId: true,
-          status: true,
-          totalMinor: true,
-          dueDate: true,
-          paidAt: true,
-        },
+        select: INVOICE_WITH_PAYMENTS_SELECT,
       }),
       this.prisma.customer.count({
         where: { accountId, deletedAt: null },
       }),
     ]);
 
-    const isPaid = (inv: { status: string }) => PAID_STATUSES.includes(inv.status);
-    const isCancelled = (inv: { status: string }) => CANCELLED_STATUSES.includes(inv.status);
-    const isOverdue = (inv: { status: string; dueDate: Date | null }) =>
+    const invoices = rawInvoices.map(attachBalance);
+
+    const isCancelled = (inv: InvoiceWithBalance) => CANCELLED_STATUSES.includes(inv.status);
+    const isFullyPaid = (inv: InvoiceWithBalance) =>
+      inv.totalMinor > 0 && inv.outstandingMinor <= 0;
+    const isOverdue = (inv: InvoiceWithBalance) =>
       OVERDUE_STATUSES.includes(inv.status) ||
-      (!isPaid(inv) && !isCancelled(inv) && inv.dueDate !== null && new Date(inv.dueDate) < now);
+      (!isFullyPaid(inv) && !isCancelled(inv) && inv.dueDate !== null && new Date(inv.dueDate) < now);
 
-    const paidInvoices = invoices.filter(isPaid);
     const overdueInvoices = invoices.filter(isOverdue);
-    const outstandingInvoices = invoices.filter((inv) => !isPaid(inv) && !isCancelled(inv));
+    const outstandingInvoices = invoices.filter((inv) => !isFullyPaid(inv) && !isCancelled(inv));
 
-    const sum = (list: { totalMinor: number }[]) =>
-      list.reduce((acc, inv) => acc + inv.totalMinor, 0);
+    // Paid revenue = total of all payments received across account
+    const allPayments = invoices.flatMap((inv) => inv.payments);
+    const paidRevenueMinor = allPayments.reduce((s, p) => s + p.amountMinor, 0);
 
-    const totalRevenueMinor = sum(invoices.filter((inv) => !isCancelled(inv)));
-    const paidRevenueMinor = sum(paidInvoices);
-    const overdueRevenueMinor = sum(overdueInvoices);
-    const outstandingRevenueMinor = sum(outstandingInvoices);
+    const totalRevenueMinor = invoices
+      .filter((inv) => !isCancelled(inv))
+      .reduce((s, inv) => s + inv.totalMinor, 0);
 
-    const recentPaidInvoices = paidInvoices.filter(
-      (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= thirtyDaysAgo,
+    const overdueRevenueMinor = overdueInvoices.reduce((s, inv) => s + inv.outstandingMinor, 0);
+    const outstandingRevenueMinor = outstandingInvoices.reduce((s, inv) => s + inv.outstandingMinor, 0);
+
+    const recentPayments = allPayments.filter(
+      (p) => new Date(p.paymentDate) >= thirtyDaysAgo,
     );
+    const paidLast30DaysMinor = recentPayments.reduce((s, p) => s + p.amountMinor, 0);
 
     const paidByCustomer = new Map<string, number>();
-    for (const inv of paidInvoices) {
-      paidByCustomer.set(inv.customerId, (paidByCustomer.get(inv.customerId) ?? 0) + inv.totalMinor);
+    for (const inv of invoices) {
+      if (inv.paidAmountMinor > 0) {
+        paidByCustomer.set(
+          inv.customerId,
+          (paidByCustomer.get(inv.customerId) ?? 0) + inv.paidAmountMinor,
+        );
+      }
     }
     const topCustomerRevenue = paidByCustomer.size > 0 ? Math.max(...paidByCustomer.values()) : 0;
     const concentrationRatio = paidRevenueMinor > 0 ? topCustomerRevenue / paidRevenueMinor : 0;
+
+    const paidInvoiceCount = invoices.filter(isFullyPaid).length;
 
     const summary = {
       totalRevenueMinor,
       paidRevenueMinor,
       outstandingRevenueMinor,
       overdueRevenueMinor,
+      paidLast30DaysMinor,
       invoiceCount: invoices.length,
-      paidInvoiceCount: paidInvoices.length,
+      paidInvoiceCount,
       overdueInvoiceCount: overdueInvoices.length,
       customerCount,
     };
@@ -108,26 +146,26 @@ export class InsightsService {
       });
     }
 
-    if (invoices.length > 0 && paidInvoices.length / invoices.length < 0.5) {
+    if (invoices.length > 0 && paidInvoiceCount / invoices.length < 0.5) {
       insights.push({
         id: 'LOW_PAYMENT_CONVERSION',
         type: 'LOW_PAYMENT_CONVERSION',
         severity: 'MEDIUM',
         title: 'Low Payment Conversion Rate',
-        description: `Only ${Math.round((paidInvoices.length / invoices.length) * 100)}% of your invoices have been paid.`,
-        metricValue: Math.round((paidInvoices.length / invoices.length) * 100),
+        description: `Only ${Math.round((paidInvoiceCount / invoices.length) * 100)}% of your invoices have been fully paid.`,
+        metricValue: Math.round((paidInvoiceCount / invoices.length) * 100),
         recommendation: 'Review payment terms, send reminders for outstanding invoices, and consider offering multiple payment options.',
         createdAt: nowIso,
       });
     }
 
-    if (recentPaidInvoices.length === 0) {
+    if (recentPayments.length === 0) {
       insights.push({
         id: 'NO_RECENT_REVENUE',
         type: 'NO_RECENT_REVENUE',
         severity: 'HIGH',
         title: 'No Revenue in Last 30 Days',
-        description: 'No paid invoices have been recorded in the last 30 days.',
+        description: 'No payments have been recorded in the last 30 days.',
         metricValue: 0,
         recommendation: 'Review your sales pipeline, follow up on open invoices, and reach out to inactive customers.',
         createdAt: nowIso,
@@ -135,7 +173,7 @@ export class InsightsService {
     }
 
     const isHealthy =
-      recentPaidInvoices.length > 0 &&
+      recentPayments.length > 0 &&
       (paidRevenueMinor === 0 || overdueRevenueMinor < paidRevenueMinor * 0.1);
 
     if (isHealthy) {
@@ -144,8 +182,8 @@ export class InsightsService {
         type: 'HEALTHY_REVENUE_SIGNAL',
         severity: 'LOW',
         title: 'Healthy Revenue Signal',
-        description: `You have received payment on ${recentPaidInvoices.length} invoice${recentPaidInvoices.length !== 1 ? 's' : ''} in the last 30 days with low overdue exposure.`,
-        metricValue: recentPaidInvoices.length,
+        description: `You have received ${recentPayments.length} payment${recentPayments.length !== 1 ? 's' : ''} in the last 30 days with low overdue exposure.`,
+        metricValue: recentPayments.length,
         recommendation: 'Maintain your current billing discipline and continue following up promptly on issued invoices.',
         createdAt: nowIso,
       });
@@ -160,7 +198,7 @@ export class InsightsService {
     const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const invoices = await this.prisma.invoice.findMany({
+    const rawInvoices = await this.prisma.invoice.findMany({
       where: { accountId, deletedAt: null },
       select: {
         id: true,
@@ -168,7 +206,10 @@ export class InsightsService {
         status: true,
         totalMinor: true,
         dueDate: true,
-        paidAt: true,
+        payments: {
+          where: { deletedAt: null },
+          select: { amountMinor: true, paymentDate: true },
+        },
         customer: {
           select: { displayName: true, companyName: true },
         },
@@ -176,9 +217,17 @@ export class InsightsService {
       orderBy: { dueDate: 'asc' },
     });
 
-    const isPaid = (inv: { status: string }) => PAID_STATUSES.includes(inv.status);
     const isCancelled = (inv: { status: string }) => CANCELLED_STATUSES.includes(inv.status);
-    const isOpen = (inv: { status: string }) => !isPaid(inv) && !isCancelled(inv);
+
+    const invoices = rawInvoices.map((inv) => {
+      const paidAmountMinor = inv.payments.reduce((s, p) => s + p.amountMinor, 0);
+      const outstandingMinor = inv.totalMinor - paidAmountMinor;
+      return { ...inv, paidAmountMinor, outstandingMinor };
+    });
+
+    const isFullyPaid = (inv: typeof invoices[number]) =>
+      inv.totalMinor > 0 && inv.outstandingMinor <= 0;
+    const isOpen = (inv: typeof invoices[number]) => !isFullyPaid(inv) && !isCancelled(inv);
 
     const dueDateOf = (inv: { dueDate: Date | null }) =>
       inv.dueDate ? new Date(inv.dueDate) : null;
@@ -200,17 +249,19 @@ export class InsightsService {
       const d = dueDateOf(inv);
       return d !== null && d >= now && d <= in30Days;
     });
-    const paidLast30Invoices = invoices.filter(
-      (inv) => isPaid(inv) && inv.paidAt !== null && new Date(inv.paidAt) >= thirtyDaysAgo,
-    );
 
-    const sumMinor = (list: { totalMinor: number }[]) =>
-      list.reduce((acc, inv) => acc + inv.totalMinor, 0);
+    // Paid last 30 days = sum of payments with paymentDate >= 30 days ago
+    const paidLast30DaysMinor = invoices
+      .flatMap((inv) => inv.payments)
+      .filter((p) => new Date(p.paymentDate) >= thirtyDaysAgo)
+      .reduce((s, p) => s + p.amountMinor, 0);
+
+    const sumMinor = (list: { outstandingMinor: number }[]) =>
+      list.reduce((s, inv) => s + inv.outstandingMinor, 0);
 
     const expectedIncomingNext30DaysMinor = sumMinor(expectedNext30Invoices);
     const overdueAmountMinor = sumMinor(overdueInvoices);
     const dueSoonAmountMinor = sumMinor(dueSoonInvoices);
-    const paidLast30DaysMinor = sumMinor(paidLast30Invoices);
 
     let cashflowStatus: 'HEALTHY' | 'WATCH' | 'RISK' = 'HEALTHY';
     if (overdueAmountMinor > expectedIncomingNext30DaysMinor) {
@@ -234,7 +285,7 @@ export class InsightsService {
       { label: 'Overdue', amountMinor: overdueAmountMinor, invoiceCount: overdueInvoices.length },
       { label: 'Due next 7 days', amountMinor: dueSoonAmountMinor, invoiceCount: dueSoonInvoices.length },
       { label: 'Due 8–30 days', amountMinor: sumMinor(due8to30Invoices), invoiceCount: due8to30Invoices.length },
-      { label: 'Paid last 30 days', amountMinor: paidLast30DaysMinor, invoiceCount: paidLast30Invoices.length },
+      { label: 'Paid last 30 days', amountMinor: paidLast30DaysMinor, invoiceCount: 0 },
     ];
 
     const recommendations: {
@@ -287,6 +338,7 @@ export class InsightsService {
         customerName: inv.customer.displayName || inv.customer.companyName || '—',
         dueDate: inv.dueDate,
         totalMinor: inv.totalMinor,
+        outstandingMinor: inv.outstandingMinor,
         status: inv.status,
       }));
 
@@ -300,19 +352,36 @@ export class InsightsService {
     const currentEnd = now;
     const previousEnd = currentStart;
 
-    const [invoices, paidInvoicesByPaidAt, currentCustomerCount, previousCustomerCount] = await Promise.all([
+    const [invoices, currentPaymentsAgg, previousPaymentsAgg, currentCustomerCount, previousCustomerCount] = await Promise.all([
+      // Invoice volume + outstanding use issueDate for period classification
       this.prisma.invoice.findMany({
         where: { accountId, deletedAt: null, issueDate: { gte: previousStart } },
-        select: { status: true, totalMinor: true, issueDate: true },
+        select: {
+          status: true,
+          totalMinor: true,
+          issueDate: true,
+          payments: {
+            where: { deletedAt: null },
+            select: { amountMinor: true },
+          },
+        },
       }),
-      this.prisma.invoice.findMany({
+      // Paid revenue uses paymentDate for accurate period classification
+      this.prisma.invoicePayment.aggregate({
         where: {
           accountId,
           deletedAt: null,
-          status: { in: PAID_STATUSES },
-          paidAt: { gte: previousStart },
+          paymentDate: { gte: currentStart, lt: currentEnd },
         },
-        select: { totalMinor: true, paidAt: true },
+        _sum: { amountMinor: true },
+      }),
+      this.prisma.invoicePayment.aggregate({
+        where: {
+          accountId,
+          deletedAt: null,
+          paymentDate: { gte: previousStart, lt: previousEnd },
+        },
+        _sum: { amountMinor: true },
       }),
       this.prisma.customer.count({
         where: { accountId, deletedAt: null, createdAt: { gte: currentStart, lt: currentEnd } },
@@ -322,9 +391,10 @@ export class InsightsService {
       }),
     ]);
 
-    const isPaid = (inv: { status: string }) => PAID_STATUSES.includes(inv.status);
-    const isOpen = (inv: { status: string }) =>
-      !isPaid(inv) && !CANCELLED_STATUSES.includes(inv.status);
+    const isOpen = (inv: { status: string; totalMinor: number; payments: { amountMinor: number }[] }) => {
+      const paid = inv.payments.reduce((s, p) => s + p.amountMinor, 0);
+      return !CANCELLED_STATUSES.includes(inv.status) && paid < inv.totalMinor;
+    };
 
     const inCurrent = (inv: { issueDate: Date }) =>
       new Date(inv.issueDate) >= currentStart && new Date(inv.issueDate) < currentEnd;
@@ -334,21 +404,17 @@ export class InsightsService {
     const curInvoices = invoices.filter(inCurrent);
     const prevInvoices = invoices.filter(inPrevious);
 
-    const sumMinor = (list: { totalMinor: number }[]) =>
-      list.reduce((acc, inv) => acc + inv.totalMinor, 0);
+    const currentRevenueMinor = currentPaymentsAgg._sum.amountMinor ?? 0;
+    const previousRevenueMinor = previousPaymentsAgg._sum.amountMinor ?? 0;
 
-    const currentRevenueMinor = sumMinor(
-      paidInvoicesByPaidAt.filter(
-        (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= currentStart && new Date(inv.paidAt) < currentEnd,
-      ),
-    );
-    const previousRevenueMinor = sumMinor(
-      paidInvoicesByPaidAt.filter(
-        (inv) => inv.paidAt !== null && new Date(inv.paidAt) >= previousStart && new Date(inv.paidAt) < previousEnd,
-      ),
-    );
-    const currentOutstandingMinor = sumMinor(curInvoices.filter(isOpen));
-    const previousOutstandingMinor = sumMinor(prevInvoices.filter(isOpen));
+    const sumOutstanding = (list: typeof invoices) =>
+      list.filter(isOpen).reduce((s, inv) => {
+        const paid = inv.payments.reduce((sp, p) => sp + p.amountMinor, 0);
+        return s + (inv.totalMinor - paid);
+      }, 0);
+
+    const currentOutstandingMinor = sumOutstanding(curInvoices);
+    const previousOutstandingMinor = sumOutstanding(prevInvoices);
 
     const pctChange = (current: number, previous: number): number => {
       if (previous === 0 && current > 0) return 100;

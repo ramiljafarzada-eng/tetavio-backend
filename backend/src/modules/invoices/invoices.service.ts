@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { CreateInvoicePaymentDto } from './dto/create-invoice-payment.dto';
 import { InvoiceLineDto } from './dto/invoice-line.dto';
 import {
   ListInvoicesQueryDto,
@@ -28,6 +29,23 @@ type CalculatedInvoiceTotals = {
 
 const AUTO_INVOICE_NUMBER_MAX_RETRIES = 5;
 const PAID_STATUSES_SET = new Set(['PAID', 'Ödənilib']);
+
+const INVOICE_INCLUDE = {
+  customer: true,
+  lines: { where: { deletedAt: null as null } },
+  payments: {
+    where: { deletedAt: null as null },
+    orderBy: { paymentDate: 'asc' as const },
+  },
+} satisfies Prisma.InvoiceInclude;
+
+type InvoiceWithPayments = Prisma.InvoiceGetPayload<{ include: typeof INVOICE_INCLUDE }>;
+
+function attachPaymentDerived(invoice: InvoiceWithPayments) {
+  const paidAmountMinor = invoice.payments.reduce((sum, p) => sum + p.amountMinor, 0);
+  const outstandingMinor = invoice.totalMinor - paidAmountMinor;
+  return { ...invoice, paidAmountMinor, outstandingMinor };
+}
 
 @Injectable()
 export class InvoicesService {
@@ -176,6 +194,47 @@ export class InvoicesService {
     }
   }
 
+  private async recalculateInvoiceState(
+    tx: Prisma.TransactionClient,
+    invoiceId: string,
+  ): Promise<void> {
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      select: { totalMinor: true, status: true, paidAt: true },
+    });
+    if (!invoice) return;
+
+    const agg = await tx.invoicePayment.aggregate({
+      where: { invoiceId, deletedAt: null },
+      _sum: { amountMinor: true },
+    });
+
+    const paidAmountMinor = agg._sum.amountMinor ?? 0;
+
+    let newStatus: string;
+    let newPaidAt: Date | null;
+
+    if (invoice.totalMinor > 0 && paidAmountMinor >= invoice.totalMinor) {
+      newStatus = 'PAID';
+      newPaidAt = invoice.paidAt ?? new Date();
+    } else if (paidAmountMinor > 0) {
+      newStatus = 'PARTIAL';
+      newPaidAt = null;
+    } else {
+      const wasPaymentDerived =
+        invoice.status === 'PAID' ||
+        invoice.status === 'PARTIAL' ||
+        PAID_STATUSES_SET.has(invoice.status);
+      newStatus = wasPaymentDerived ? 'SENT' : invoice.status;
+      newPaidAt = null;
+    }
+
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { status: newStatus, paidAt: newPaidAt },
+    });
+  }
+
   async list(user: JwtPayload, query: ListInvoicesQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -241,19 +300,12 @@ export class InvoicesService {
         orderBy,
         skip,
         take: limit,
-        include: {
-          customer: true,
-          lines: {
-            where: {
-              deletedAt: null,
-            },
-          },
-        },
+        include: INVOICE_INCLUDE,
       }),
       this.prisma.invoice.count({ where }),
     ]);
 
-    return buildPaginatedResponse(data, page, limit, total);
+    return buildPaginatedResponse(data.map(attachPaymentDerived), page, limit, total);
   }
 
   async getById(user: JwtPayload, invoiceId: string) {
@@ -263,21 +315,14 @@ export class InvoicesService {
         accountId: user.accountId,
         deletedAt: null,
       },
-      include: {
-        customer: true,
-        lines: {
-          where: {
-            deletedAt: null,
-          },
-        },
-      },
+      include: INVOICE_INCLUDE,
     });
 
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
 
-    return invoice;
+    return attachPaymentDerived(invoice);
   }
 
   private async ensureCustomerOwnership(
@@ -389,17 +434,11 @@ export class InvoicesService {
       await this.ensureUniqueInvoiceNumber(user.accountId, invoiceNumber);
 
       try {
-        return await this.prisma.invoice.create({
+        const created = await this.prisma.invoice.create({
           data: this.buildCreateData(user, dto, invoiceNumber, totals),
-          include: {
-            customer: true,
-            lines: {
-              where: {
-                deletedAt: null,
-              },
-            },
-          },
+          include: INVOICE_INCLUDE,
         });
+        return attachPaymentDerived(created);
       } catch (error) {
         if (this.isInvoiceNumberUniqueViolation(error)) {
           throw new ConflictException('Invoice number already exists for account');
@@ -413,17 +452,11 @@ export class InvoicesService {
       const invoiceNumber = await this.generateInvoiceNumber(user.accountId);
 
       try {
-        return await this.prisma.invoice.create({
+        const created = await this.prisma.invoice.create({
           data: this.buildCreateData(user, dto, invoiceNumber, totals),
-          include: {
-            customer: true,
-            lines: {
-              where: {
-                deletedAt: null,
-              },
-            },
-          },
+          include: INVOICE_INCLUDE,
         });
+        return attachPaymentDerived(created);
       } catch (error) {
         if (!this.isInvoiceNumberUniqueViolation(error)) {
           throw error;
@@ -542,21 +575,14 @@ export class InvoicesService {
           accountId: user.accountId,
           deletedAt: null,
         },
-        include: {
-          customer: true,
-          lines: {
-            where: {
-              deletedAt: null,
-            },
-          },
-        },
+        include: INVOICE_INCLUDE,
       });
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
       }
 
-      return invoice;
+      return attachPaymentDerived(invoice);
     });
   }
 
@@ -566,23 +592,110 @@ export class InvoicesService {
     const now = new Date();
 
     await this.prisma.$transaction([
+      this.prisma.invoicePayment.updateMany({
+        where: { invoiceId, deletedAt: null },
+        data: { deletedAt: now },
+      }),
       this.prisma.invoiceLine.updateMany({
-        where: {
-          invoiceId,
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: now,
-        },
+        where: { invoiceId, deletedAt: null },
+        data: { deletedAt: now },
       }),
       this.prisma.invoice.update({
         where: { id: invoiceId },
-        data: {
-          deletedAt: now,
-        },
+        data: { deletedAt: now },
       }),
     ]);
 
     return { deleted: true, id: invoiceId };
+  }
+
+  // ─── Payments ──────────────────────────────────────────────────────────────
+
+  async listPayments(user: JwtPayload, invoiceId: string) {
+    await this.getById(user, invoiceId);
+
+    return this.prisma.invoicePayment.findMany({
+      where: { invoiceId, accountId: user.accountId, deletedAt: null },
+      orderBy: { paymentDate: 'asc' },
+    });
+  }
+
+  async addPayment(
+    user: JwtPayload,
+    invoiceId: string,
+    dto: CreateInvoicePaymentDto,
+  ) {
+    const invoice = await this.getById(user, invoiceId);
+
+    if (invoice.outstandingMinor <= 0) {
+      throw new BadRequestException('Invoice is already fully paid');
+    }
+
+    if (dto.amountMinor > invoice.outstandingMinor) {
+      throw new BadRequestException(
+        `Payment amount (${dto.amountMinor}) exceeds outstanding balance (${invoice.outstandingMinor})`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.invoicePayment.create({
+        data: {
+          accountId: user.accountId,
+          invoiceId,
+          amountMinor: dto.amountMinor,
+          paymentDate: new Date(dto.paymentDate),
+          method: dto.method ?? null,
+          reference: dto.reference ?? null,
+          note: dto.note ?? null,
+        },
+      });
+
+      await this.recalculateInvoiceState(tx, invoiceId);
+
+      const updated = await tx.invoice.findFirst({
+        where: { id: invoiceId },
+        include: INVOICE_INCLUDE,
+      });
+
+      return attachPaymentDerived(updated!);
+    });
+  }
+
+  async removePayment(
+    user: JwtPayload,
+    invoiceId: string,
+    paymentId: string,
+  ) {
+    await this.getById(user, invoiceId);
+
+    const payment = await this.prisma.invoicePayment.findFirst({
+      where: {
+        id: paymentId,
+        invoiceId,
+        accountId: user.accountId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.invoicePayment.update({
+        where: { id: paymentId },
+        data: { deletedAt: new Date() },
+      });
+
+      await this.recalculateInvoiceState(tx, invoiceId);
+
+      const updated = await tx.invoice.findFirst({
+        where: { id: invoiceId },
+        include: INVOICE_INCLUDE,
+      });
+
+      return attachPaymentDerived(updated!);
+    });
   }
 }
