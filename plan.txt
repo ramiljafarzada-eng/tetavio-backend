@@ -343,6 +343,7 @@ Completion Note:
 Bills/Purchases backend added with Bill and BillLine models, safe additive migration, JWT/account-scoped CRUD endpoints, backend-calculated totals, vendor ownership validation, pagination, and soft delete. No frontend changes were required.
 
 Commit Reference:
+7725745 feat(bills): add purchases backend
 
 ==================================================
 PHASE 6B — BANKING BACKEND
