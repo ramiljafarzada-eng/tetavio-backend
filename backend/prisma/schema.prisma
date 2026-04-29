@@ -61,21 +61,23 @@ enum WebhookProcessingStatus {
 }
 
 model Account {
-  id             String          @id @default(uuid()) @db.Uuid
-  name           String
-  type           AccountType     @default(INDIVIDUAL)
-  users          User[]
-  subscriptions  Subscription[]
-  orders         Order[]
-  companyProfile CompanyProfile?
-  customers      Customer[]
-  vendors        Vendor[]
-  invoices       Invoice[]
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  adminNotes     AdminAccountNote[]
-  adminFlags     AdminAccountFlag[]
-  anomalyReviews AdminAnomalyReview[]
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String
+  type               AccountType     @default(INDIVIDUAL)
+  users              User[]
+  subscriptions      Subscription[]
+  orders             Order[]
+  companyProfile     CompanyProfile?
+  customers          Customer[]
+  vendors            Vendor[]
+  invoices           Invoice[]
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  adminNotes         AdminAccountNote[]
+  adminFlags         AdminAccountFlag[]
+  anomalyReviews     AdminAnomalyReview[]
+  accountingAccounts AccountingAccount[]
+  journalEntries     JournalEntry[]
 
   @@map("accounts")
 }
@@ -411,4 +413,60 @@ model AdminAuditLog {
   @@index([actorUserId])
   @@index([targetId])
   @@map("admin_audit_logs")
+}
+
+model AccountingAccount {
+  id           String             @id @default(uuid()) @db.Uuid
+  accountId    String             @map("account_id") @db.Uuid
+  account      Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  code         String
+  name         String
+  type         String             @default("Aktiv")
+  parentId     String?            @map("parent_id") @db.Uuid
+  isActive     Boolean            @default(true) @map("is_active")
+  balanceMinor Int                @default(0) @map("balance_minor")
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  journalLines JournalEntryLine[]
+
+  @@index([accountId])
+  @@index([accountId, code])
+  @@map("accounting_accounts")
+}
+
+model JournalEntry {
+  id            String             @id @default(uuid()) @db.Uuid
+  accountId     String             @map("account_id") @db.Uuid
+  account       Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  journalNumber String             @map("journal_number")
+  reference     String?
+  entryDate     DateTime           @map("entry_date") @db.Date
+  sourceType    String?            @map("source_type")
+  sourceId      String?            @map("source_id")
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  lines         JournalEntryLine[]
+
+  @@index([accountId])
+  @@index([accountId, entryDate])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id                  String            @id @default(uuid()) @db.Uuid
+  journalEntryId      String            @map("journal_entry_id") @db.Uuid
+  journalEntry        JournalEntry      @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountingAccountId String            @map("accounting_account_id") @db.Uuid
+  accountingAccount   AccountingAccount @relation(fields: [accountingAccountId], references: [id], onDelete: Restrict)
+  description         String?
+  debitMinor          Int               @default(0) @map("debit_minor")
+  creditMinor         Int               @default(0) @map("credit_minor")
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([journalEntryId])
+  @@index([accountingAccountId])
+  @@map("journal_entry_lines")
 }

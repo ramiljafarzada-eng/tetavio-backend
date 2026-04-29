@@ -440,3 +440,39 @@ export function apiUpdateInvoice(invoiceId, payload, onSessionUpdate) {
 export function apiDeleteInvoice(invoiceId, onSessionUpdate) {
   return authRequest(`/invoices/${invoiceId}`, { method: "DELETE" }, onSessionUpdate);
 }
+
+export function apiListAccountingAccounts(query = {}, onSessionUpdate) {
+  return authRequest(`/accounting/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateAccountingAccount(payload, onSessionUpdate) {
+  return authRequest("/accounting/accounts", { method: "POST", body: JSON.stringify(payload) }, onSessionUpdate);
+}
+
+export function apiUpdateAccountingAccount(id, payload, onSessionUpdate) {
+  return authRequest(`/accounting/accounts/${id}`, { method: "PATCH", body: JSON.stringify(payload) }, onSessionUpdate);
+}
+
+export function apiDeleteAccountingAccount(id, onSessionUpdate) {
+  return authRequest(`/accounting/accounts/${id}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+export function apiListJournalEntries(query = {}, onSessionUpdate) {
+  return authRequest(`/accounting/journals${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetJournalEntry(id, onSessionUpdate) {
+  return authRequest(`/accounting/journals/${id}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateJournalEntry(payload, onSessionUpdate) {
+  return authRequest("/accounting/journals", { method: "POST", body: JSON.stringify(payload) }, onSessionUpdate);
+}
+
+export function apiUpdateJournalEntry(id, payload, onSessionUpdate) {
+  return authRequest(`/accounting/journals/${id}`, { method: "PATCH", body: JSON.stringify(payload) }, onSessionUpdate);
+}
+
+export function apiDeleteJournalEntry(id, onSessionUpdate) {
+  return authRequest(`/accounting/journals/${id}`, { method: "DELETE" }, onSessionUpdate);
+}

@@ -5,10 +5,18 @@ import { normalizeAppState } from "./lib/storage";
 import I18N from './i18n';
 import {
   apiCheckout,
+  apiCreateAccountingAccount,
   apiCreateCustomer,
+  apiCreateJournalEntry,
   apiCreateVendor,
+  apiDeleteAccountingAccount,
   apiDeleteCustomer,
+  apiDeleteJournalEntry,
   apiDeleteVendor,
+  apiListAccountingAccounts,
+  apiListJournalEntries,
+  apiUpdateAccountingAccount,
+  apiUpdateJournalEntry,
   apiAddAdminNote,
   apiAdminFlagAccount,
   apiAdminUnflagAccount,
@@ -2269,6 +2277,10 @@ function MainApp() {
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [vendorsError, setVendorsError] = useState("");
   const [vendorsMeta, setVendorsMeta] = useState(null);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState("");
+  const [journalsLoading, setJournalsLoading] = useState(false);
+  const [journalsError, setJournalsError] = useState("");
   const [companySettingsLoading, setCompanySettingsLoading] = useState(false);
   const [companySettingsError, setCompanySettingsError] = useState("");
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -2674,6 +2686,213 @@ function MainApp() {
       return [];
     } finally {
       setVendorsLoading(false);
+    }
+  }
+
+  function normalizeBackendAccount(record) {
+    return {
+      id: record?.id || crypto.randomUUID(),
+      accountCode: String(record?.accountCode || "").trim(),
+      accountName: String(record?.accountName || "").trim(),
+      accountType: String(record?.accountType || "Aktiv").trim(),
+      status: String(record?.status || "Aktiv").trim(),
+      balance: Number(record?.balance || 0),
+      createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
+    };
+  }
+
+  function normalizeBackendJournal(record) {
+    return {
+      id: record?.id || crypto.randomUUID(),
+      journalNumber: String(record?.journalNumber || "").trim(),
+      reference: String(record?.reference || "").trim(),
+      debitAccount: String(record?.debitAccount || "").trim(),
+      creditAccount: String(record?.creditAccount || "").trim(),
+      date: record?.date ? String(record.date).slice(0, 10) : today(),
+      debit: Number(record?.debit || 0),
+      credit: Number(record?.credit || 0),
+      createdAt: record?.createdAt ? String(record.createdAt).slice(0, 10) : today(),
+      journalLines: Array.isArray(record?.journalLines)
+        ? record.journalLines.map((line) => ({
+            id: line?.id || crypto.randomUUID(),
+            accountCode: String(line?.accountCode || "").trim(),
+            entryType: String(line?.entryType || "Debet").trim(),
+            amount: Number(line?.amount || 0),
+            linkedQuantity: Number(line?.linkedQuantity || 0),
+            linkedUnit: String(line?.linkedUnit || "").trim(),
+            subledgerCategory: String(line?.subledgerCategory || "").trim(),
+            linkedEntityType: String(line?.linkedEntityType || "").trim(),
+            linkedEntityId: String(line?.linkedEntityId || "").trim(),
+            linkedEntityName: String(line?.linkedEntityName || "").trim(),
+          }))
+        : [],
+    };
+  }
+
+  async function syncAccountsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setAccountsLoading(false);
+      setAccountsError("");
+      return [];
+    }
+
+    setAccountsLoading(true);
+    setAccountsError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListAccountingAccounts({ page, limit: 500 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendAccount));
+        totalPages = Math.max(1, Number(response?.meta?.totalPages || 1));
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, chartOfAccounts: collected }));
+      return collected;
+    } catch (error) {
+      setAccountsError(error?.message || "Hesablar planı backend-dən alınmadı.");
+      return [];
+    } finally {
+      setAccountsLoading(false);
+    }
+  }
+
+  async function syncJournalsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setJournalsLoading(false);
+      setJournalsError("");
+      return [];
+    }
+
+    setJournalsLoading(true);
+    setJournalsError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListJournalEntries({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendJournal));
+        totalPages = Math.max(1, Number(response?.meta?.totalPages || 1));
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, manualJournals: collected }));
+      return collected;
+    } catch (error) {
+      setJournalsError(error?.message || "Müxabirləşmə jurnalı backend-dən alınmadı.");
+      return [];
+    } finally {
+      setJournalsLoading(false);
+    }
+  }
+
+  async function submitAccountingAccountModule(activeDraft, editingId) {
+    const payload = {
+      accountCode: String(activeDraft.accountCode || "").trim(),
+      accountName: String(activeDraft.accountName || "").trim(),
+      accountType: String(activeDraft.accountType || "Aktiv").trim(),
+      status: String(activeDraft.status || "Aktiv").trim(),
+      balance: Number(activeDraft.balance || 0),
+    };
+
+    if (!payload.accountCode || !payload.accountName) {
+      setAccountsError("Hesab kodu və adı mütləq daxil edilməlidir.");
+      return;
+    }
+
+    setAccountsLoading(true);
+    setAccountsError("");
+
+    try {
+      if (editingId) {
+        await apiUpdateAccountingAccount(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateAccountingAccount(payload, updateBackendSession);
+        markOperationUsage();
+      }
+      await syncAccountsFromBackend();
+      cancelEdit("chartOfAccounts");
+    } catch (error) {
+      setAccountsError(error?.message || "Hesab yadda saxlanmadı.");
+    } finally {
+      setAccountsLoading(false);
+    }
+  }
+
+  async function deleteAccountingAccountRecord(recordId) {
+    setAccountsLoading(true);
+    setAccountsError("");
+    try {
+      await apiDeleteAccountingAccount(recordId, updateBackendSession);
+      await syncAccountsFromBackend();
+      if (editing.chartOfAccounts === recordId) cancelEdit("chartOfAccounts");
+    } catch (error) {
+      setAccountsError(error?.message || "Hesab silinmədi.");
+    } finally {
+      setAccountsLoading(false);
+    }
+  }
+
+  async function submitJournalEntryModule(activeDraft, editingId) {
+    const analysis = getManualJournalAnalysis(activeDraft);
+    if (!analysis.isBalanced) return;
+
+    const payload = {
+      journalNumber: String(activeDraft.journalNumber || "").trim() || undefined,
+      reference: String(activeDraft.reference || "").trim() || undefined,
+      date: activeDraft.date || today(),
+      journalLines: analysis.filledLines.map((line) => ({
+        accountCode: line.accountCode,
+        entryType: line.entryType,
+        amount: Number(line.amount || 0),
+        subledgerCategory: line.subledgerCategory || "",
+        linkedEntityType: line.linkedEntityType || "",
+        linkedEntityId: line.linkedEntityId || "",
+        linkedEntityName: line.linkedEntityName || "",
+      })),
+    };
+
+    setJournalsLoading(true);
+    setJournalsError("");
+
+    try {
+      if (editingId) {
+        await apiUpdateJournalEntry(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateJournalEntry(payload, updateBackendSession);
+        markOperationUsage();
+      }
+      await syncJournalsFromBackend();
+      cancelEdit("manualJournals");
+    } catch (error) {
+      setJournalsError(error?.message || "Müxabirləşmə yadda saxlanmadı.");
+    } finally {
+      setJournalsLoading(false);
+    }
+  }
+
+  async function deleteJournalEntryRecord(recordId) {
+    setJournalsLoading(true);
+    setJournalsError("");
+    try {
+      await apiDeleteJournalEntry(recordId, updateBackendSession);
+      await syncJournalsFromBackend();
+      if (editing.manualJournals === recordId) cancelEdit("manualJournals");
+    } catch (error) {
+      setJournalsError(error?.message || "Müxabirləşmə silinmədi.");
+    } finally {
+      setJournalsLoading(false);
     }
   }
 
@@ -3168,6 +3387,18 @@ function MainApp() {
   useEffect(() => {
     syncVendorsFromBackend(backendSession).catch(() => {
       // syncVendorsFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    syncAccountsFromBackend(backendSession).catch(() => {
+      // syncAccountsFromBackend already updates the visible error state
+    });
+  }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    syncJournalsFromBackend(backendSession).catch(() => {
+      // syncJournalsFromBackend already updates the visible error state
     });
   }, [backendSession?.accessToken]);
 
@@ -6255,11 +6486,13 @@ function MainApp() {
       await submitInvoiceModule(activeDraft, editingId);
       return;
     }
+    if (moduleId === "chartOfAccounts") {
+      await submitAccountingAccountModule(activeDraft, editingId);
+      return;
+    }
     if (moduleId === "manualJournals") {
-      const analysis = getManualJournalAnalysis(activeDraft);
-      if (!analysis.isBalanced) {
-        return;
-      }
+      await submitJournalEntryModule(activeDraft, editingId);
+      return;
     }
     const payload = moduleId === "manualJournals"
       ? {
@@ -6417,6 +6650,14 @@ function MainApp() {
     }
     if (moduleId === "invoices") {
       await deleteInvoiceRecord(recordId);
+      return;
+    }
+    if (moduleId === "chartOfAccounts") {
+      await deleteAccountingAccountRecord(recordId);
+      return;
+    }
+    if (moduleId === "manualJournals") {
+      await deleteJournalEntryRecord(recordId);
       return;
     }
 
@@ -8083,6 +8324,7 @@ function renderItemsCatalog() {
     const config = MODULES.manualJournals;
     const query = searches[config.collection] || "";
     const draft = drafts.manualJournals || createModuleDraft("manualJournals");
+    const journalsStatusNotice = journalsLoading ? "Müxabirləşmələr yüklənir..." : journalsError;
     const rows = state.manualJournals
       .filter((item) => matchesSearch(item, query))
       .slice()
@@ -8241,6 +8483,7 @@ function renderItemsCatalog() {
               </div>
               <input className="search-input" placeholder={at.mj_search} value={query} onChange={(event) => setSearches((current) => ({ ...current, [config.collection]: event.target.value }))} />
             </div>
+            {journalsStatusNotice ? <p className="panel-copy">{journalsStatusNotice}</p> : null}
 
             {rows.length === 0 ? (
               <div className="nomen-empty">
@@ -8280,8 +8523,8 @@ function renderItemsCatalog() {
                           </span>
                         </div>
                         <div className="row-actions mj-row-actions">
-                          <button className="table-btn" type="button" onClick={() => startEdit("manualJournals", record)}>{at.mj_btnEdit}</button>
-                          <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("manualJournals", record.id)}>{at.mj_btnDelete}</button>
+                          <button className="table-btn" type="button" onClick={() => startEdit("manualJournals", record)} disabled={journalsLoading}>{at.mj_btnEdit}</button>
+                          <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("manualJournals", record.id)} disabled={journalsLoading}>{at.mj_btnDelete}</button>
                         </div>
                       </div>
                       <div className="mj-ledger-preview mj-ledger-preview-row">
@@ -8486,9 +8729,10 @@ function renderItemsCatalog() {
                 <span>{journalAnalysis?.conflictingCode ? `${journalAnalysis.conflictingCode} ${at.mj_conflictHint}` : journalIsBalanced ? at.mj_balancedHint : `${at.mj_diff}: ${currency(Math.abs(Number(journalAnalysis?.difference || 0)), state.settings.currency)}. ${at.mj_unbalancedHint}`}</span>
               </div>
 
+              {journalsStatusNotice ? <p className="panel-copy">{journalsStatusNotice}</p> : null}
               <div className="form-actions">
-                <button className="primary-btn" type="submit" disabled={!journalIsBalanced}>{editing.manualJournals ? at.ic_updateBtn : at.save}</button>
-                <button className="ghost-btn" type="button" onClick={() => cancelEdit("manualJournals")}>{at.cancel}</button>
+                <button className="primary-btn" type="submit" disabled={!journalIsBalanced || journalsLoading}>{editing.manualJournals ? at.ic_updateBtn : at.save}</button>
+                <button className="ghost-btn" type="button" onClick={() => cancelEdit("manualJournals")} disabled={journalsLoading}>{at.cancel}</button>
               </div>
             </form>
           </div>
@@ -8915,6 +9159,8 @@ function renderItemsCatalog() {
         .filter((item) => isVisibleAccount(item))
         .filter((item) => matchesSearch(item, query))
         .sort((a, b) => Number(a.accountCode) - Number(b.accountCode));
+      const accountsStatusNotice = accountsLoading ? "Hesablar planı yüklənir..." : accountsError;
+      const accountsEmptyMessage = accountsLoading ? "Hesablar yüklənir..." : at.noAcc;
 
       if (chartView === "overview") {
         return (
@@ -8924,9 +9170,9 @@ function renderItemsCatalog() {
                 <button className="bill-back-btn" type="button" onClick={() => setActiveModule(null)}>{at.back}</button>
               </div>
             )}
-            {vendorStatusNotice ? (
+            {accountsStatusNotice ? (
               <div className="panel">
-                <p className="panel-copy">{vendorStatusNotice}</p>
+                <p className="panel-copy">{accountsStatusNotice}</p>
               </div>
             ) : null}
             <div className="bill-hub">
@@ -8960,23 +9206,24 @@ function renderItemsCatalog() {
               <button className="bill-back-btn" type="button" onClick={() => setChartView("overview")}>{at.back}</button>
               <div className="bill-journal-title-row">
                 <h2>{at.coaJournalTitle}</h2>
-                <button className="primary-btn" type="button" onClick={() => { cancelEdit("chartOfAccounts"); setChartView("form"); }}>{at.journalNewAcc}</button>
+                <button className="primary-btn" type="button" onClick={() => { cancelEdit("chartOfAccounts"); setChartView("form"); }} disabled={accountsLoading}>{at.journalNewAcc}</button>
               </div>
             </div>
             <div className="panel">
+              {accountsStatusNotice ? <p className="panel-copy">{accountsStatusNotice}</p> : null}
               <div className="panel-toolbar">
                 <input className="search-input" placeholder={at.searchAcc} value={query} onChange={(e) => setSearches((current) => ({ ...current, [config.collection]: e.target.value }))} />
               </div>
               <Table
                 headers={config.columns.map(([, label]) => col(label)).concat(at.action)}
-                emptyMessage={at.noAcc}
+                emptyMessage={accountsEmptyMessage}
                 rows={rows.map((record) => (
                   <tr key={record.id}>
                     {config.columns.map((column) => <td key={column[0]}>{renderCell(record, column)}</td>)}
                     <td>
                       <div className="row-actions">
-                        <button className="table-btn" onClick={() => startEdit("chartOfAccounts", record)}>{at.edit}</button>
-                        <button className="table-btn danger-btn" onClick={() => removeModuleRecord("chartOfAccounts", record.id)}>{at.delete}</button>
+                        <button className="table-btn" onClick={() => startEdit("chartOfAccounts", record)} disabled={accountsLoading}>{at.edit}</button>
+                        <button className="table-btn danger-btn" onClick={() => removeModuleRecord("chartOfAccounts", record.id)} disabled={accountsLoading}>{at.delete}</button>
                       </div>
                     </td>
                   </tr>
@@ -8998,6 +9245,7 @@ function renderItemsCatalog() {
             </div>
             <div className="bill-form-panel">
               <form className="form-grid" onSubmit={(event) => submitModule("chartOfAccounts", event)}>
+                {accountsStatusNotice ? <p className="panel-copy">{accountsStatusNotice}</p> : null}
                 {config.form.map((field) => (
                   <label key={field[0]}>
                     <span>{fld(field[1])}</span>
@@ -9005,8 +9253,8 @@ function renderItemsCatalog() {
                   </label>
                 ))}
                 <div className="form-actions">
-                  <button className="primary-btn" type="submit">{editing.chartOfAccounts ? at.ic_updateBtn : at.save}</button>
-                  <button className="ghost-btn" type="button" onClick={() => cancelEdit("chartOfAccounts")}>{at.cancel}</button>
+                  <button className="primary-btn" type="submit" disabled={accountsLoading}>{editing.chartOfAccounts ? at.ic_updateBtn : at.save}</button>
+                  <button className="ghost-btn" type="button" onClick={() => cancelEdit("chartOfAccounts")} disabled={accountsLoading}>{at.cancel}</button>
                 </div>
               </form>
             </div>

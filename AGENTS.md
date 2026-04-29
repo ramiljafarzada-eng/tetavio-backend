@@ -414,6 +414,9 @@ Backend change:
 \- Invoices frontend flow now persists through backend APIs (`apiListInvoices`, `apiCreateInvoice`, `apiUpdateInvoice`, `apiDeleteInvoice`) and must not reintroduce localStorage-based invoice persistence.
 \- Frontend invoices must map the selected customer to a real backend `customerId`; never send fake IDs or backend-calculated invoice totals/line totals.
 \- Vendors frontend flow now persists through backend APIs (`apiListVendors`, `apiCreateVendor`, `apiUpdateVendor`, `apiDeleteVendor`) and must not reintroduce localStorage-based vendor persistence.
+\- Chart of Accounts frontend flow now persists through backend APIs (`apiListAccountingAccounts`, `apiCreateAccountingAccount`, `apiUpdateAccountingAccount`, `apiDeleteAccountingAccount`) and must not reintroduce localStorage-based persistence.
+\- Manual Journals frontend flow now persists through backend APIs (`apiListJournalEntries`, `apiCreateJournalEntry`, `apiUpdateJournalEntry`, `apiDeleteJournalEntry`) and must not reintroduce localStorage-based persistence.
+\- Journal entry API requires `journalLines[].accountCode` (not accountingAccountId); backend resolves the FK internally.
 
 \## Current Handoff State
 
@@ -525,11 +528,29 @@ Backend change:
 
 \## Next Task
 
+\- Phase 5A: Chart of Accounts + Manual Journals Backend Persistence (COMPLETED)
+  - Prisma models: AccountingAccount, JournalEntry, JournalEntryLine (migration: 20260429035700_add_accounting_module)
+  - Module: backend/src/modules/accounting/ (AccountingController, AccountingService, AccountingModule)
+  - Chart of Accounts endpoints: GET/POST /accounting/accounts, PATCH/DELETE /accounting/accounts/:id
+  - Journal Entries endpoints: GET/GET/:id/POST /accounting/journals, PATCH/DELETE /accounting/journals/:id
+  - Backend response maps: code→accountCode, name→accountName, type→accountType, isActive→status("Aktiv"/"Passiv"), balanceMinor/100→balance
+  - Journal entry lines: debitMinor/creditMinor stored as minor units; response maps to entryType("Debet"/"Kredit")+amount
+  - Double-entry validation: debitTotal===creditTotal, both>0, at least 2 lines; account codes resolved per accountId
+  - Soft delete: AccountingAccount (deletedAt), JournalEntry (deletedAt); JournalEntryLine cascades on journal delete
+  - Cannot delete account referenced by any journal line (ConflictException)
+  - Frontend: syncAccountsFromBackend + syncJournalsFromBackend fire on backendSession?.accessToken change
+  - submitModule("chartOfAccounts") → submitAccountingAccountModule (API create/update + sync)
+  - submitModule("manualJournals") → submitJournalEntryModule (validates balance, API create/update + sync)
+  - removeModuleRecord("chartOfAccounts/manualJournals") → API delete + sync
+  - Loading/error state: accountsLoading/Error, journalsLoading/Error shown in UI
+
 \- Phase 1 ERP full-stack persistence is now in place for:
   - Company Settings
   - Customers
   - Vendors
   - Invoices
+  - Chart of Accounts (Phase 5A)
+  - Manual Journals (Phase 5A)
 \- Next frontend/backend work should build on this baseline without reintroducing localStorage-based ERP persistence.
 \- Preserve these rules:
   - do not modify auth/payment/subscription flows unless explicitly requested
@@ -537,4 +558,5 @@ Backend change:
   - do not send `accountId`
   - do not send backend-calculated invoice fields: `subTotalMinor`, `taxMinor`, `discountMinor`, `totalMinor`, `lineTotalMinor`
   - invoices must always use a real backend `customerId`
+  - journal entries must resolve accountCode to accountingAccountId via backend; never send accountingAccountId from frontend
 

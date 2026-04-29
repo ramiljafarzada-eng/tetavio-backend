@@ -15,6 +15,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { AdminModule } from './admin/admin.module';
 import { InsightsModule } from './modules/insights/insights.module';
+import { AccountingModule } from './modules/accounting/accounting.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { InsightsModule } from './modules/insights/insights.module';
     InvoicesModule,
     AdminModule,
     InsightsModule,
+    AccountingModule,
   ],
   controllers: [AppController],
   providers: [
