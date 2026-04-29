@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import {
   ListVendorsQueryDto,
@@ -12,7 +13,10 @@ import { buildPaginatedResponse } from '../../common/utils/paginated-response.ut
 
 @Injectable()
 export class VendorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   private getOrderBy(
     sortBy?: VendorSortField,
@@ -84,7 +88,7 @@ export class VendorsService {
   }
 
   async create(user: JwtPayload, dto: CreateVendorDto) {
-    return this.prisma.vendor.create({
+    const vendor = await this.prisma.vendor.create({
       data: {
         accountId: user.accountId,
         vendorName: dto.vendorName,
@@ -95,12 +99,23 @@ export class VendorsService {
         status: dto.status ?? 'ACTIVE',
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'vendor.created',
+      entityType: 'vendor',
+      entityId: vendor.id,
+      metadata: { vendorName: vendor.vendorName },
+    }).catch(() => {});
+
+    return vendor;
   }
 
   async update(user: JwtPayload, vendorId: string, dto: UpdateVendorDto) {
     await this.getById(user, vendorId);
 
-    return this.prisma.vendor.update({
+    const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
       data: {
         ...(dto.vendorName !== undefined ? { vendorName: dto.vendorName } : {}),
@@ -111,10 +126,21 @@ export class VendorsService {
         ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'vendor.updated',
+      entityType: 'vendor',
+      entityId: vendorId,
+      metadata: { vendorName: vendor.vendorName },
+    }).catch(() => {});
+
+    return vendor;
   }
 
   async remove(user: JwtPayload, vendorId: string) {
-    await this.getById(user, vendorId);
+    const vendor = await this.getById(user, vendorId);
 
     // TODO: When vendor-linked purchase documents or bills are added,
     // block vendor deletion if active documents still reference this vendor.
@@ -125,6 +151,15 @@ export class VendorsService {
         deletedAt: new Date(),
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'vendor.deleted',
+      entityType: 'vendor',
+      entityId: vendorId,
+      metadata: { vendorName: vendor.vendorName },
+    }).catch(() => {});
 
     return { deleted: true, id: vendorId };
   }

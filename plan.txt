@@ -269,11 +269,11 @@ Completion Note:
 Team management added with JWT/account-scoped GET/POST/PATCH/DELETE /api/v1/team endpoints. UserRole now supports ADMIN, ACCOUNTANT, VIEWER. OWNER/ADMIN can manage team members; sensitive fields are excluded; deactivation is soft via SUSPENDED; last-owner protections are enforced. Frontend Settings → Team tab is backend-wired with list, invite, role update, and deactivate actions without sending accountId.
 
 Commit Reference:
-TBD
+7f9d596
 
 ==================================================
 PHASE 5I — ERP USER AUDIT TRAIL
-Status: NOT STARTED
+Status: COMPLETE
 
 Goal:
 Track important business user actions for trust and accountability.
@@ -294,13 +294,18 @@ Frontend:
 - Optional audit section in invoice/accounting details later
 
 Completion Checklist:
-[ ] ERP audit log model/service added
-[ ] Critical actions logged
-[ ] No sensitive data logged
-[ ] Build passes
-[ ] Commit pushed
-[ ] AGENTS.md updated
-[ ] plan.txt updated
+[x] ERP audit log model/service added
+[x] Critical actions logged
+[x] No sensitive data logged
+[x] Build passes
+[x] Commit pushed
+[x] AGENTS.md updated
+[x] plan.txt updated
+
+Completion Note:
+ERP user audit trail added with AuditLog model and AuditService. Critical customer, vendor, invoice, payment, and journal actions are logged with accountId and actorUserId from JWT only. Metadata is minimal and non-sensitive. No frontend changes were required.
+
+Commit Reference:
 
 ==================================================
 PHASE 6A — BILLS / PURCHASES BACKEND

@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import {
   ListCustomersQueryDto,
@@ -12,7 +13,10 @@ import { buildPaginatedResponse } from '../../common/utils/paginated-response.ut
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   private getOrderBy(
     sortBy?: CustomerSortField,
@@ -84,7 +88,7 @@ export class CustomersService {
   }
 
   async create(user: JwtPayload, dto: CreateCustomerDto) {
-    return this.prisma.customer.create({
+    const customer = await this.prisma.customer.create({
       data: {
         accountId: user.accountId,
         displayName: dto.displayName,
@@ -95,12 +99,23 @@ export class CustomersService {
         status: dto.status ?? 'ACTIVE',
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'customer.created',
+      entityType: 'customer',
+      entityId: customer.id,
+      metadata: { displayName: customer.displayName },
+    }).catch(() => {});
+
+    return customer;
   }
 
   async update(user: JwtPayload, customerId: string, dto: UpdateCustomerDto) {
     await this.getById(user, customerId);
 
-    return this.prisma.customer.update({
+    const customer = await this.prisma.customer.update({
       where: { id: customerId },
       data: {
         ...(dto.displayName !== undefined ? { displayName: dto.displayName } : {}),
@@ -111,10 +126,21 @@ export class CustomersService {
         ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'customer.updated',
+      entityType: 'customer',
+      entityId: customerId,
+      metadata: { displayName: customer.displayName },
+    }).catch(() => {});
+
+    return customer;
   }
 
   async remove(user: JwtPayload, customerId: string) {
-    await this.getById(user, customerId);
+    const customer = await this.getById(user, customerId);
 
     const activeInvoice = await this.prisma.invoice.findFirst({
       where: {
@@ -137,6 +163,15 @@ export class CustomersService {
         deletedAt: new Date(),
       },
     });
+
+    this.audit.logAction({
+      accountId: user.accountId,
+      actorUserId: user.sub,
+      action: 'customer.deleted',
+      entityType: 'customer',
+      entityId: customerId,
+      metadata: { displayName: customer.displayName },
+    }).catch(() => {});
 
     return { deleted: true, id: customerId };
   }

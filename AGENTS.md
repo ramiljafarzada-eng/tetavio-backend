@@ -618,6 +618,27 @@ Backend change:
   - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
   - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
 
+\- Phase 5I: ERP User Audit Trail (COMPLETED)
+  - Prisma model: AuditLog (migration: 20260429150000_add_audit_log_model) — table: audit_logs; fields: id, accountId, actorUserId, action, entityType, entityId, metadata (nullable JSON), createdAt; indexes on accountId, (accountId+entityType), actorUserId
+  - No Prisma relations on AuditLog — stores raw UUID strings to survive user deactivation/deletion
+  - Module: backend/src/modules/audit/ (AuditService, AuditModule)
+  - AuditService.logAction() is fire-and-forget: always call with .catch(() => {}) so logging never blocks or fails the main operation
+  - AuditModule imported into: CustomersModule, VendorsModule, InvoicesModule, AccountingModule
+  - Audited ERP actions:
+    - customer.created / customer.updated / customer.deleted — metadata: { displayName }
+    - vendor.created / vendor.updated / vendor.deleted — metadata: { vendorName }
+    - invoice.created — metadata: { invoiceNumber, totalMinor, status }
+    - invoice.updated — metadata: { invoiceNumber, status }
+    - invoice.deleted — metadata: { invoiceNumber }
+    - invoice.payment.added — metadata: { invoiceNumber, amountMinor }
+    - invoice.payment.removed — metadata: { invoiceNumber, paymentId }
+    - journal.created / journal.updated — metadata: { journalNumber }
+    - journal.deleted — metadata: { journalNumber }
+  - Safety rules that must never be violated:
+    - audit logs must never store passwordHash, tokens, secrets, full request bodies, or sensitive payloads
+    - accountId and actorUserId must always come from the authenticated user JWT payload — never from the request body or frontend
+    - metadata must be minimal and non-sensitive; do not log email addresses, tax IDs, payment card data, or amounts beyond what is listed above
+
 \- Phase 5H: Team Member Management (COMPLETED)
   - Migration: 20260429140000_extend_user_role_for_team — adds ADMIN, ACCOUNTANT, VIEWER to UserRole enum (additive only; OWNER and SUPER_ADMIN unchanged)
   - Module: backend/src/modules/team/ (TeamService, TeamController, TeamModule)

@@ -10,6 +10,7 @@ import PDFDocument from 'pdfkit';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateInvoicePaymentDto } from './dto/create-invoice-payment.dto';
 import { InvoiceLineDto } from './dto/invoice-line.dto';
@@ -58,6 +59,7 @@ export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   private getInvoiceOrderBy(
@@ -447,7 +449,9 @@ export class InvoicesService {
           data: this.buildCreateData(user, dto, invoiceNumber, totals),
           include: INVOICE_INCLUDE,
         });
-        return attachPaymentDerived(created);
+        const invoice = attachPaymentDerived(created);
+        this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.created', entityType: 'invoice', entityId: invoice.id, metadata: { invoiceNumber: invoice.invoiceNumber, totalMinor: invoice.totalMinor, status: invoice.status } }).catch(() => {});
+        return invoice;
       } catch (error) {
         if (this.isInvoiceNumberUniqueViolation(error)) {
           throw new ConflictException('Invoice number already exists for account');
@@ -465,7 +469,9 @@ export class InvoicesService {
           data: this.buildCreateData(user, dto, invoiceNumber, totals),
           include: INVOICE_INCLUDE,
         });
-        return attachPaymentDerived(created);
+        const invoice = attachPaymentDerived(created);
+        this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.created', entityType: 'invoice', entityId: invoice.id, metadata: { invoiceNumber: invoice.invoiceNumber, totalMinor: invoice.totalMinor, status: invoice.status } }).catch(() => {});
+        return invoice;
       } catch (error) {
         if (!this.isInvoiceNumberUniqueViolation(error)) {
           throw error;
@@ -545,7 +551,7 @@ export class InvoicesService {
         : {}),
     };
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.invoice.update({
         where: { id: invoiceId },
         data,
@@ -593,10 +599,13 @@ export class InvoicesService {
 
       return attachPaymentDerived(invoice);
     });
+
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.updated', entityType: 'invoice', entityId: invoiceId, metadata: { invoiceNumber: result.invoiceNumber, status: result.status } }).catch(() => {});
+    return result;
   }
 
   async remove(user: JwtPayload, invoiceId: string) {
-    await this.getById(user, invoiceId);
+    const invoice = await this.getById(user, invoiceId);
 
     const now = new Date();
 
@@ -615,6 +624,7 @@ export class InvoicesService {
       }),
     ]);
 
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.deleted', entityType: 'invoice', entityId: invoiceId, metadata: { invoiceNumber: invoice.invoiceNumber } }).catch(() => {});
     return { deleted: true, id: invoiceId };
   }
 
@@ -873,7 +883,7 @@ export class InvoicesService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.invoicePayment.create({
         data: {
           accountId: user.accountId,
@@ -895,6 +905,9 @@ export class InvoicesService {
 
       return attachPaymentDerived(updated!);
     });
+
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.payment.added', entityType: 'invoice', entityId: invoiceId, metadata: { invoiceNumber: invoice.invoiceNumber, amountMinor: dto.amountMinor } }).catch(() => {});
+    return result;
   }
 
   async removePayment(
@@ -902,7 +915,7 @@ export class InvoicesService {
     invoiceId: string,
     paymentId: string,
   ) {
-    await this.getById(user, invoiceId);
+    const invoice = await this.getById(user, invoiceId);
 
     const payment = await this.prisma.invoicePayment.findFirst({
       where: {
@@ -918,7 +931,7 @@ export class InvoicesService {
       throw new NotFoundException('Payment not found');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.invoicePayment.update({
         where: { id: paymentId },
         data: { deletedAt: new Date() },
@@ -933,5 +946,8 @@ export class InvoicesService {
 
       return attachPaymentDerived(updated!);
     });
+
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'invoice.payment.removed', entityType: 'invoice', entityId: invoiceId, metadata: { invoiceNumber: invoice.invoiceNumber, paymentId } }).catch(() => {});
+    return result;
   }
 }

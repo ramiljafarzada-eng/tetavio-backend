@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { buildPaginatedResponse } from '../../common/utils/paginated-response.util';
 import { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
 import { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
@@ -16,7 +17,10 @@ import { ListJournalEntriesQueryDto } from './dto/list-journal-entries-query.dto
 
 @Injectable()
 export class AccountingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -360,6 +364,7 @@ export class AccountingService {
       include: this.lineInclude,
     });
 
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'journal.created', entityType: 'journal', entityId: entry.id, metadata: { journalNumber: entry.journalNumber } }).catch(() => {});
     return this.mapJournalEntry(entry);
   }
 
@@ -417,6 +422,7 @@ export class AccountingService {
       });
     });
 
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'journal.updated', entityType: 'journal', entityId: id, metadata: { journalNumber: entry.journalNumber } }).catch(() => {});
     return this.mapJournalEntry(entry);
   }
 
@@ -432,6 +438,7 @@ export class AccountingService {
       data: { deletedAt: new Date() },
     });
 
+    this.audit.logAction({ accountId: user.accountId, actorUserId: user.sub, action: 'journal.deleted', entityType: 'journal', entityId: id, metadata: { journalNumber: existing.journalNumber } }).catch(() => {});
     return { deleted: true, id };
   }
 }
