@@ -282,6 +282,10 @@ export function apiGetFinancialTrends(onSessionUpdate) {
   return authRequest("/insights/trends", { method: "GET" }, onSessionUpdate);
 }
 
+export function apiGetAccountsReceivableAging(onSessionUpdate) {
+  return authRequest("/reports/accounts-receivable-aging", { method: "GET" }, onSessionUpdate);
+}
+
 export function apiLogout(refreshToken) {
   return apiRequest("/auth/logout", {
     method: "POST",

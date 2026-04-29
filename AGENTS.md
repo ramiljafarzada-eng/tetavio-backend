@@ -544,6 +544,19 @@ Backend change:
   - removeModuleRecord("chartOfAccounts/manualJournals") → API delete + sync
   - Loading/error state: accountsLoading/Error, journalsLoading/Error shown in UI
 
+\- Phase 5D: Accounts Receivable Aging Report — Payment-Aware (COMPLETED)
+  - New ReportsModule: backend/src/modules/reports/ (reports.service.ts, reports.controller.ts, reports.module.ts) registered in app.module.ts
+  - Endpoint: GET /reports/accounts-receivable-aging (JWT-scoped by accountId)
+  - Uses real InvoicePayment records: outstandingMinor = totalMinor - paidAmountMinor; only invoices with outstandingMinor > 0 included
+  - Aging buckets: CURRENT (dueDate >= today), DAYS_1_30, DAYS_31_60, DAYS_61_90, DAYS_90_PLUS, NO_DUE_DATE (no dueDate)
+  - Response: { asOfDate, summary: { totalOutstandingMinor, invoiceCount, customerCount, buckets }, customers[], invoices[] }
+  - customers[] per-customer aggregate: totalOutstandingMinor, buckets{}, oldestDueDate
+  - invoices[]: invoiceId, invoiceNumber, customerName, dueDate, totalMinor, paidAmountMinor, outstandingMinor, daysOverdue, bucket
+  - Frontend: apiGetAccountsReceivableAging in api.js; arAgingData/Loading/Error state in App.jsx
+  - renderAccountsReceivableAging(): summary cards (7), customer aggregate table, invoice detail table
+  - Data fetch: useEffect triggers when activeModule === "arAging"; manual refresh button in panel header
+  - arAging entry in MODULES, "arAging" in OVERVIEWS.reports, 📅 icon in reportIcons
+
 \- Phase 5C: Invoice Payments & Collections Layer (COMPLETED)
   - InvoicePayment model added (migration: 20260429084052_add_invoice_payments): accountId, invoiceId, amountMinor, paymentDate, method?, reference?, note?, soft delete
   - Invoice status derived from payments: paidAmountMinor=sum(payments); PAID if >=total, PARTIAL if >0, SENT/prior if 0

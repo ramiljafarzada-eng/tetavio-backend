@@ -40,6 +40,7 @@ import {
   apiListInvoices,
   apiListVendors,
   apiAddInvoicePayment,
+  apiGetAccountsReceivableAging,
   apiCreateInvoice,
   apiDeleteInvoice,
   apiDeleteInvoicePayment,
@@ -1317,6 +1318,9 @@ const MODULES_BASE = {
   receivables: {
     title: "Debitor borclar", singular: "Debitor", collection: "customers", summary: "Müştərilərdən alınacaq ödənişlər və debitor qalıqları."
   },
+  arAging: {
+    title: "Debitor yaşlanma hesabatı", singular: "Debitor yaşlanma", collection: "reports", summary: "Ödənilməmiş fakturalar ödəniş tarixinə görə qruplaşdırılır."
+  },
   payables: {
     title: "Kreditor borclar", singular: "Kreditor", collection: "vendors", summary: "Təchizatçılara ödəniləcək məbləğlər və kreditor qalıqları."
   },
@@ -1449,7 +1453,7 @@ function getModules(at) {
   };
 }
 
-const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "goods", "incomingGoodsServices"], accountant: ["operationsJournal", "manualJournals", "chartOfAccounts"], reports: ["trialBalance", "accountCard", "financialPositionReport", "profitLossReport", "cashFlowReport", "equityChangesReport", "receivables", "payables"] };
+const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "goods", "incomingGoodsServices"], accountant: ["operationsJournal", "manualJournals", "chartOfAccounts"], reports: ["trialBalance", "accountCard", "financialPositionReport", "profitLossReport", "cashFlowReport", "equityChangesReport", "receivables", "payables", "arAging"] };
 const STATUS = { Ödənilib: "status-paid", Göndərilib: "status-sent", Qaralama: "status-draft", "Qəbul edilib": "status-paid", Gecikib: "status-overdue", Açıq: "status-draft", Bağlanıb: "status-paid", "Tətbiq edilib": "status-sent", Aktiv: "status-paid", Passiv: "status-draft", "Qismən ödənilib": "status-sent" };
 const ITEM_MOVEMENT_TYPES = ["Alış", "Satış"];
 const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
@@ -2377,6 +2381,9 @@ function MainApp() {
   const [trendsData, setTrendsData] = useState(null);
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [trendsError, setTrendsError] = useState("");
+  const [arAgingData, setArAgingData] = useState(null);
+  const [arAgingLoading, setArAgingLoading] = useState(false);
+  const [arAgingError, setArAgingError] = useState("");
 
   const [authDraft, setAuthDraft] = useState({
     fullName: "",
@@ -3697,6 +3704,21 @@ function MainApp() {
         setTrendsLoading(false);
       });
   }, [currentUser, activeSection]);
+
+  useEffect(() => {
+    if (!currentUser || activeModule !== "arAging") return;
+    setArAgingLoading(true);
+    setArAgingError("");
+    apiGetAccountsReceivableAging(updateBackendSession)
+      .then((data) => {
+        setArAgingData(data);
+        setArAgingLoading(false);
+      })
+      .catch((err) => {
+        setArAgingError(err?.message || "AR aging hesabatı yüklənmədi.");
+        setArAgingLoading(false);
+      });
+  }, [currentUser, activeModule]);
 
   useEffect(() => {
     const allowedNav = getAccessibleNavItems(currentUser);
@@ -8933,6 +8955,7 @@ function renderItemsCatalog() {
     if (moduleId === "profitLossReport") return renderProfitLossReport();
     if (moduleId === "cashFlowReport") return renderCashFlowReport();
     if (moduleId === "equityChangesReport") return renderEquityChangesReport();
+    if (moduleId === "arAging") return renderAccountsReceivableAging();
     if (moduleId === "incomingGoodsServices") {
       const config = MODULES.incomingGoodsServices;
       const query = searches[config.collection] || "";
@@ -10060,7 +10083,7 @@ function renderItemsCatalog() {
 
   function renderOverview(section) {
     if (section === "reports") {
-      const reportIcons = { trialBalance: "⚖️", accountCard: "📘", financialPositionReport: "📊", profitLossReport: "📈", cashFlowReport: "💰", equityChangesReport: "📋", receivables: "🟢", payables: "🔴" };
+      const reportIcons = { trialBalance: "⚖️", accountCard: "📘", financialPositionReport: "📊", profitLossReport: "📈", cashFlowReport: "💰", equityChangesReport: "📋", receivables: "🟢", payables: "🔴", arAging: "📅" };
       return (
         <section className="view active">
           <div className="bill-hub">
@@ -16994,6 +17017,179 @@ function renderSettings() {
           )}
         </section>
       </div>
+    );
+  }
+
+  function renderAccountsReceivableAging() {
+    const cur = state.settings.currency;
+    const fmtMinor = (minor) => currency((minor || 0) / 100, cur);
+    const BUCKET_LABELS = {
+      CURRENT: "Cari",
+      DAYS_1_30: "1–30 gün",
+      DAYS_31_60: "31–60 gün",
+      DAYS_61_90: "61–90 gün",
+      DAYS_90_PLUS: "90+ gün",
+      NO_DUE_DATE: "Tarixsiz",
+    };
+    const BUCKET_KEYS = ["CURRENT", "DAYS_1_30", "DAYS_31_60", "DAYS_61_90", "DAYS_90_PLUS", "NO_DUE_DATE"];
+
+    if (arAgingLoading) {
+      return (
+        <section className="view active">
+          <div className="panel">
+            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
+            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>Yüklənir…</p>
+          </div>
+        </section>
+      );
+    }
+
+    if (arAgingError) {
+      return (
+        <section className="view active">
+          <div className="panel">
+            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
+            <p style={{ padding: "1.5rem", color: "var(--danger)" }}>{arAgingError}</p>
+          </div>
+        </section>
+      );
+    }
+
+    if (!arAgingData) {
+      return (
+        <section className="view active">
+          <div className="panel">
+            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
+            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>Məlumat tapılmadı.</p>
+          </div>
+        </section>
+      );
+    }
+
+    const { asOfDate, summary, customers, invoices } = arAgingData;
+
+    const summaryCards = [
+      { label: "Ümumi qalıq", value: fmtMinor(summary.totalOutstandingMinor), highlight: true },
+      { label: "Cari", value: fmtMinor(summary.buckets.CURRENT) },
+      { label: "1–30 gün", value: fmtMinor(summary.buckets.DAYS_1_30) },
+      { label: "31–60 gün", value: fmtMinor(summary.buckets.DAYS_31_60) },
+      { label: "61–90 gün", value: fmtMinor(summary.buckets.DAYS_61_90) },
+      { label: "90+ gün", value: fmtMinor(summary.buckets.DAYS_90_PLUS) },
+      { label: "Tarixsiz", value: fmtMinor(summary.buckets.NO_DUE_DATE) },
+    ];
+
+    return (
+      <section className="view active">
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <h3>Debitor yaşlanma hesabatı</h3>
+              <p className="panel-copy">Tarix: {asOfDate} — Ödənilməmiş fakturalar ödəniş tarixinə görə qruplaşdırılır.</p>
+            </div>
+            <button
+              className="btn btn-sm"
+              type="button"
+              onClick={() => {
+                setArAgingData(null);
+                setArAgingLoading(true);
+                setArAgingError("");
+                apiGetAccountsReceivableAging(updateBackendSession)
+                  .then((data) => { setArAgingData(data); setArAgingLoading(false); })
+                  .catch((err) => { setArAgingError(err?.message || "AR aging hesabatı yüklənmədi."); setArAgingLoading(false); });
+              }}
+            >Yenilə</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.75rem", padding: "1.25rem 1.5rem" }}>
+            {summaryCards.map((card) => (
+              <div key={card.label} style={{ background: card.highlight ? "var(--accent-pale, #eef4ff)" : "var(--surface-raised, #f8f9fa)", borderRadius: "0.5rem", padding: "0.875rem 1rem", border: card.highlight ? "1px solid var(--accent, #3b82f6)" : "1px solid var(--border)" }}>
+                <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{card.label}</p>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "1.05rem", fontWeight: 700, color: card.highlight ? "var(--accent, #3b82f6)" : "var(--text)" }}>{card.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {customers && customers.length > 0 && (
+            <div style={{ padding: "0 1.5rem 1.5rem" }}>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>Müştəri üzrə icmal</h4>
+              <div style={{ overflowX: "auto" }}>
+                <table className="data-table" style={{ width: "100%", minWidth: "720px" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>Müştəri</th>
+                      <th style={{ textAlign: "right" }}>Ümumi</th>
+                      {BUCKET_KEYS.map((key) => (
+                        <th key={key} style={{ textAlign: "right" }}>{BUCKET_LABELS[key]}</th>
+                      ))}
+                      <th style={{ textAlign: "right" }}>Ən köhnə tarix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map((cust) => (
+                      <tr key={cust.customerId || cust.customerName}>
+                        <td>{cust.customerName || "—"}</td>
+                        <td style={{ textAlign: "right", fontWeight: 600 }}>{fmtMinor(cust.totalOutstandingMinor)}</td>
+                        {BUCKET_KEYS.map((key) => (
+                          <td key={key} style={{ textAlign: "right", color: cust.buckets[key] > 0 && key !== "CURRENT" && key !== "NO_DUE_DATE" ? "var(--danger, #ef4444)" : undefined }}>
+                            {cust.buckets[key] > 0 ? fmtMinor(cust.buckets[key]) : "—"}
+                          </td>
+                        ))}
+                        <td style={{ textAlign: "right", fontSize: "0.82rem", color: "var(--muted)" }}>{cust.oldestDueDate || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {invoices && invoices.length > 0 && (
+            <div style={{ padding: "0 1.5rem 1.5rem" }}>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>Faktura detalları</h4>
+              <div style={{ overflowX: "auto" }}>
+                <table className="data-table" style={{ width: "100%", minWidth: "820px" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>Faktura №</th>
+                      <th style={{ textAlign: "left" }}>Müştəri</th>
+                      <th style={{ textAlign: "right" }}>Ödəniş tarixi</th>
+                      <th style={{ textAlign: "right" }}>Yekun</th>
+                      <th style={{ textAlign: "right" }}>Ödənilib</th>
+                      <th style={{ textAlign: "right" }}>Qalıq</th>
+                      <th style={{ textAlign: "right" }}>Gecikmə (gün)</th>
+                      <th style={{ textAlign: "left" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((inv) => (
+                      <tr key={inv.invoiceId}>
+                        <td style={{ fontFamily: "monospace", fontSize: "0.82rem" }}>{inv.invoiceNumber || "—"}</td>
+                        <td>{inv.customerName || "—"}</td>
+                        <td style={{ textAlign: "right", fontSize: "0.82rem" }}>{inv.dueDate || "—"}</td>
+                        <td style={{ textAlign: "right" }}>{fmtMinor(inv.totalMinor)}</td>
+                        <td style={{ textAlign: "right", color: "var(--success, #22c55e)" }}>{fmtMinor(inv.paidAmountMinor)}</td>
+                        <td style={{ textAlign: "right", fontWeight: 600, color: inv.outstandingMinor > 0 ? "var(--danger, #ef4444)" : undefined }}>{fmtMinor(inv.outstandingMinor)}</td>
+                        <td style={{ textAlign: "right", color: (inv.daysOverdue > 0) ? "var(--danger, #ef4444)" : "var(--muted)" }}>
+                          {inv.daysOverdue != null ? (inv.daysOverdue === 0 ? "Cari" : `${inv.daysOverdue}`) : "—"}
+                        </td>
+                        <td>
+                          <span style={{ fontSize: "0.75rem", padding: "0.15rem 0.5rem", borderRadius: "999px", background: inv.bucket === "CURRENT" ? "var(--success-pale, #dcfce7)" : inv.bucket === "NO_DUE_DATE" ? "var(--surface-raised, #f1f5f9)" : "var(--danger-pale, #fee2e2)", color: inv.bucket === "CURRENT" ? "var(--success, #16a34a)" : inv.bucket === "NO_DUE_DATE" ? "var(--muted)" : "var(--danger, #dc2626)" }}>
+                            {BUCKET_LABELS[inv.bucket] || inv.bucket}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(!invoices || invoices.length === 0) && (
+            <p style={{ padding: "0 1.5rem 1.5rem", color: "var(--muted)" }}>Ödənilməmiş faktura yoxdur.</p>
+          )}
+        </div>
+      </section>
     );
   }
 
