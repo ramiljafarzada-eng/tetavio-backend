@@ -410,6 +410,7 @@ Completion Note:
 Reports backend upgraded with JWT/account-scoped Trial Balance, Profit & Loss, and Balance Sheet endpoints. Reports are backend-calculated from journals, invoices, payments, bills, and bank accounts. No frontend calculations or accountId input are used.
 
 Commit Reference:
+650d28a feat(reports): add backend financial statements
 
 ==================================================
 PHASE 7A — REAL PAYMENT GATEWAY
