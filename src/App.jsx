@@ -1453,6 +1453,9 @@ function getModules(at) {
     equityChangesReport: {
       title: at.mod_equityChangesReport, singular: at.mod_equityChangesReportSingular, collection: "reports", summary: at.mod_equityChangesReportSummary
     },
+    arAging: {
+      title: "Debitor yaşlanma hesabatı", singular: "Debitor yaşlanma", collection: "reports", summary: "Ödənilməmiş fakturalar ödəniş tarixinə görə qruplaşdırılır."
+    },
     operationsJournal: {
       title: at.mod_operationsJournal, singular: at.mod_operationsJournalSingular, collection: "manualJournals", summary: at.mod_operationsJournalSummary
     }
@@ -16748,10 +16751,10 @@ function renderSettings() {
               {companySettingsLoading ? <p className="panel-copy">Şirkət məlumatları backend ilə sinxronlaşdırılır...</p> : null}
               <label><span>{at.settings_entityType}</span><select name="entityType" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.entityType || "Hüquqi şəxs"}><option value="Fiziki şəxs">{at.settings_entityIndiv}</option><option value="Hüquqi şəxs">{at.settings_entityCompany}</option></select></label>
               <label><span>{at.settings_companyOwnerName}</span><input name="companyName" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.companyName} required /></label>
-              <label><span>{at.settings_taxId}</span><input name="taxId" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.taxId} placeholder="0000000000" required /></label>
-              <label><span>{at.settings_mobile}</span><input name="mobilePhone" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.mobilePhone || ""} placeholder="+994..." required /></label>
+              <label><span>{at.settings_taxId}</span><input name="taxId" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.taxId} placeholder="0000000000" /></label>
+              <label><span>{at.settings_mobile}</span><input name="mobilePhone" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.mobilePhone || ""} placeholder="+994..." /></label>
               <label><span>{at.settings_currency}</span><input name="currency" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.currency} required /></label>
-              <label><span>{at.settings_fiscalYear}</span><input name="fiscalYear" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.fiscalYear} required /></label>
+              <label><span>{at.settings_fiscalYear}</span><input name="fiscalYear" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.fiscalYear} /></label>
               <label><span>{at.settings_uiScale}</span><select name="uiScale" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.uiScale || "Avtomatik"}><option value="Avtomatik">{at.settings_uiAuto}</option><option value="Kiçik">{at.settings_uiSmall}</option><option value="Standart">{at.settings_uiStandard}</option><option value="Böyük">{at.settings_uiLarge}</option></select></label>
               {profileSaved ? (
                 <div className="settings-saved-row">
