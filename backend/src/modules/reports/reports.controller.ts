@@ -17,4 +17,22 @@ export class ReportsController {
   getAccountsReceivableAging(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getAccountsReceivableAging(user.accountId);
   }
+
+  @Get('trial-balance')
+  @ApiOperation({ summary: 'Trial balance from journal entries for authenticated account' })
+  getTrialBalance(@CurrentUser() user: JwtPayload) {
+    return this.reportsService.getTrialBalance(user.accountId);
+  }
+
+  @Get('profit-loss')
+  @ApiOperation({ summary: 'Profit & Loss report for authenticated account' })
+  getProfitLoss(@CurrentUser() user: JwtPayload) {
+    return this.reportsService.getProfitLoss(user.accountId);
+  }
+
+  @Get('balance-sheet')
+  @ApiOperation({ summary: 'Balance sheet report for authenticated account' })
+  getBalanceSheet(@CurrentUser() user: JwtPayload) {
+    return this.reportsService.getBalanceSheet(user.accountId);
+  }
 }

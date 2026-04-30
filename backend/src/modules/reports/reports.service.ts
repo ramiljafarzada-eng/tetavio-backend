@@ -206,4 +206,173 @@ export class ReportsService {
       invoices: invoiceRows,
     };
   }
+
+  // ─── Trial Balance ──────────────────────────────────────────────────────────
+
+  async getTrialBalance(accountId: string) {
+    const today = new Date();
+
+    // Single query: all lines from non-deleted journal entries for this account
+    const lines = await this.prisma.journalEntryLine.findMany({
+      where: {
+        journalEntry: { accountId, deletedAt: null },
+      },
+      select: {
+        debitMinor: true,
+        creditMinor: true,
+        accountingAccount: {
+          select: { id: true, code: true, name: true, type: true },
+        },
+      },
+    });
+
+    // In-memory aggregation by accounting account
+    const accountMap = new Map<string, {
+      accountCode: string;
+      accountName: string;
+      accountType: string;
+      totalDebitMinor: number;
+      totalCreditMinor: number;
+    }>();
+
+    for (const line of lines) {
+      const acc = line.accountingAccount;
+      const existing = accountMap.get(acc.id) ?? {
+        accountCode: acc.code,
+        accountName: acc.name,
+        accountType: acc.type,
+        totalDebitMinor: 0,
+        totalCreditMinor: 0,
+      };
+      existing.totalDebitMinor += line.debitMinor;
+      existing.totalCreditMinor += line.creditMinor;
+      accountMap.set(acc.id, existing);
+    }
+
+    const accounts = Array.from(accountMap.values())
+      .map((a) => ({ ...a, netMinor: a.totalDebitMinor - a.totalCreditMinor }))
+      .sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+    const totalDebitMinor = accounts.reduce((s, a) => s + a.totalDebitMinor, 0);
+    const totalCreditMinor = accounts.reduce((s, a) => s + a.totalCreditMinor, 0);
+
+    return {
+      asOfDate: today.toISOString().slice(0, 10),
+      accounts,
+      totals: {
+        totalDebitMinor,
+        totalCreditMinor,
+        isBalanced: totalDebitMinor === totalCreditMinor,
+      },
+    };
+  }
+
+  // ─── Profit & Loss ──────────────────────────────────────────────────────────
+
+  async getProfitLoss(accountId: string) {
+    const today = new Date();
+
+    const [invoiceAgg, paymentAgg, billAgg] = await Promise.all([
+      this.prisma.invoice.aggregate({
+        where: { accountId, deletedAt: null },
+        _sum: { totalMinor: true },
+      }),
+      this.prisma.invoicePayment.aggregate({
+        where: { accountId, deletedAt: null },
+        _sum: { amountMinor: true },
+      }),
+      this.prisma.bill.aggregate({
+        where: { accountId, deletedAt: null },
+        _sum: { totalMinor: true },
+      }),
+    ]);
+
+    const grossRevenueMinor = invoiceAgg._sum.totalMinor ?? 0;
+    const paidRevenueMinor = paymentAgg._sum.amountMinor ?? 0;
+    const outstandingRevenueMinor = grossRevenueMinor - paidRevenueMinor;
+    const totalExpensesMinor = billAgg._sum.totalMinor ?? 0;
+    const grossProfitMinor = grossRevenueMinor - totalExpensesMinor;
+
+    return {
+      asOfDate: today.toISOString().slice(0, 10),
+      revenue: {
+        grossRevenueMinor,
+        paidRevenueMinor,
+        outstandingRevenueMinor,
+      },
+      expenses: {
+        totalBillsMinor: totalExpensesMinor,
+      },
+      grossProfitMinor,
+      netProfitMinor: grossProfitMinor,
+    };
+  }
+
+  // ─── Balance Sheet ──────────────────────────────────────────────────────────
+
+  async getBalanceSheet(accountId: string) {
+    const today = new Date();
+
+    // 3 parallel queries — no N+1
+    const [bankAccounts, invoices, billAgg] = await Promise.all([
+      this.prisma.bankAccount.findMany({
+        where: { accountId, deletedAt: null },
+        select: { balanceMinor: true },
+      }),
+      this.prisma.invoice.findMany({
+        where: { accountId, deletedAt: null },
+        select: {
+          totalMinor: true,
+          payments: {
+            where: { deletedAt: null },
+            select: { amountMinor: true },
+          },
+        },
+      }),
+      this.prisma.bill.aggregate({
+        where: { accountId, deletedAt: null },
+        _sum: { totalMinor: true },
+      }),
+    ]);
+
+    // Assets
+    const cashAndBankMinor = bankAccounts.reduce((s, b) => s + b.balanceMinor, 0);
+    const accountsReceivableMinor = invoices.reduce((s, inv) => {
+      const paid = inv.payments.reduce((ps, p) => ps + p.amountMinor, 0);
+      const outstanding = inv.totalMinor - paid;
+      return s + (outstanding > 0 ? outstanding : 0);
+    }, 0);
+    const totalAssetsMinor = cashAndBankMinor + accountsReceivableMinor;
+
+    // Liabilities (accounts payable = all bills, no bill payments yet)
+    const accountsPayableMinor = billAgg._sum.totalMinor ?? 0;
+    const totalLiabilitiesMinor = accountsPayableMinor;
+
+    // Equity = retained earnings (gross revenue – total expenses)
+    const grossRevenueMinor = invoices.reduce((s, inv) => s + inv.totalMinor, 0);
+    const retainedEarningsMinor = grossRevenueMinor - accountsPayableMinor;
+    const totalEquityMinor = retainedEarningsMinor;
+
+    const totalLiabilitiesAndEquityMinor = totalLiabilitiesMinor + totalEquityMinor;
+    const isBalanced = Math.abs(totalAssetsMinor - totalLiabilitiesAndEquityMinor) < 1;
+
+    return {
+      asOfDate: today.toISOString().slice(0, 10),
+      assets: {
+        cashAndBankMinor,
+        accountsReceivableMinor,
+        totalAssetsMinor,
+      },
+      liabilities: {
+        accountsPayableMinor,
+        totalLiabilitiesMinor,
+      },
+      equity: {
+        retainedEarningsMinor,
+        totalEquityMinor,
+      },
+      totalLiabilitiesAndEquityMinor,
+      isBalanced,
+    };
+  }
 }

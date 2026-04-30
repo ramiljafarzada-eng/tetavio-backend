@@ -618,6 +618,32 @@ Backend change:
   - UI: "E-poçtla göndər" button in invoice edit form header; disabled when customer has no email; loading/success/error state via sendEmailLoading/sendEmailMessage
   - Invoice calculation logic, payment logic, and auth/session logic are NOT modified
 
+\- Phase 6C: Financial Statements Reports Backend (COMPLETED)
+  - No migration required — pure read queries on existing tables
+  - Endpoints added to existing ReportsModule (backend/src/modules/reports/)
+  - All endpoints: JWT-protected via class-level @UseGuards(JwtAuthGuard); accountId from token only; no accountId accepted from frontend
+  - GET /api/v1/reports/trial-balance
+    - Queries all JournalEntryLine records linked to non-deleted JournalEntry rows for the account
+    - In-memory aggregation by AccountingAccount: totalDebitMinor, totalCreditMinor, netMinor (debit–credit)
+    - Results sorted by accountCode; response includes totals.isBalanced flag
+  - GET /api/v1/reports/profit-loss
+    - Three parallel aggregates via Promise.all: invoice.totalMinor sum, invoicePayment.amountMinor sum, bill.totalMinor sum
+    - grossRevenueMinor = invoice total; paidRevenueMinor = payments total; outstandingRevenueMinor = difference
+    - totalExpensesMinor = bills total; grossProfitMinor = netProfitMinor = grossRevenue – totalExpenses
+  - GET /api/v1/reports/balance-sheet
+    - Three parallel queries: bank accounts (balanceMinor), invoices (totalMinor + payments), bills aggregate
+    - cashAndBankMinor = sum of bank account balances
+    - accountsReceivableMinor = sum of outstanding invoice amounts (totalMinor – paid, floored at 0)
+    - accountsPayableMinor = total bills (no bill payments yet)
+    - retainedEarningsMinor = grossRevenue – accountsPayable; equity = retainedEarnings
+    - isBalanced = |totalAssets – (totalLiabilities + totalEquity)| < 1
+  - Rules that must never be violated:
+    - accountId must come from JWT only — never from frontend
+    - all three reports are backend-calculated; frontend must not recompute or cache these as source of truth
+    - deletedAt null filter applied on every query (invoices, payments, bills, bank accounts, journal entries)
+    - no auth, payment, invoice-write, or bill-write logic was modified for this phase
+    - no sensitive fields exposed (no tokens, no passwordHash, no payment provider data)
+
 \- Phase 6B: Banking Backend (COMPLETED)
   - Migration: 20260429170000_add_banking_module — creates `bank_accounts` and `bank_transactions` tables; adds `BankTransactionType` enum (INFLOW | OUTFLOW)
   - Prisma models: BankAccount (accountId, name, currency, balanceMinor, soft delete), BankTransaction (accountId, bankAccountId, type, amountMinor, description, reference, transactionDate, soft delete — no updatedAt)
