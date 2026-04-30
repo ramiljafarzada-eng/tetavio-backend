@@ -12405,14 +12405,16 @@ function renderItemsCatalog() {
               border: "1px solid rgba(255,255,255,0.92)",
               borderLeftWidth: 4,
               borderLeftColor: kpi.accent,
+              overflow: "hidden",
+              minWidth: 0,
             }}>
               <div style={{
                 fontSize: "1.3rem", width: 40, height: 40, display: "flex",
                 alignItems: "center", justifyContent: "center",
                 borderRadius: 10, background: kpi.iconBg, flexShrink: 0,
               }}>{kpi.icon}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", minWidth: 0 }}>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", whiteSpace: "nowrap" }}>{kpi.label}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.15 }}>{kpi.label}</span>
                 <strong style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "clamp(0.9rem,1.2vw,1.25rem)", fontWeight: 800, lineHeight: 1, whiteSpace: "nowrap", ...(kpi.valueStyle || { color: "var(--text)" }) }}>{kpi.value}</strong>
               </div>
             </div>
