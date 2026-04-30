@@ -1,11 +1,11 @@
 import {
   PrismaClient,
-  PlanInterval,
   SubscriptionStatus,
   UserStatus,
   UserRole,
 } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { CANONICAL_PLANS, LEGACY_INACTIVE_PLAN_CODES } from '../src/common/plan-catalog';
 
 const prisma = new PrismaClient();
 
@@ -14,37 +14,7 @@ const DEFAULT_ADMIN_PASSWORD = 'Tetavio@2026';
 const DEFAULT_ADMIN_NAME = 'Finotam Super Admin';
 
 async function main() {
-  const plans = [
-    {
-      code: 'FREE',
-      name: 'Free',
-      priceMinor: 0,
-      currency: 'AZN',
-      interval: PlanInterval.NONE,
-      isActive: true,
-      sortOrder: 1,
-    },
-    {
-      code: 'PRO_MONTHLY',
-      name: 'Pro Monthly',
-      priceMinor: 2900,
-      currency: 'AZN',
-      interval: PlanInterval.MONTH,
-      isActive: true,
-      sortOrder: 2,
-    },
-    {
-      code: 'PREMIUM_MONTHLY',
-      name: 'Premium Monthly',
-      priceMinor: 5900,
-      currency: 'AZN',
-      interval: PlanInterval.MONTH,
-      isActive: true,
-      sortOrder: 3,
-    },
-  ];
-
-  for (const plan of plans) {
+  for (const plan of CANONICAL_PLANS) {
     await prisma.plan.upsert({
       where: { code: plan.code },
       create: plan,
@@ -58,6 +28,12 @@ async function main() {
       },
     });
   }
+
+  // Deactivate legacy plans
+  await prisma.plan.updateMany({
+    where: { code: { in: [...LEGACY_INACTIVE_PLAN_CODES] } },
+    data: { isActive: false },
+  });
 
   const result = await prisma.plan.findMany({
     orderBy: { sortOrder: 'asc' },

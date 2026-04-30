@@ -17,6 +17,7 @@ export class PlansService {
         currency: true,
         interval: true,
         isActive: true,
+        sortOrder: true,
       },
     });
   }
