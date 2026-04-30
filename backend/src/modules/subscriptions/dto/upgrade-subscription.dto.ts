@@ -1,11 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsString } from 'class-validator';
+import { CANONICAL_PLANS } from '../../../common/plan-catalog';
 
-const UPGRADE_TARGETS = ['PRO_MONTHLY', 'PREMIUM_MONTHLY'] as const;
+const UPGRADE_TARGETS = CANONICAL_PLANS
+  .filter((plan) => plan.code !== 'FREE')
+  .map((plan) => plan.code) as [string, ...string[]];
 
 export class UpgradeSubscriptionDto {
-  @ApiProperty({ enum: UPGRADE_TARGETS, example: 'PRO_MONTHLY' })
+  @ApiProperty({ enum: UPGRADE_TARGETS, example: 'STANDARD' })
   @IsString()
   @IsIn(UPGRADE_TARGETS)
-  targetPlanCode!: 'PRO_MONTHLY' | 'PREMIUM_MONTHLY';
+  targetPlanCode!: (typeof UPGRADE_TARGETS)[number];
 }
