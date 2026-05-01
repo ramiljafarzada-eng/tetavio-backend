@@ -40,7 +40,7 @@ export const CANONICAL_PLANS = [
   {
     code: 'ELITE',
     name: 'Elite',
-    priceMinor: 12900,
+    priceMinor: 10000,
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
@@ -49,7 +49,7 @@ export const CANONICAL_PLANS = [
   {
     code: 'ULTIMATE',
     name: 'Ultimate',
-    priceMinor: 24900,
+    priceMinor: 20000,
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
