@@ -17474,13 +17474,15 @@ function renderSettings() {
                   const isCurrentBackendPlan = currentBackendPlanCode && String(currentBackendPlanCode) === String(plan.code);
                   const priceLabel = planIsFree
                     ? at.sub_free
-                    : `${(Number(plan.priceMinor || 0) / 100).toFixed(2)} ${plan.currency || "AZN"} / ay`;
+                    : subscriptionBillingCycle === "annual"
+                      ? `${((Number(plan.priceMinor || 0) / 100) * 12).toFixed(2)} ${plan.currency || "AZN"} / il`
+                      : `${(Number(plan.priceMinor || 0) / 100).toFixed(2)} ${plan.currency || "AZN"} / ay`;
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
                       <strong>{priceLabel}</strong>
                       <p>{plan.code}</p>
-                      <small>{planIsFree ? at.sub_freeOps : `${plan.interval === "MONTH" ? `30 ${at.sub_days}` : plan.interval}`}</small>
+                      <small>{planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
                         if (planIsFree) {
                           setBooksNotice("FREE plana keçid backend downgrade axını ilə idarə olunur.");
