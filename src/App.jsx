@@ -2517,6 +2517,7 @@ function MainApp() {
   const [teamMemberDraft, setTeamMemberDraft] = useState({ fullName: "", email: "", password: "", staffRole: "Admin" });
   const [paymentDraft, setPaymentDraft] = useState({ planCode: "", billingCycle: "monthly" });
   const [paymentTermsAccepted, setPaymentTermsAccepted] = useState(false);
+  const [legalOverlay, setLegalOverlay] = useState(null);
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
@@ -17353,7 +17354,6 @@ function renderSettings() {
                 </div>
                 <div className="summary-grid compact">
                   <article className="summary-card"><span>{at.sub_selectedPlan}</span><strong>{selectedPaymentPlan?.name || "—"}</strong></article>
-                  <article className="summary-card"><span>{at.sub_model}</span><strong>{at.sub_demoFree}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0 ? at.sub_free : `${(Number(selectedPaymentPlan.priceMinor || 0) / 100).toFixed(2)} ${selectedPaymentPlan.currency || "AZN"} / ay`) : "—"}</strong></article>
                   <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : `30 ${at.sub_days}`) : "—"}</strong></article>
                 </div>
@@ -17362,7 +17362,7 @@ function renderSettings() {
                     <input type="checkbox" checked={paymentTermsAccepted} onChange={(event) => setPaymentTermsAccepted(event.target.checked)} />
                     <span>Ödəniş şərtləri ilə tanış oldum və qəbul edirəm</span>
                   </label>
-                  <button type="button" className="text-btn payment-consent-link" onClick={() => openBooksLegalPage("payment-terms")}>Ödəniş şərtləri</button>
+                  <button type="button" className="text-btn payment-consent-link" onClick={() => setLegalOverlay("payment-terms")}>Ödəniş şərtləri</button>
                   <p className="payment-consent-note">Davam etməzdən əvvəl ödəniş şərtlərini qəbul etməyiniz tələb olunur. Uğurlu ödənişdən sonra plan istifadəçi hesabında rəqəmsal olaraq aktivləşdirilir.</p>
                 </div>
                 <div className="form-actions split-actions">
@@ -17489,6 +17489,30 @@ function renderSettings() {
               </div>
             </div>
           )}
+          {legalOverlay ? (() => {
+            const legalPage = COMPLIANCE_LEGAL_PAGES.find((p) => p.id === legalOverlay);
+            if (!legalPage) return null;
+            const sections = getLegalPageSections(legalPage.id, hubLang);
+            return (
+              <div className="legal-overlay-backdrop" onClick={() => setLegalOverlay(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div className="legal-overlay-card" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface-raised, #fff)", borderRadius: "0.75rem", maxWidth: 640, maxHeight: "80vh", overflow: "auto", padding: "1.5rem", margin: "1rem", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <h3 style={{ margin: 0 }}>{legalPage.title}</h3>
+                    <button className="icon-btn" type="button" onClick={() => setLegalOverlay(null)} style={{ fontSize: "1.25rem", lineHeight: 1, border: "none", background: "none", cursor: "pointer" }}>×</button>
+                  </div>
+                  {legalPage.summary ? <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>{legalPage.summary}</p> : null}
+                  {sections.map((section, idx) => (
+                    <div key={idx} style={{ marginBottom: 16 }}>
+                      <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.9rem" }}>{section.heading}</h4>
+                      {Array.isArray(section.paragraphs) && section.paragraphs.map((p, pIdx) => (
+                        <p key={pIdx} style={{ margin: "0 0 0.5rem", fontSize: "0.85rem", lineHeight: 1.6, color: "var(--text)" }}>{p}</p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })() : null}
         </section>
       </div>
     );
