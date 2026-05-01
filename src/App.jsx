@@ -17354,8 +17354,17 @@ function renderSettings() {
                 </div>
                 <div className="summary-grid compact">
                   <article className="summary-card"><span>{at.sub_selectedPlan}</span><strong>{selectedPaymentPlan?.name || "—"}</strong></article>
-                  <article className="summary-card"><span>{at.sub_price}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0 ? at.sub_free : `${(Number(selectedPaymentPlan.priceMinor || 0) / 100).toFixed(2)} ${selectedPaymentPlan.currency || "AZN"} / ay`) : "—"}</strong></article>
-                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : `30 ${at.sub_days}`) : "—"}</strong></article>
+                  <article className="summary-card"><span>{at.sub_price}</span><strong>{(() => {
+                    if (!selectedPaymentPlan || selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0) return at.sub_free;
+                    const monthly = Number(selectedPaymentPlan.priceMinor || 0) / 100;
+                    const cur = selectedPaymentPlan.currency || "AZN";
+                    if (paymentDraft.billingCycle === "annual") {
+                      const annualTotal = monthly * 12;
+                      return `${annualTotal.toFixed(2)} ${cur} / il`;
+                    }
+                    return `${monthly.toFixed(2)} ${cur} / ay`;
+                  })()}</strong></article>
+                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : (paymentDraft.billingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)) : "—"}</strong></article>
                 </div>
                 <div className="payment-consent-card">
                   <label className="payment-consent-check">
