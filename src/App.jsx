@@ -1495,8 +1495,8 @@ const SUBSCRIPTION_PLANS = [
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
-  { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 129, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
-  { id: "ultimate", name: "Ultimate", monthlyPrice: 240, annualMonthlyPrice: 249, currency: "USD", operationLimit: 200000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
+  { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 100, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
+  { id: "ultimate", name: "Ultimate", monthlyPrice: 249, annualMonthlyPrice: 200, currency: "USD", operationLimit: 200000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
 ];
 
 const FREE_PLAN_ENTITY_LIMITS = { customers: 5, vendors: 5, invoices: 5 };

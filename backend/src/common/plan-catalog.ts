@@ -49,7 +49,7 @@ export const CANONICAL_PLANS = [
   {
     code: 'ULTIMATE',
     name: 'Ultimate',
-    priceMinor: 24000,
+    priceMinor: 24900,
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
