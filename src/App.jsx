@@ -1495,8 +1495,8 @@ const SUBSCRIPTION_PLANS = [
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
-  { id: "elite", name: "Elite", monthlyPrice: 100, annualMonthlyPrice: 100, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
-  { id: "ultimate", name: "Ultimate", monthlyPrice: 200, annualMonthlyPrice: 200, currency: "USD", operationLimit: 200000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
+  { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 129, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
+  { id: "ultimate", name: "Ultimate", monthlyPrice: 240, annualMonthlyPrice: 249, currency: "USD", operationLimit: 200000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
 ];
 
 const FREE_PLAN_ENTITY_LIMITS = { customers: 5, vendors: 5, invoices: 5 };
@@ -17356,13 +17356,13 @@ function renderSettings() {
                   <article className="summary-card"><span>{at.sub_selectedPlan}</span><strong>{selectedPaymentPlan?.name || "—"}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{(() => {
                     if (!selectedPaymentPlan || selectedPaymentPlan.interval === "NONE" || Number(selectedPaymentPlan.priceMinor || 0) <= 0) return at.sub_free;
-                    const monthly = Number(selectedPaymentPlan.priceMinor || 0) / 100;
-                    const cur = selectedPaymentPlan.currency || "AZN";
+                    const fePlan = SUBSCRIPTION_PLANS.find((p) => BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID[p.id] === selectedPaymentPlan.code);
+                    const cur = fePlan?.currency || selectedPaymentPlan.currency || "USD";
                     if (paymentDraft.billingCycle === "annual") {
-                      const annualTotal = monthly * 10;
+                      const annualTotal = (fePlan?.annualMonthlyPrice || 0) * 12;
                       return `${annualTotal.toFixed(2)} ${cur} / il`;
                     }
-                    return `${monthly.toFixed(2)} ${cur} / ay`;
+                    return `${(fePlan?.monthlyPrice || 0).toFixed(2)} ${cur} / ay`;
                   })()}</strong></article>
                   <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : (paymentDraft.billingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)) : "—"}</strong></article>
                 </div>
@@ -17472,11 +17472,12 @@ function renderSettings() {
                 ) : effectivePlans.map((plan) => {
                   const planIsFree = String(plan.code || "").toUpperCase() === "FREE" || Number(plan.priceMinor || 0) <= 0;
                   const isCurrentBackendPlan = currentBackendPlanCode && String(currentBackendPlanCode) === String(plan.code);
+                  const fePlan = SUBSCRIPTION_PLANS.find((p) => BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID[p.id] === plan.code);
                   const priceLabel = planIsFree
                     ? at.sub_free
                     : subscriptionBillingCycle === "annual"
-                      ? `${((Number(plan.priceMinor || 0) / 100) * 10).toFixed(2)} ${plan.currency || "AZN"} / il`
-                      : `${(Number(plan.priceMinor || 0) / 100).toFixed(2)} ${plan.currency || "AZN"} / ay`;
+                      ? `${((fePlan?.annualMonthlyPrice || 0) * 12).toFixed(2)} ${fePlan?.currency || "USD"} / il`
+                      : `${(fePlan?.monthlyPrice || 0).toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
