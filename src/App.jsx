@@ -17359,7 +17359,7 @@ function renderSettings() {
                     const monthly = Number(selectedPaymentPlan.priceMinor || 0) / 100;
                     const cur = selectedPaymentPlan.currency || "AZN";
                     if (paymentDraft.billingCycle === "annual") {
-                      const annualTotal = monthly * 12;
+                      const annualTotal = monthly * 10;
                       return `${annualTotal.toFixed(2)} ${cur} / il`;
                     }
                     return `${monthly.toFixed(2)} ${cur} / ay`;
@@ -17475,7 +17475,7 @@ function renderSettings() {
                   const priceLabel = planIsFree
                     ? at.sub_free
                     : subscriptionBillingCycle === "annual"
-                      ? `${((Number(plan.priceMinor || 0) / 100) * 12).toFixed(2)} ${plan.currency || "AZN"} / il`
+                      ? `${((Number(plan.priceMinor || 0) / 100) * 10).toFixed(2)} ${plan.currency || "AZN"} / il`
                       : `${(Number(plan.priceMinor || 0) / 100).toFixed(2)} ${plan.currency || "AZN"} / ay`;
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
