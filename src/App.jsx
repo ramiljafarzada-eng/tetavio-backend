@@ -12909,6 +12909,7 @@ function renderItemsCatalog() {
         monthlyDuration: "30 günlük aktiv plan",
         annualPriceSuffix: "/ay",
         monthlyPriceSuffix: "/1 ay",
+        monthlyEquivalent: "aylıq ekvivalent",
         trustTitle: "Etibar və performans",
         trustItems: [
           { title: "Təhlükəsiz giriş", text: "Rollar üzrə giriş nəzarəti və məlumat müdafiəsi." },
@@ -12994,6 +12995,7 @@ function renderItemsCatalog() {
         monthlyDuration: "30-day active plan",
         annualPriceSuffix: "/month",
         monthlyPriceSuffix: "/1 month",
+        monthlyEquivalent: "monthly equivalent",
         trustTitle: "Trust and performance",
         trustItems: [
           { title: "Secure access", text: "Role-based access control and data protection." },
@@ -13079,6 +13081,7 @@ function renderItemsCatalog() {
         monthlyDuration: "План активен 30 дней",
         annualPriceSuffix: "/мес",
         monthlyPriceSuffix: "/1 мес",
+        monthlyEquivalent: "эквивалент в месяц",
         trustTitle: "Надежность и производительность",
         trustItems: [
           { title: "Безопасный доступ", text: "Ролевой контроль доступа и защита данных." },
@@ -13164,6 +13167,7 @@ function renderItemsCatalog() {
         monthlyDuration: "30 gün aktif plan",
         annualPriceSuffix: "/ay",
         monthlyPriceSuffix: "/1 ay",
+        monthlyEquivalent: "aylık eşdeğer",
         trustTitle: "Güven ve performans",
         trustItems: [
           { title: "Güvenli erişim", text: "Rol bazlı erişim kontrolü ve veri koruması." },
@@ -13249,6 +13253,7 @@ function renderItemsCatalog() {
         monthlyDuration: "30 Tage aktiv",
         annualPriceSuffix: "/Monat",
         monthlyPriceSuffix: "/1 Monat",
+        monthlyEquivalent: "monatliches Äquivalent",
         trustTitle: "Vertrauen und Leistung",
         trustItems: [
           { title: "Sicherer Zugriff", text: "Rollenbasierter Zugriff und Datenschutz." },
@@ -13479,7 +13484,10 @@ function renderItemsCatalog() {
                     {isRecommended ? <span className="ph-price-badge">{t.recommended}</span> : null}
                     {isActive && plan.id !== "free" ? <span className="ph-price-badge ph-price-badge-active">{t.activePlan}</span> : null}
                   </div>
-                  <p className="ph-price-value">{getHubPriceLabel(plan)}</p>
+                   <p className="ph-price-value">{getHubPriceLabel(plan)}</p>
+                  {hubBillingCycle === "annual" && plan.id !== "free" && plan.annualMonthlyPrice < plan.monthlyPrice ? (
+                    <p className="ph-price-monthly-compare">{t.monthlyEquivalent || "aylıq ekvivalent"}: ${plan.monthlyPrice.toFixed(2)}/ay</p>
+                  ) : null}
                   <p className="ph-price-copy">{planDescriptions[plan.id]}</p>
                   <ul className="ph-list ph-list-tight">
                     <li>{plan.id === "free" ? t.freeLimit : `${Number(plan.operationLimit).toLocaleString("en-US")} ${t.operationLimitSuffix}`}</li>
@@ -17478,10 +17486,14 @@ function renderSettings() {
                     : subscriptionBillingCycle === "annual"
                       ? `${((fePlan?.annualMonthlyPrice || 0) * 12).toFixed(2)} ${fePlan?.currency || "USD"} / il`
                       : `${(fePlan?.monthlyPrice || 0).toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
+                  const annualPrice = planIsFree ? 0 : (fePlan?.annualMonthlyPrice || 0) * 12;
+                  const annualMonthlyPrice = planIsFree ? 0 : fePlan?.annualMonthlyPrice || 0;
+                  const monthlyPrice = planIsFree ? 0 : fePlan?.monthlyPrice || 0;
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
-                      <strong>{priceLabel}</strong>
+                      <strong>{planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`}</strong>
+                      {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${monthlyPrice.toFixed(2)} / ay</small> : null}
                       <p>{plan.code}</p>
                       <small>{planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {

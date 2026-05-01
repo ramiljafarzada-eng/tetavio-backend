@@ -1753,6 +1753,16 @@ button:disabled {
   color: var(--muted);
 }
 
+.annual-discount-badge {
+  display: inline-block !important;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981 !important;
+  font-weight: 600;
+  font-size: 0.8rem !important;
+}
+
 .subscription-plan-card strong {
   font-size: clamp(1.2rem, 1rem + 0.5vw, 1.6rem);
 }
@@ -7274,6 +7284,13 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   color: #f4f8ff;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   line-height: 1.2;
+}
+
+.ph-price-monthly-compare {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(16, 185, 129, 0.9);
+  font-weight: 600;
 }
 
 .ph-price-btn.ghost {
