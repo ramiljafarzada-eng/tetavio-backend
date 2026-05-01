@@ -10,6 +10,7 @@ import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { DowngradeSubscriptionDto } from './dto/downgrade-subscription.dto';
 import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
+import { DEFAULT_OPERATION_LIMIT, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
 
 @Injectable()
 export class SubscriptionsService {
@@ -44,6 +45,17 @@ export class SubscriptionsService {
       throw new NotFoundException('Subscription not found for account');
     }
 
+    const planCode = subscription.plan.code;
+    const operationLimit = PLAN_OPERATION_LIMITS[planCode] ?? DEFAULT_OPERATION_LIMIT;
+
+    const [invoices, bills, journals] = await Promise.all([
+      this.prisma.invoice.count({ where: { accountId: user.accountId, deletedAt: null } }),
+      this.prisma.bill.count({ where: { accountId: user.accountId, deletedAt: null } }),
+      this.prisma.journalEntry.count({ where: { accountId: user.accountId, deletedAt: null } }),
+    ]);
+
+    const operationsUsed = invoices + bills + journals;
+
     return {
       id: subscription.id,
       status: subscription.status,
@@ -53,6 +65,8 @@ export class SubscriptionsService {
       scheduledPlan: subscription.scheduledPlan,
       scheduledChangeAt: subscription.scheduledChangeAt,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      operationsUsed,
+      operationLimit,
     };
   }
 

@@ -2,6 +2,9 @@ export interface CheckoutSessionInput {
   orderId: string;
   amountMinor: number;
   currency: string;
+  clientIpAddress?: string;
+  description?: string;
+  language?: string;
 }
 
 export interface CheckoutSessionResult {

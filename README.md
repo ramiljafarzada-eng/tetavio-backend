@@ -23,3 +23,7 @@ Offline accounting application scaffold prepared for desktop packaging.
 2. Add authentication, chart of accounts, taxes, and journal entries.
 3. Add invoice print layouts, PDF export, and backup restore.
 4. Build a Windows installer.
+
+## PASHA payment setup
+
+For Render environment variables and PASHA checkout/return wiring, see `backend/PASHA_RENDER_SETUP.md`.

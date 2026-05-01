@@ -18,6 +18,7 @@ import { CheckoutDto } from './dto/checkout.dto';
 import { MockWebhookDto } from './dto/mock-webhook.dto';
 import { PashaWebhookDto } from './dto/pasha-webhook.dto';
 import { MockGateway } from './gateways/mock.gateway';
+import { PashaGateway } from './gateways/pasha.gateway';
 
 @Injectable()
 export class PaymentsService {
@@ -25,9 +26,14 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mockGateway: MockGateway,
+    private readonly pashaGateway: PashaGateway,
   ) {}
 
-  async checkout(user: JwtPayload, dto: CheckoutDto) {
+  async checkout(
+    user: JwtPayload,
+    dto: CheckoutDto,
+    clientIpAddress?: string,
+  ) {
     const order = await this.prisma.order.findFirst({
       where: {
         id: dto.orderId,
@@ -50,10 +56,15 @@ export class PaymentsService {
       throw new BadRequestException('Free plan does not require a payment');
     }
 
+    const usesMock =
+      this.configService.get<string>('PAYMENT_GATEWAY', 'MOCK').toUpperCase() !== 'PASHA';
+    const activeGateway = usesMock ? this.mockGateway : this.pashaGateway;
+    const activeGatewayEnum = usesMock ? PaymentGateway.MOCK : PaymentGateway.PASHA;
+
     const existing = await this.prisma.paymentTransaction.findFirst({
       where: {
         orderId: order.id,
-        gateway: PaymentGateway.MOCK,
+        gateway: activeGatewayEnum,
         status: PaymentStatus.INITIATED,
       },
       orderBy: {
@@ -70,22 +81,26 @@ export class PaymentsService {
         amountMinor: existing.amountMinor,
         currency: existing.currency,
         status: existing.status,
+        checkoutUrl: (existing.responsePayload as Record<string, unknown>)?.['checkoutUrl'] as string | undefined,
         nextAction: {
           type: 'OPEN_CHECKOUT',
         },
       };
     }
 
-    const session = await this.mockGateway.createCheckoutSession({
+    const session = await activeGateway.createCheckoutSession({
       orderId: order.id,
       amountMinor: order.amountMinor,
       currency: order.currency,
+      clientIpAddress,
+      description: `Tetavio subscription payment for ${order.targetPlan.name}`,
+      language: 'az',
     });
 
     const payment = await this.prisma.paymentTransaction.create({
       data: {
         orderId: order.id,
-        gateway: PaymentGateway.MOCK,
+        gateway: activeGatewayEnum,
         gatewayPaymentId: session.gatewayPaymentId,
         status: PaymentStatus.INITIATED,
         amountMinor: order.amountMinor,
@@ -181,8 +196,13 @@ export class PaymentsService {
     };
   }
 
-  async handlePashaWebhook(dto: PashaWebhookDto, signature?: string) {
-    const signatureValid = this.verifyPashaSignature(signature, dto);
+  async handlePashaWebhook(
+    dto: PashaWebhookDto,
+    signature?: string,
+    rawBody?: Buffer,
+  ) {
+    const bodyForVerification = rawBody ?? Buffer.from(JSON.stringify(dto));
+    const signatureValid = this.verifyPashaSignature(signature, bodyForVerification);
 
     const eventLog = await this.createWebhookEvent({
       gateway: PaymentGateway.PASHA,
@@ -193,10 +213,7 @@ export class PaymentsService {
     });
 
     if (eventLog.isDuplicate) {
-      return {
-        message: 'Duplicate webhook ignored',
-        eventId: dto.eventId,
-      };
+      return { message: 'Duplicate webhook ignored', eventId: dto.eventId };
     }
 
     if (!signatureValid) {
@@ -204,20 +221,135 @@ export class PaymentsService {
       throw new BadRequestException('Webhook signature validation failed');
     }
 
-    await this.prisma.paymentWebhookEvent.update({
-      where: { id: eventLog.id },
-      data: {
-        processingStatus: WebhookProcessingStatus.PROCESSED,
-        processedAt: new Date(),
+    const SUCCESS_EVENTS = [
+      'payment.success',
+      'payment.completed',
+      'payment.approved',
+      'payment.confirmed',
+    ];
+    const FAILURE_EVENTS = [
+      'payment.failed',
+      'payment.declined',
+      'payment.cancelled',
+      'payment.expired',
+    ];
+
+    const isSuccess = SUCCESS_EVENTS.includes(dto.eventType);
+    const isFailure = FAILURE_EVENTS.includes(dto.eventType);
+
+    if (!isSuccess && !isFailure) {
+      await this.prisma.paymentWebhookEvent.update({
+        where: { id: eventLog.id },
+        data: { processingStatus: WebhookProcessingStatus.PROCESSED, processedAt: new Date() },
+      });
+      return { message: 'Webhook event type not actionable', eventId: dto.eventId };
+    }
+
+    if (!dto.gatewayPaymentId) {
+      await this.markWebhookFailed(eventLog.id, 'Missing gatewayPaymentId in webhook payload');
+      throw new BadRequestException('Webhook missing gatewayPaymentId');
+    }
+
+    const payment = await this.prisma.paymentTransaction.findFirst({
+      where: {
+        gateway: PaymentGateway.PASHA,
+        gatewayPaymentId: dto.gatewayPaymentId,
+      },
+      include: {
+        order: {
+          include: {
+            subscription: true,
+            targetPlan: true,
+          },
+        },
       },
     });
 
+    if (!payment) {
+      await this.markWebhookFailed(eventLog.id, 'Payment transaction not found');
+      throw new NotFoundException('Payment transaction could not be matched');
+    }
+
+    if (isSuccess) {
+      await this.applySuccessfulPayment(payment.id, dto.payload);
+    } else {
+      await this.applyFailedPayment(payment.id, dto.payload);
+    }
+
+    await this.prisma.paymentWebhookEvent.update({
+      where: { id: eventLog.id },
+      data: { processingStatus: WebhookProcessingStatus.PROCESSED, processedAt: new Date() },
+    });
+
     return {
-      message: 'PASHA webhook accepted (stub)',
+      message: 'PASHA webhook processed',
       eventId: dto.eventId,
-      signatureValid: true,
-      note: 'No business effect in v1 placeholder implementation',
+      paymentId: payment.id,
+      appliedStatus: isSuccess ? 'SUCCESS' : 'FAILED',
     };
+  }
+
+  async completePashaReturn(
+    transactionId: string | undefined,
+    clientIpAddress: string,
+  ): Promise<string> {
+    if (!transactionId) {
+      return this.buildPashaFrontendRedirect('failed', {
+        message: 'PASHA return request did not include trans_id.',
+      });
+    }
+
+    const payment = await this.prisma.paymentTransaction.findFirst({
+      where: {
+        gateway: PaymentGateway.PASHA,
+        gatewayPaymentId: transactionId,
+      },
+      include: {
+        order: {
+          include: {
+            targetPlan: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      return this.buildPashaFrontendRedirect('failed', {
+        message: 'Payment transaction could not be matched.',
+      });
+    }
+
+    try {
+      const result = await this.pashaGateway.getTransactionResult(
+        transactionId,
+        clientIpAddress,
+      );
+      const isSuccess =
+        result.RESULT === 'OK' && result.RESULT_CODE === '000';
+
+      if (isSuccess) {
+        await this.applySuccessfulPayment(payment.id, result);
+        return this.buildPashaFrontendRedirect('success', {
+          orderId: payment.orderId,
+          planCode: payment.order.targetPlan.code,
+        });
+      }
+
+      await this.applyFailedPayment(payment.id, result);
+      return this.buildPashaFrontendRedirect('failed', {
+        orderId: payment.orderId,
+        code: result.RESULT_CODE,
+        message: this.mapPashaFailureMessage(result),
+      });
+    } catch (error) {
+      return this.buildPashaFrontendRedirect('failed', {
+        orderId: payment.orderId,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Payment gateway completion could not be confirmed.',
+      });
+    }
   }
 
   private async applySuccessfulPayment(
@@ -334,7 +466,7 @@ export class PaymentsService {
 
   private verifyPashaSignature(
     signature: string | undefined,
-    payload: PashaWebhookDto,
+    rawBody: Buffer,
   ): boolean {
     if (!signature) {
       return false;
@@ -344,7 +476,6 @@ export class PaymentsService {
       'PASHA_WEBHOOK_SECRET',
       'dev-pasha-secret',
     );
-    const rawBody = JSON.stringify(payload);
     const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
 
     const left = Buffer.from(signature);
@@ -430,5 +561,39 @@ export class PaymentsService {
 
   private toInputJson(value: unknown): Prisma.InputJsonValue {
     return value as Prisma.InputJsonValue;
+  }
+
+  private buildPashaFrontendRedirect(
+    status: 'success' | 'failed',
+    params: Record<string, string | undefined>,
+  ): string {
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_PRODUCTION_URL',
+      'http://localhost:5173',
+    );
+    const url = new URL(frontendUrl);
+
+    url.searchParams.set('payment', status);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        url.searchParams.set(key, value);
+      }
+    });
+
+    return url.toString();
+  }
+
+  private mapPashaFailureMessage(result: Record<string, string>): string {
+    switch (result.RESULT_CODE) {
+      case '116':
+        return 'Insufficient funds.';
+      case '129':
+        return 'Card expired.';
+      case '909':
+        return 'Bank system malfunction.';
+      default:
+        return result.ERROR || 'Payment was not completed.';
+    }
   }
 }

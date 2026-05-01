@@ -1,0 +1,22 @@
+We are continuing Tetavio SaaS ERP.
+
+Context:
+- I will provide plan.txt and AGENTS.md
+- These are the source of truth
+
+Current status:
+- Phase 5D COMPLETE
+- We are starting Phase 5E (Invoice PDF Generation)
+
+Instructions:
+- Follow plan.txt phases strictly
+- Follow AGENTS.md rules strictly
+- Do NOT assume anything outside these files
+- Backend is source of truth
+- Do NOT send accountId from frontend
+- Do NOT modify auth/payment/invoice calculation logic
+
+Task:
+Read the files, confirm current phase, and prepare to proceed with Phase 5E.
+
+Do NOT code yet.

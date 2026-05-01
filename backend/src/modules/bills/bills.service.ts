@@ -13,6 +13,7 @@ import { UpdateBillDto } from './dto/update-bill.dto';
 import { BillLineDto } from './dto/bill-line.dto';
 import { ListBillsQueryDto, type BillSortField } from './dto/list-bills-query.dto';
 import { buildPaginatedResponse } from '../../common/utils/paginated-response.util';
+import { checkOperationLimit } from '../../common/check-operation-limit';
 
 type CalculatedBillLine = {
   itemName: string;
@@ -249,6 +250,7 @@ export class BillsService {
   }
 
   async create(user: JwtPayload, dto: CreateBillDto) {
+    await checkOperationLimit(user.accountId, this.prisma);
     await this.ensureVendorOwnership(user, dto.vendorId);
 
     const totals = this.calculateTotals(dto.lines);

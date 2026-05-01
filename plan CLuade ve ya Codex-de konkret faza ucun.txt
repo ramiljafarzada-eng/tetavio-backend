@@ -1,0 +1,13 @@
+Read AGENTS.md and plan.txt.
+
+We are starting Phase 5E — Invoice PDF Generation.
+
+Do NOT code yet.
+
+1. Analyze requirements
+2. List backend tasks
+3. List frontend tasks
+4. Identify risks
+5. Propose smallest safe first step
+
+Wait for approval before coding.

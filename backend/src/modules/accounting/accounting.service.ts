@@ -8,6 +8,7 @@ import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { buildPaginatedResponse } from '../../common/utils/paginated-response.util';
+import { checkOperationLimit } from '../../common/check-operation-limit';
 import { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
 import { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
 import { ListAccountingAccountsQueryDto } from './dto/list-accounting-accounts-query.dto';
@@ -331,6 +332,7 @@ export class AccountingService {
   }
 
   async createJournal(user: JwtPayload, dto: CreateJournalEntryDto) {
+    await checkOperationLimit(user.accountId, this.prisma);
     this.validateJournalBalance(dto.journalLines);
 
     const codes = dto.journalLines.map((l) => l.accountCode);

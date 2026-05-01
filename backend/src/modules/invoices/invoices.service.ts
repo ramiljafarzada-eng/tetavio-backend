@@ -20,6 +20,7 @@ import {
 } from './dto/list-invoices-query.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { buildPaginatedResponse } from '../../common/utils/paginated-response.util';
+import { checkOperationLimit } from '../../common/check-operation-limit';
 
 type CalculatedInvoiceLine = Prisma.InvoiceLineCreateWithoutInvoiceInput;
 
@@ -433,6 +434,7 @@ export class InvoicesService {
   }
 
   async create(user: JwtPayload, dto: CreateInvoiceDto) {
+    await checkOperationLimit(user.accountId, this.prisma);
     await this.ensureCustomerOwnership(user, dto.customerId);
 
     const totals = this.calculateTotals(dto.lines);

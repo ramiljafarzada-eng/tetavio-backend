@@ -1,0 +1,28 @@
+Read AGENTS.md and plan.txt fully.
+
+Then:
+1. Identify the first IN PROGRESS or NOT STARTED phase in plan.txt.
+2. Summarize what is already completed for that phase.
+3. List remaining tasks clearly.
+4. Propose a safe, minimal step-by-step execution plan.
+
+Rules:
+- Do NOT modify auth/session/token logic.
+- Do NOT modify payment/subscription logic unless required.
+- Do NOT modify invoice calculation logic.
+- Do NOT send accountId from frontend.
+- Backend must remain source of truth.
+- No localStorage for ERP/accounting data.
+
+Before coding:
+- Explain what you will do.
+- Wait for my confirmation.
+
+After completion:
+- Run backend build
+- Run frontend build
+- Update plan.txt
+- Update AGENTS.md only if needed
+- Commit and push
+
+Start with the current phase.

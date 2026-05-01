@@ -1463,10 +1463,11 @@ function getModules(at) {
 }
 
 const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "goods", "incomingGoodsServices"], accountant: ["operationsJournal", "manualJournals", "chartOfAccounts"], reports: ["trialBalance", "accountCard", "financialPositionReport", "profitLossReport", "cashFlowReport", "equityChangesReport", "receivables", "payables", "arAging"] };
-const STATUS = { Ödənilib: "status-paid", Göndərilib: "status-sent", Qaralama: "status-draft", "Qəbul edilib": "status-paid", Gecikib: "status-overdue", Açıq: "status-draft", Bağlanıb: "status-paid", "Tətbiq edilib": "status-sent", Aktiv: "status-paid", Passiv: "status-draft", "Qismən ödənilib": "status-sent" };
+const STATUS = { "Ödənilib": "status-paid", "Göndərilib": "status-sent", Qaralama: "status-draft", "Qəbul edilib": "status-paid", Gecikib: "status-overdue", "Açıq": "status-draft", "Bağlanıb": "status-paid", "Tətbiq edilib": "status-sent", Aktiv: "status-paid", Passiv: "status-draft", "Qismən ödənilib": "status-sent" };
 const ITEM_MOVEMENT_TYPES = ["Alış", "Satış"];
 const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
 const HUB_LANG_KEY = "finotam-hub-lang-v1";
+const SESSION_STORAGE_KEY = "finotam-session-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
   fullName: "Tetavio Super Admin",
@@ -1490,26 +1491,36 @@ const MONTHS = [
 ];
 
 const SUBSCRIPTION_PLANS = [
-  { id: "free", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: 5, durationDays: null, summaryKey: "sub_freeSummary", signupOnly: false },
-  { id: "demo", name: "Demo", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: 100000, durationDays: 14, summaryKey: "sub_demoSummary", signupOnly: true },
+  { id: "free", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: 10, durationDays: null, summaryKey: "sub_freeSummary", signupOnly: false },
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
   { id: "elite", name: "Elite", monthlyPrice: 129, annualMonthlyPrice: 100, currency: "USD", operationLimit: 100000, durationDays: 30, summaryKey: "sub_eliteSummary", signupOnly: false },
-  { id: "ultimate", name: "Ultimate", monthlyPrice: 249, annualMonthlyPrice: 200, currency: "USD", operationLimit: 250000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
+  { id: "ultimate", name: "Ultimate", monthlyPrice: 249, annualMonthlyPrice: 200, currency: "USD", operationLimit: 200000, durationDays: 30, summaryKey: "sub_ultimateSummary", signupOnly: false }
 ];
 
 const FREE_PLAN_ENTITY_LIMITS = { customers: 5, vendors: 5, invoices: 5 };
 
 const BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID = {
   free: "FREE",
-  professional: "PRO_MONTHLY",
-  premium: "PREMIUM_MONTHLY",
+  standard: "STANDARD",
+  professional: "PROFESSIONAL",
+  premium: "PREMIUM",
+  elite: "ELITE",
+  ultimate: "ULTIMATE",
 };
 
-const LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE = Object.fromEntries(
-  Object.entries(BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID).map(([legacyPlanId, backendPlanCode]) => [backendPlanCode, legacyPlanId]),
-);
+const LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE = {
+  FREE: "free",
+  STANDARD: "standard",
+  PROFESSIONAL: "professional",
+  PREMIUM: "premium",
+  ELITE: "elite",
+  ULTIMATE: "ultimate",
+  // Legacy plan backward compatibility
+  PRO_MONTHLY: "professional",
+  PREMIUM_MONTHLY: "premium",
+};
 
 const STAFF_ROLE_CONFIG = {
   Admin: {
@@ -1540,13 +1551,11 @@ function getPlanById(planId) {
 
 function getPlanDurationDays(plan, billingCycle = "annual") {
   if (plan.id === "free") return null;
-  if (plan.id === "demo" || billingCycle === "demo") return 14;
   return billingCycle === "monthly" ? 30 : 365;
 }
 
 function getPlanDurationLabel(plan, billingCycle = "annual") {
   if (plan.id === "free") return "Limitsiz müddət";
-  if (plan.id === "demo" || billingCycle === "demo") return "14 günlük demo";
   return billingCycle === "monthly" ? "30 günlük aktiv plan" : "365 günlük aktiv plan";
 }
 
@@ -1562,7 +1571,6 @@ function getPlanPrice(plan, billingCycle = "annual") {
 
 function getPlanPriceLabel(plan, billingCycle = "annual") {
   if (plan.id === "free") return "Pulsuz";
-  if (plan.id === "demo" || billingCycle === "demo") return "14 günlük demo";
   if (billingCycle === "monthly") return `$${getPlanPrice(plan, "monthly")}/1 ay`;
   return `$${getPlanPrice(plan, "annual")}/ay`;
 }
@@ -1584,11 +1592,11 @@ function normalizeSubscription(user) {
   return {
     planId: activePlan.id,
     planName: activePlan.name,
-    billingCycle: user?.subscription?.billingCycle || (activePlan.id === "free" ? "free" : activePlan.id === "demo" ? "demo" : "annual"),
+    billingCycle: user?.subscription?.billingCycle || (activePlan.id === "free" ? "free" : "annual"),
     monthlyPrice: getPlanPrice(activePlan, user?.subscription?.billingCycle || "annual"),
     currency: activePlan.currency,
     startedAt: expired ? today() : user?.subscription?.startedAt || today(),
-    endsAt: isSuperAdmin ? null : expired ? null : (user?.subscription?.endsAt || (activePlan.id === "free" ? null : addDays(today(), getPlanDurationDays(activePlan, activePlan.id === "demo" ? "demo" : (user?.subscription?.billingCycle || "annual")) || 30))),
+    endsAt: isSuperAdmin ? null : expired ? null : (user?.subscription?.endsAt || (activePlan.id === "free" ? null : addDays(today(), getPlanDurationDays(activePlan, user?.subscription?.billingCycle || "annual") || 30))),
     operationLimit: activePlan.operationLimit,
     autoDowngraded: expired ? "Bəli" : (user?.subscription?.autoDowngraded || "Xeyr")
   };
@@ -1653,6 +1661,63 @@ function normalizeAuthUser(user) {
     subscription: normalizeSubscription(user)
   };
   return normalized;
+}
+
+function decodeJwtPayload(token) {
+  if (!token) return null;
+
+  try {
+    const [, rawPayload] = String(token).split(".");
+    if (!rawPayload) return null;
+
+    const normalizedBase64 = rawPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedBase64 = normalizedBase64.padEnd(
+      normalizedBase64.length + ((4 - (normalizedBase64.length % 4)) % 4),
+      "=",
+    );
+
+    return JSON.parse(window.atob(paddedBase64));
+  } catch {
+    return null;
+  }
+}
+
+function buildOptimisticAuthUser(authResponse) {
+  const user = authResponse?.user;
+  const claims = decodeJwtPayload(authResponse?.tokens?.accessToken);
+  const role = String(user?.role || claims?.role || "owner").toLowerCase();
+
+  if (!user?.email) {
+    return null;
+  }
+
+  return normalizeAuthUser({
+    id: user.id,
+    fullName: user.fullName || user.email,
+    email: user.email,
+    role,
+    profile: {
+      entityType: "Hüquqi şəxs",
+      companyName: user.fullName || user.email,
+      taxId: "",
+      mobilePhone: "",
+    },
+    operationsUsed: 0,
+    subscription: {
+      planId: "free",
+      billingCycle: "monthly",
+      startedAt: today(),
+      endsAt: null,
+      autoDowngraded: "Xeyr",
+    },
+  });
+}
+
+function getLoginProgressCopy(elapsedSeconds) {
+  if (elapsedSeconds <= 1) return "Giriş yoxlanılır...";
+  if (elapsedSeconds <= 3) return `Daxil olunur... ${elapsedSeconds} san`;
+  if (elapsedSeconds <= 8) return `Server cavabı gözlənilir... ${elapsedSeconds} san`;
+  return `Gözləmə uzanıb... ${elapsedSeconds} san`;
 }
 
 function fmtDate(value) {
@@ -2192,6 +2257,7 @@ function MainApp() {
   const [state, setState] = useState(() => normalizeAppState(createResetData()));
   const [isReady, setIsReady] = useState(false);
   const [timeTick, setTimeTick] = useState(() => Date.now());
+  const publicBackendWarmupStartedRef = useRef(false);
   const [activeSection, setActiveSection] = useState(() => {
     const parts = getInitialRouteParts();
     const sec = parts[0];
@@ -2422,6 +2488,25 @@ function MainApp() {
   const [showPassword, setShowPassword] = useState(false);
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
   const [booksNotice, setBooksNotice] = useState("");
+  const [pendingPaymentReturn, setPendingPaymentReturn] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const status = searchParams.get("payment");
+
+    if (!status) {
+      return null;
+    }
+
+    return {
+      status,
+      message: searchParams.get("message") || "",
+      orderId: searchParams.get("orderId") || "",
+      code: searchParams.get("code") || "",
+      uiHandled: false,
+    };
+  });
+  const [signInStartedAt, setSignInStartedAt] = useState(null);
+  const [internalLoginStartedAt, setInternalLoginStartedAt] = useState(null);
+  const [authProgressTick, setAuthProgressTick] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [appNavOpen, setAppNavOpen] = useState(false);
   const [accountPanel, setAccountPanel] = useState(null);
@@ -2441,6 +2526,13 @@ function MainApp() {
   function updateBackendSession(session) {
     setBackendSession(session || null);
     setApiSession(session || null);
+    try {
+      if (session) {
+        window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      } else {
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    } catch {}
   }
 
   async function syncBackendSubscription(sessionOverride = null) {
@@ -2473,6 +2565,7 @@ function MainApp() {
         taxId: "",
         mobilePhone: "",
       },
+      operationsUsed: subscription?.operationsUsed ?? 0,
       subscription: {
         planId: mappedLegacyPlanId || backendPlanCode || "free",
         billingCycle: "monthly",
@@ -3532,6 +3625,18 @@ function MainApp() {
 
   useEffect(() => {
     try {
+      const saved = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const session = JSON.parse(saved);
+        if (session?.accessToken) {
+          updateBackendSession(session);
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
       window.localStorage.setItem(HUB_LANG_KEY, hubLang || "en");
     } catch { /* ignore */ }
   }, [hubLang]);
@@ -3539,6 +3644,24 @@ function MainApp() {
   useEffect(() => {
     setApiSession(backendSession);
   }, [backendSession]);
+
+  useEffect(() => {
+    if (publicBackendWarmupStartedRef.current || backendSession?.accessToken) {
+      return;
+    }
+
+    publicBackendWarmupStartedRef.current = true;
+
+    apiGetPlans()
+      .then((plans) => {
+        if (Array.isArray(plans) && plans.length > 0) {
+          setBackendPlans(plans);
+        }
+      })
+      .catch(() => {
+        // Warmup failure should never block the UI.
+      });
+  }, [backendSession?.accessToken]);
 
   useEffect(() => {
     if (!backendSession?.accessToken) {
@@ -3549,6 +3672,48 @@ function MainApp() {
       setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
     });
   }, [backendSession?.accessToken]);
+
+  useEffect(() => {
+    if (!pendingPaymentReturn) {
+      return;
+    }
+
+    if (!pendingPaymentReturn.uiHandled) {
+      const status = String(pendingPaymentReturn.status || "").toLowerCase();
+      const fallbackMessage = status === "success"
+        ? "Ödəniş uğurla tamamlandı. Abunəliyiniz yenilənir."
+        : "Ödəniş tamamlanmadı və ya bank tərəfindən təsdiqlənmədi.";
+
+      setActiveProduct("hub");
+      setAccountPanel("plans");
+      setBooksNotice(pendingPaymentReturn.message || fallbackMessage);
+
+      const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      setPendingPaymentReturn((current) => current ? { ...current, uiHandled: true } : null);
+      return;
+    }
+
+    if (!backendSession?.accessToken) {
+      return;
+    }
+
+    syncBackendSubscription(backendSession).catch((error) => {
+      setBooksNotice(error?.message || "Abunəlik məlumatı yenilənmədi.");
+    });
+
+    apiGetMyOrders(updateBackendSession)
+      .then((orders) => {
+        setBackendOrders(Array.isArray(orders) ? orders : []);
+      })
+      .catch(() => {
+        // Non-blocking refresh after payment return.
+      })
+      .finally(() => {
+        setPendingPaymentReturn(null);
+      });
+  }, [pendingPaymentReturn, backendSession?.accessToken]);
 
   useEffect(() => {
     syncCustomersFromBackend(backendSession).catch(() => {
@@ -3861,6 +4026,19 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
+    if (!signInStartedAt && !internalLoginStartedAt) {
+      return undefined;
+    }
+
+    setAuthProgressTick(Date.now());
+    const timerId = window.setInterval(() => {
+      setAuthProgressTick(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [signInStartedAt, internalLoginStartedAt]);
+
+  useEffect(() => {
     if (activeProduct !== "booksLanding") return;
     if (!["signin", "signup", "forgot", "reset", "demo"].includes(booksView)) return;
 
@@ -4138,7 +4316,7 @@ function MainApp() {
         subscription: {
           ...user.subscription,
           planId: plan.id,
-          billingCycle: plan.id === "free" ? "free" : plan.id === "demo" ? "demo" : billingCycle,
+          billingCycle: plan.id === "free" ? "free" : billingCycle,
           startedAt: today(),
           endsAt: plan.id === "free" ? null : addDays(today(), nextDuration || 30),
           autoDowngraded: "Xeyr"
@@ -4147,9 +4325,7 @@ function MainApp() {
     }));
     setBackupStatus({
       tone: "success",
-      message: plan.id === "demo" || billingCycle === "demo"
-        ? `${email} üçün 14 günlük Demo aktiv edildi. Müddət bitəndə hesab avtomatik Free plana keçəcək.`
-        : `${plan.name} planı ${email} üçün ${billingCycle === "monthly" ? "1 aylıq" : "illik"} aktiv edildi.`
+      message: `${plan.name} planı ${email} üçün ${billingCycle === "monthly" ? "1 aylıq" : "illik"} aktiv edildi.`
     });
   }
 
@@ -4234,10 +4410,17 @@ function MainApp() {
         paymentTransactionId: checkout.paymentTransactionId,
         gatewayPaymentId: checkout.gatewayPaymentId,
         checkoutUrl: checkout.checkoutUrl,
+        gateway: checkout.gateway,
       });
 
+      if (checkout.gateway === "PASHA" && checkout.checkoutUrl) {
+        setBooksNotice("Təhlükəsiz ödəniş səhifəsinə yönləndirilirsiniz.");
+        window.location.assign(checkout.checkoutUrl);
+        return;
+      }
+
       await syncBackendSubscription();
-      setBooksNotice("Upgrade order və checkout hazırlandı. Mock nəticəni seçib tamamlayın.");
+      setBooksNotice("Backend hələ MOCK payment gateway rejimindədir. Render env-də `PAYMENT_GATEWAY=PASHA` və PASHA sertifikat/terminal dəyərləri qurulmadan real ödənişə keçmək olmayacaq.");
     } catch (error) {
       setBooksNotice(error?.message || "Upgrade/checkout alınmadı.");
     } finally {
@@ -8440,15 +8623,15 @@ function renderItemsCatalog() {
       Aktiv: "tb-type-aktiv",
       "Öhdəlik": "tb-type-ohdelik",
       Kapital: "tb-type-kapital",
-      Gəlir: "tb-type-gelir",
-      Xərc: "tb-type-xerc"
+      "Gəlir": "tb-type-gelir",
+      "Xərc": "tb-type-xerc"
     };
     const groupLabels = {
       Aktiv: at.tb_acAsset,
       "Öhdəlik": at.tb_acLiab,
       Kapital: at.tb_acEq,
-      Gəlir: at.tb_acInc,
-      Xərc: at.tb_acExp
+      "Gəlir": at.tb_acInc,
+      "Xərc": at.tb_acExp
     };
     const groupedRows = filteredRows.reduce((groups, row) => {
       const key = row.accountType || at.tb_tabAll;
@@ -10281,6 +10464,7 @@ function renderItemsCatalog() {
       async function handleInternalLogin(event) {
         event.preventDefault();
         setInternalGateError("");
+        setInternalLoginStartedAt(Date.now());
         try {
           const email = String(authDraft.email || "").trim().toLowerCase();
           const response = await apiLogin(email, authDraft.password);
@@ -10288,10 +10472,20 @@ function renderItemsCatalog() {
             accessToken: response?.tokens?.accessToken,
             refreshToken: response?.tokens?.refreshToken,
           };
+          const optimisticUser = buildOptimisticAuthUser(response);
+
           updateBackendSession(session);
-          await syncBackendSubscription(session);
+          if (optimisticUser) {
+            setCurrentUser(optimisticUser);
+          }
+
+          syncBackendSubscription(session).catch((error) => {
+            setInternalGateError(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+          });
         } catch (error) {
           setInternalGateError(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+        } finally {
+          setInternalLoginStartedAt(null);
         }
       }
       return (
@@ -10321,7 +10515,14 @@ function renderItemsCatalog() {
                 autoComplete="current-password"
               />
               {internalGateError && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{internalGateError}</p>}
-              <button className="internal-admin-link-btn" type="submit">Daxil ol</button>
+              {internalLoginStartedAt ? (
+                <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+                  {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - internalLoginStartedAt) / 1000)))}
+                </p>
+              ) : null}
+              <button className="internal-admin-link-btn" type="submit" disabled={Boolean(internalLoginStartedAt)}>
+                {internalLoginStartedAt ? "Daxil olunur..." : "Daxil ol"}
+              </button>
             </form>
           </div>
         </div>
@@ -12702,7 +12903,7 @@ function renderItemsCatalog() {
         recommended: "Tövsiyə olunan",
         activePlan: "Aktiv plan",
         freePrice: "Pulsuz",
-        freeLimit: "5 əməliyyat limiti",
+        freeLimit: "10 əməliyyat limiti",
         operationLimitSuffix: "əməliyyat limiti",
         annualDuration: "365 günlük aktiv plan",
         monthlyDuration: "30 günlük aktiv plan",
@@ -12787,7 +12988,7 @@ function renderItemsCatalog() {
         recommended: "Recommended",
         activePlan: "Active plan",
         freePrice: "Free",
-        freeLimit: "5 operation limit",
+        freeLimit: "10 operation limit",
         operationLimitSuffix: "operation limit",
         annualDuration: "365-day active plan",
         monthlyDuration: "30-day active plan",
@@ -12872,7 +13073,7 @@ function renderItemsCatalog() {
         recommended: "Рекомендуем",
         activePlan: "Активный план",
         freePrice: "Бесплатно",
-        freeLimit: "Лимит 5 операций",
+        freeLimit: "Лимит 10 операций",
         operationLimitSuffix: "лимит операций",
         annualDuration: "План активен 365 дней",
         monthlyDuration: "План активен 30 дней",
@@ -12957,7 +13158,7 @@ function renderItemsCatalog() {
         recommended: "Önerilen",
         activePlan: "Aktif plan",
         freePrice: "Ücretsiz",
-        freeLimit: "5 işlem limiti",
+        freeLimit: "10 işlem limiti",
         operationLimitSuffix: "işlem limiti",
         annualDuration: "365 gün aktif plan",
         monthlyDuration: "30 gün aktif plan",
@@ -13042,7 +13243,7 @@ function renderItemsCatalog() {
         recommended: "Empfohlen",
         activePlan: "Aktiver Plan",
         freePrice: "Kostenlos",
-        freeLimit: "5 Vorgänge Limit",
+        freeLimit: "10 Vorgänge Limit",
         operationLimitSuffix: "Vorgänge Limit",
         annualDuration: "365 Tage aktiv",
         monthlyDuration: "30 Tage aktiv",
@@ -13270,7 +13471,7 @@ function renderItemsCatalog() {
           <div className="ph-pricing-grid">
             {publicPlans.map((plan) => {
               const isRecommended = plan.id === "professional";
-              const isActive = currentPlanId === plan.id && (currentPlanCycle === hubBillingCycle || currentPlanCycle === "demo");
+              const isActive = currentPlanId === plan.id && currentPlanCycle === hubBillingCycle;
               return (
                 <article key={plan.id} className={`ph-price-card${isRecommended ? " recommended" : ""}${isActive ? " active" : ""}`} data-ph-reveal>
                   <div className="ph-price-head">
@@ -13350,6 +13551,8 @@ function renderItemsCatalog() {
   async function submitSignIn(event) {
     event.preventDefault();
     try {
+      setBooksNotice("");
+      setSignInStartedAt(Date.now());
       const email = String(authDraft.email || "").trim().toLowerCase();
       const response = await apiLogin(email, authDraft.password);
       const session = {
@@ -13357,14 +13560,24 @@ function renderItemsCatalog() {
         refreshToken: response?.tokens?.refreshToken,
       };
 
+      const optimisticUser = buildOptimisticAuthUser(response);
+
       updateBackendSession(session);
-      await syncBackendSubscription(session);
+      if (optimisticUser) {
+        setCurrentUser(optimisticUser);
+      }
 
       setBooksNotice("Uğurla daxil oldunuz.");
       setActiveProduct("books");
       setBooksView("home");
+
+      syncBackendSubscription(session).catch((error) => {
+        setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+      });
     } catch (error) {
       setBooksNotice(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+    } finally {
+      setSignInStartedAt(null);
     }
   }
 
@@ -13388,12 +13601,20 @@ function renderItemsCatalog() {
         refreshToken: response?.tokens?.refreshToken,
       };
 
+      const optimisticUser = buildOptimisticAuthUser(response);
+
       updateBackendSession(session);
-      await syncBackendSubscription(session);
+      if (optimisticUser) {
+        setCurrentUser(optimisticUser);
+      }
 
       setBooksNotice("Qeydiyyat tamamlandı və Free plan aktiv edildi.");
       setActiveProduct("books");
       setBooksView("home");
+
+      syncBackendSubscription(session).catch((error) => {
+        setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+      });
     } catch (error) {
       setBooksNotice(error?.message || "Qeydiyyat alınmadı. Yenidən yoxlayın.");
     }
@@ -13939,7 +14160,14 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fSigninBtn}</button>
+                {signInStartedAt ? (
+                  <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+                    {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
+                  </p>
+                ) : null}
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt)}>
+                  {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
+                </button>
               </form>
 
             ) : booksView === "signup" ? (
@@ -13974,7 +14202,6 @@ function renderItemsCatalog() {
                     <label>{t.fPlan}</label>
                     <select value={authDraft.signupPlan || "free"} onChange={(e) => setAuthDraft((c) => ({ ...c, signupPlan: e.target.value }))}>
                       <option value="free">Free</option>
-                      <option value="demo">{t.fPlanDemo}</option>
                     </select>
                   </div>
                 </div>
@@ -14186,7 +14413,14 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fSigninBtn}</button>
+                {signInStartedAt ? (
+                  <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+                    {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
+                  </p>
+                ) : null}
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt)}>
+                  {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
+                </button>
               </form>
 
             ) : booksView === "signup" ? (
@@ -14221,7 +14455,6 @@ function renderItemsCatalog() {
                     <label>{t.fPlan}</label>
                     <select value={authDraft.signupPlan || "free"} onChange={(e) => setAuthDraft((c) => ({ ...c, signupPlan: e.target.value }))}>
                       <option value="free">Free</option>
-                      <option value="demo">{t.fPlanDemo}</option>
                     </select>
                   </div>
                 </div>
@@ -16497,8 +16730,8 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
   function renderDocuments() {
     const query = searches.documents || "";
     const documents = state.documents.filter((item) => matchesSearch(item, query));
-    const categoryColors = { Faktura: "doc-cat-invoice", Müqavilə: "doc-cat-contract", "Hesab əlavəsi": "doc-cat-attachment", Qəbz: "doc-cat-receipt" };
-    const categoryIcons = { Faktura: "🧾", Müqavilə: "📄", "Hesab əlavəsi": "📎", Qəbz: "🖨️" };
+    const categoryColors = { Faktura: "doc-cat-invoice", "Müqavilə": "doc-cat-contract", "Hesab əlavəsi": "doc-cat-attachment", "Qəbz": "doc-cat-receipt" };
+    const categoryIcons = { Faktura: "🧾", "Müqavilə": "📄", "Hesab əlavəsi": "📎", "Qəbz": "🖨️" };
 
     // ── Overview ──
     if (documentView === "overview") {
@@ -17026,6 +17259,8 @@ function renderSettings() {
       .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0));
     const currentBackendPlanCode = backendSubscription?.plan?.code || "";
     const selectedPaymentPlan = effectivePlans.find((plan) => plan.code === paymentDraft.planCode) || null;
+    const isSubscriptionSuperAdmin =
+      currentUser?.role === "super_admin" || currentUser?.email === SUPER_ADMIN.email;
 
     return (
       <div className="modal-backdrop" onClick={() => setAccountPanel(null)}>
@@ -17037,6 +17272,12 @@ function renderSettings() {
             </div>
             <button className="icon-btn" type="button" onClick={() => setAccountPanel(null)}>×</button>
           </div>
+
+          {booksNotice && (accountPanel === "plans" || accountPanel === "payment") ? (
+            <div className="backup-notice info" style={{ marginBottom: 16 }}>
+              {booksNotice}
+            </div>
+          ) : null}
 
           {accountPanel === "changePassword" ? (
             <div className="change-password-panel">
@@ -17183,6 +17424,11 @@ function renderSettings() {
             </div>
           ) : (
             <div className="subscription-user-grid">
+              {isSubscriptionSuperAdmin ? (
+                <div className="backup-notice warning" style={{ marginBottom: 16 }}>
+                  Bu hesab `super_admin` hesabıdır. Subscription checkout axını real müştəri hesabları üçündür; plan aktivləşdirməni test etmək üçün adi `OWNER/ADMIN` hesabı ilə daxil olun.
+                </div>
+              ) : null}
               <section className="panel subscription-current-card">
                 <div className="panel-head">
                   <div>

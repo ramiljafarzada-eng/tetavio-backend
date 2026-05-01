@@ -1,1 +1,26 @@
-Read AGENTS.md and plan.txt first. Follow the next incomplete phase in plan.txt. Update plan.txt when done.Update AGENTS.md only if architecture, API contracts, security rules, or core system behavior changes. Otherwise, do not modify AGENTS.md.
+We are continuing Tetavio SaaS ERP.
+
+This project uses a brain system.
+
+Start by reading in this exact order:
+1. AGENTS.md
+2. plan.md
+3. brain/README.md
+
+Then follow the Tetavio Brain instructions inside brain/README.md.
+
+Rules:
+- Root AGENTS.md and root plan.md are source of truth.
+- brain/ is the working brain for summaries, bugs, decisions, and handoff context.
+- Do not code before confirming current phase, active bugs, current focus, and safety rules.
+- Do not commit unfinished Phase 7A PASHA gateway work without official PASHA docs and explicit approval.
+
+First report:
+- current phase
+- active bugs
+- current focus
+- relevant safety rules
+- uncommitted files
+- whether Phase 7A files are uncommitted
+
+Do not code yet.
