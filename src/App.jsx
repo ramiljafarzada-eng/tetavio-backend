@@ -124,7 +124,7 @@ const COMPLIANCE_LEGAL_PAGES = [
         heading: "Ödənişin predmeti və valyuta",
         paragraphs: [
           "Tetavio üzrə ödənişlər yalnız rəqəmsal SaaS abunəlik planlarının alınması, yenilənməsi və ya yüksəldilməsi üçündür. Fiziki məhsul satışı və fiziki çatdırılma həyata keçirilmir.",
-          "Platformada göstərilən bütün qiymətlər Azərbaycan manatı (AZN) ilə ifadə olunur, əgər ayrıca başqa cür göstərilməyibsə.",
+          "Platformada göstərilən bütün qiymətlər ABŞ dolları (USD) ilə ifadə olunur.",
         ],
       },
       {
@@ -4419,8 +4419,7 @@ function MainApp() {
         return;
       }
 
-      await syncBackendSubscription();
-      setBooksNotice("Backend hələ MOCK payment gateway rejimindədir. Render env-də `PAYMENT_GATEWAY=PASHA` və PASHA sertifikat/terminal dəyərləri qurulmadan real ödənişə keçmək olmayacaq.");
+      setBooksNotice("Ödəniş rejimi MOCK olaraq qalır. Render env-də PAYMENT_GATEWAY=PASHA və PASHA sertifikatları qurulduqdan sonra real ödəniş səhifəsinə yönləndiriləcəksiniz.");
     } catch (error) {
       setBooksNotice(error?.message || "Upgrade/checkout alınmadı.");
     } finally {
@@ -12887,7 +12886,7 @@ function renderItemsCatalog() {
           { title: "Əməliyyatları bağlayın və hesabat alın", text: "Maliyyə nəticələrini real vaxtda izləyin və qərarları daha sürətli verin." }
         ],
         aboutTitle: "Haqqımızda",
-        aboutText: "Tetavio komandası mühasibat proseslərini sadələşdirmək üçün yerli bazarın gündəlik ehtiyaclarına uyğun cloud platforma qurur. Məqsədimiz şirkətlərə daha az vaxtda daha düzgün maliyyə qərarları verməyə kömək etməkdir.",
+        aboutText: "Tetavio — Tetavio MMC-yə məxsus rəqəmsal mühasibat SaaS platformasıdır. VÖEN: 2009752131. Komandamız mühasibat proseslərini sadələşdirmək üçün yerli bazarın ehtiyaclarına uyğun cloud platforma qurur. Məqsədimiz şirkətlərə daha az vaxtda daha düzgün maliyyə qərarları verməyə kömək etməkdir.",
         servicesTitle: "Nə təklif edirik?",
         services: ["Mühasibat uçotu və sənəd idarəetməsi", "Satış, alış və bank əməliyyatlarının mərkəzləşmiş idarəsi", "Plan əsaslı istifadə və komanda rolları", "Texniki dəstək və davamlı məhsul yenilənməsi"],
         whyTitle: "Niyə bizi seçməlisiniz?",
@@ -12972,7 +12971,7 @@ function renderItemsCatalog() {
           { title: "Close operations and get reports", text: "Track financial outcomes in real time and make faster decisions." }
         ],
         aboutTitle: "About us",
-        aboutText: "The Tetavio team builds cloud accounting tools tailored for local business needs. Our mission is to help companies make better financial decisions in less time.",
+        aboutText: "Tetavio is a digital accounting SaaS platform owned by Tetavio MMC. VOEN: 2009752131. The Tetavio team builds cloud accounting tools tailored for local business needs. Our mission is to help companies make better financial decisions in less time.",
         servicesTitle: "What we offer",
         services: ["Accounting and document management", "Centralized sales, purchasing and banking operations", "Plan-based usage and team roles", "Technical support and continuous product updates"],
         whyTitle: "Why choose us?",
