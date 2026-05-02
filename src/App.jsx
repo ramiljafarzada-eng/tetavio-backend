@@ -18709,9 +18709,10 @@ function renderSettings() {
                           try {
                             await apiSwitchToDemo(updateBackendSession);
                             await syncBackendSubscription();
-                            setBooksNotice("Demo plana keçdiniz. 14 günlük sınaq başladı.");
-                          } catch {
-                            setBooksNotice("Keçid zamanı xəta baş verdi.");
+                            setBooksNotice("Demo plana keçdiniz. Qalıq sınaq müddətiniz bərpa edildi.");
+                          } catch (err) {
+                            const msg = err?.message || "";
+                            setBooksNotice(msg.includes("bitib") ? "Demo müddətiniz tamamilə bitib. Ödənişli plana keçin." : "Keçid zamanı xəta baş verdi.");
                           }
                           return;
                         }

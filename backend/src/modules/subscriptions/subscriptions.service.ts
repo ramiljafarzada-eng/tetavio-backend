@@ -76,7 +76,7 @@ export class SubscriptionsService {
           where: { id: subscription.id },
           data: {
             planId: freePermanentPlan.id,
-            currentPeriodEnd: null,
+            // Keep currentPeriodEnd so remaining trial days are preserved if user switches back
             scheduledPlanId: null,
             scheduledChangeAt: null,
             cancelAtPeriodEnd: false,
@@ -86,7 +86,7 @@ export class SubscriptionsService {
           id: downgraded.id,
           status: downgraded.status,
           currentPeriodStart: downgraded.currentPeriodStart,
-          currentPeriodEnd: null,
+          currentPeriodEnd: downgraded.currentPeriodEnd,
           plan: {
             code: freePermanentPlan.code,
             name: freePermanentPlan.name,
@@ -294,14 +294,18 @@ export class SubscriptionsService {
       throw new NotFoundException('Demo plan not found');
     }
 
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+    // Use preserved currentPeriodEnd — never grant a fresh trial on switch-back
+    const now = new Date();
+    const savedTrialEnd = subscription.currentPeriodEnd;
+    if (!savedTrialEnd || savedTrialEnd <= now) {
+      throw new BadRequestException('Demo müddəti tamamilə bitib. Davam etmək üçün ödənişli plana keçin.');
+    }
 
     const updated = await this.prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         planId: demoPlan.id,
-        currentPeriodEnd: trialEnd,
+        // currentPeriodEnd stays unchanged — resume from where it was paused
         scheduledPlanId: null,
         scheduledChangeAt: null,
         cancelAtPeriodEnd: false,
@@ -338,7 +342,7 @@ export class SubscriptionsService {
       where: { id: subscription.id },
       data: {
         planId: freePlan.id,
-        currentPeriodEnd: null,
+        // Keep currentPeriodEnd so remaining Demo days are preserved for switch-back
         scheduledPlanId: null,
         scheduledChangeAt: null,
         cancelAtPeriodEnd: false,
