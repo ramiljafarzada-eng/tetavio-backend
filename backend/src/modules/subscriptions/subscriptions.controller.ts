@@ -44,4 +44,10 @@ export class SubscriptionsController {
   cancelScheduledChange(@CurrentUser() user: JwtPayload) {
     return this.subscriptionsService.cancelScheduledChange(user);
   }
+
+  @Post('switch-to-free')
+  @ApiOperation({ summary: 'Immediately switch subscription to permanent Free plan' })
+  switchToFree(@CurrentUser() user: JwtPayload) {
+    return this.subscriptionsService.switchToFree(user);
+  }
 }

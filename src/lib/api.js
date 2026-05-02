@@ -202,6 +202,10 @@ export function apiUpgradeSubscription(targetPlanCode, onSessionUpdate) {
   );
 }
 
+export function apiSwitchToFree(onSessionUpdate) {
+  return authRequest("/subscription/switch-to-free", { method: "POST" }, onSessionUpdate);
+}
+
 export function apiGetMyOrders(onSessionUpdate) {
   return authRequest("/orders/me", { method: "GET" }, onSessionUpdate);
 }

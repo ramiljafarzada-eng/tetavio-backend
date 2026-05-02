@@ -63,6 +63,7 @@ import {
   apiUpdateInvoice,
   apiUpdateVendor,
   apiUpgradeSubscription,
+  apiSwitchToFree,
   setApiSession,
 } from "./lib/api";
 
@@ -18691,9 +18692,16 @@ function renderSettings() {
                       {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
                       <p>{plan.code}</p>
                       <small>{durationDisplay}</small>
-                      <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
+                      <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={async () => {
+                        if (isCurrentBackendPlan) return;
                         if (isFreeBasic) {
-                          setBooksNotice("Pulsuz plana keçid Demo müddəti bitdikdə avtomatik baş verir.");
+                          try {
+                            await apiSwitchToFree(updateBackendSession);
+                            await syncBackendSubscription();
+                            setBooksNotice("Pulsuz plana keçdiniz.");
+                          } catch {
+                            setBooksNotice("Keçid zamanı xəta baş verdi.");
+                          }
                           return;
                         }
                         if (planIsFree) {

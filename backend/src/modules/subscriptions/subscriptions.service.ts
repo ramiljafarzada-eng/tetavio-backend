@@ -275,6 +275,42 @@ export class SubscriptionsService {
     };
   }
 
+  async switchToFree(user: JwtPayload) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { accountId: user.accountId },
+      include: { plan: { select: { code: true } } },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found for account');
+    }
+
+    if (subscription.plan.code === 'FREE_BASIC') {
+      return { message: 'Already on Free plan' };
+    }
+
+    const freePlan = await this.prisma.plan.findUnique({ where: { code: 'FREE_BASIC' } });
+    if (!freePlan) {
+      throw new NotFoundException('Free plan not found');
+    }
+
+    const updated = await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        planId: freePlan.id,
+        currentPeriodEnd: null,
+        scheduledPlanId: null,
+        scheduledChangeAt: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    return {
+      subscriptionId: updated.id,
+      plan: { code: freePlan.code, name: freePlan.name },
+    };
+  }
+
   async cancelScheduledChange(user: JwtPayload) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { accountId: user.accountId },
