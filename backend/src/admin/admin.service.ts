@@ -1122,6 +1122,52 @@ export class AdminService {
     return { cleared: result.count };
   }
 
+  async grantDemo(accountId: string, actorUserId: string) {
+    await this.requireAccount(accountId);
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { accountId },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found for account');
+    }
+
+    const demoPlan = await this.prisma.plan.findUnique({ where: { code: 'FREE' } });
+    if (!demoPlan) {
+      throw new NotFoundException('Demo plan not found');
+    }
+
+    const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          planId: demoPlan.id,
+          currentPeriodEnd: trialEnd,
+          scheduledPlanId: null,
+          scheduledChangeAt: null,
+          cancelAtPeriodEnd: false,
+        },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorUserId,
+          action: 'GRANT_DEMO',
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          metadata: { trialEnd: trialEnd.toISOString() },
+        },
+      }),
+    ]);
+
+    return {
+      subscriptionId: updated.id,
+      plan: { code: demoPlan.code, name: demoPlan.name },
+      trialEndsAt: updated.currentPeriodEnd,
+    };
+  }
+
   async reviewAnomaly(
     accountId: string,
     anomalyType: string,

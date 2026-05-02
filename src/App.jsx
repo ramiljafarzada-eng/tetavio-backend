@@ -20,6 +20,7 @@ import {
   apiAddAdminNote,
   apiAdminFlagAccount,
   apiAdminUnflagAccount,
+  apiAdminGrantDemo,
   apiAdminReviewAnomaly,
   apiGetFinancialInsights,
   apiGetCashflowForecast,
@@ -1497,7 +1498,7 @@ const MONTHS = [
 
 const SUBSCRIPTION_PLANS = [
   { id: "free_basic", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: null, summaryKey: "sub_freeSummary", signupOnly: false },
-  { id: "free", name: "Demo", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false },
+  { id: "free", name: "Demo 14 gün", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false  },
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
@@ -2460,6 +2461,8 @@ function MainApp() {
   const [adminUnflagInput, setAdminUnflagInput] = useState("");
   const [adminUnflagLoading, setAdminUnflagLoading] = useState(false);
   const [adminUnflagFeedback, setAdminUnflagFeedback] = useState(null);
+  const [adminGrantDemoLoading, setAdminGrantDemoLoading] = useState(false);
+  const [adminGrantDemoFeedback, setAdminGrantDemoFeedback] = useState(null);
   const [adminReviewingId, setAdminReviewingId] = useState(null);
   const [adminReviewNote, setAdminReviewNote] = useState("");
   const [adminReviewLoading, setAdminReviewLoading] = useState(false);
@@ -12135,6 +12138,7 @@ function renderItemsCatalog() {
         setAdminFlagFeedback(null);
         setAdminUnflagInput("");
         setAdminUnflagFeedback(null);
+        setAdminGrantDemoFeedback(null);
       }
 
       function handleAddNote(e) {
@@ -12187,6 +12191,23 @@ function renderItemsCatalog() {
           .catch((err) => {
             setAdminUnflagFeedback({ ok: false, msg: err?.message || "Failed to unflag account." });
             setAdminUnflagLoading(false);
+          });
+      }
+
+      function handleGrantDemo() {
+        if (!window.confirm(`Grant a fresh 14-day Demo trial to "${d?.account?.name}"?`)) return;
+        setAdminGrantDemoLoading(true);
+        setAdminGrantDemoFeedback(null);
+        apiAdminGrantDemo(adminAccountDetailId, updateBackendSession)
+          .then((res) => {
+            const end = res?.trialEndsAt ? new Date(res.trialEndsAt).toLocaleDateString() : "—";
+            setAdminGrantDemoFeedback({ ok: true, msg: `Demo granted. Trial ends ${end}.` });
+            setAdminGrantDemoLoading(false);
+            setAdminAccountDetailKey((k) => k + 1);
+          })
+          .catch((err) => {
+            setAdminGrantDemoFeedback({ ok: false, msg: err?.message || "Failed to grant Demo." });
+            setAdminGrantDemoLoading(false);
           });
       }
 
@@ -12472,6 +12493,29 @@ function renderItemsCatalog() {
                             <span style={{ fontSize: 12, color: adminUnflagFeedback.ok ? "#10b981" : "#ef4444", alignSelf: "center" }}>{adminUnflagFeedback.msg}</span>
                           )}
                         </form>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grant Demo */}
+                  <div className="iac-section" style={{ marginBottom: 20 }}>
+                    <div className="iac-section-hd">
+                      <span className="iac-dot" style={{ background: "#8b5cf6" }} />
+                      <span className="iac-section-lbl">Admin Actions</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <button
+                        className="iac-search-btn"
+                        style={{ background: "#4c1d95", borderColor: "#4c1d95" }}
+                        disabled={adminGrantDemoLoading}
+                        onClick={handleGrantDemo}
+                      >
+                        {adminGrantDemoLoading ? "Veriliр…" : "Grant Demo (14 gün)"}
+                      </button>
+                      {adminGrantDemoFeedback && (
+                        <span style={{ fontSize: 12, color: adminGrantDemoFeedback.ok ? "#10b981" : "#ef4444" }}>
+                          {adminGrantDemoFeedback.msg}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -18651,7 +18695,7 @@ function renderSettings() {
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
                   <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{currentPlan.id === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(currentPlan, currentBillingCycle)}</strong></article>
-                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free" ? (backendSubscription?.trialDaysRemaining != null ? `${backendSubscription.trialDaysRemaining} ${at.sub_days}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? 0} ${at.sub_days}`) : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
+                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? "Müddətsiz" : currentPlan.id === "free" ? (backendSubscription?.trialDaysRemaining != null ? `${backendSubscription.trialDaysRemaining} ${at.sub_days}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? 0} ${at.sub_days}`) : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
                   <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : "Limitsiz"}</strong></article>
                   <article className="summary-card"><span>{at.sub_statusLabel}</span><strong>{currentUser.role === "super_admin" ? at.sub_fullAccess : at.statusActive}</strong></article>
                 </div>

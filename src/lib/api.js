@@ -285,6 +285,12 @@ export function apiAdminUnflagAccount(accountId, payload, onSessionUpdate) {
   }, onSessionUpdate);
 }
 
+export function apiAdminGrantDemo(accountId, onSessionUpdate) {
+  return authRequest(`/internal/accounts/${accountId}/grant-demo`, {
+    method: "POST",
+  }, onSessionUpdate);
+}
+
 export function apiAdminReviewAnomaly(payload, onSessionUpdate) {
   return authRequest("/internal/anomalies/review", {
     method: "POST",

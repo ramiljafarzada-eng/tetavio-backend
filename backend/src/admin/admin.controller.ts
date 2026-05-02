@@ -139,6 +139,15 @@ export class AdminController {
     return this.adminService.unflagAccount(id, actor.sub, dto.reason);
   }
 
+  @Post('accounts/:id/grant-demo')
+  @ApiOperation({ summary: 'Grant a fresh 14-day Demo trial to an account (SUPER_ADMIN only)' })
+  grantDemo(
+    @Param('id') id: string,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.adminService.grantDemo(id, actor.sub);
+  }
+
   @Post('anomalies/review')
   @ApiOperation({ summary: 'Mark an anomaly as reviewed (SUPER_ADMIN only)' })
   reviewAnomaly(

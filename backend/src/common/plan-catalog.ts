@@ -12,7 +12,7 @@ export const CANONICAL_PLANS = [
   },
   {
     code: 'FREE',
-    name: 'Demo',
+    name: 'Demo 14 gün',
     priceMinor: 0,
     currency: 'USD',
     interval: PlanInterval.NONE,
