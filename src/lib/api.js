@@ -206,6 +206,10 @@ export function apiSwitchToFree(onSessionUpdate) {
   return authRequest("/subscription/switch-to-free", { method: "POST" }, onSessionUpdate);
 }
 
+export function apiSwitchToDemo(onSessionUpdate) {
+  return authRequest("/subscription/switch-to-demo", { method: "POST" }, onSessionUpdate);
+}
+
 export function apiGetMyOrders(onSessionUpdate) {
   return authRequest("/orders/me", { method: "GET" }, onSessionUpdate);
 }

@@ -275,6 +275,46 @@ export class SubscriptionsService {
     };
   }
 
+  async switchToDemo(user: JwtPayload) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { accountId: user.accountId },
+      include: { plan: { select: { code: true } } },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found for account');
+    }
+
+    if (subscription.plan.code === 'FREE') {
+      return { message: 'Already on Demo plan' };
+    }
+
+    const demoPlan = await this.prisma.plan.findUnique({ where: { code: 'FREE' } });
+    if (!demoPlan) {
+      throw new NotFoundException('Demo plan not found');
+    }
+
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+
+    const updated = await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        planId: demoPlan.id,
+        currentPeriodEnd: trialEnd,
+        scheduledPlanId: null,
+        scheduledChangeAt: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    return {
+      subscriptionId: updated.id,
+      plan: { code: demoPlan.code, name: demoPlan.name },
+      trialEndsAt: updated.currentPeriodEnd,
+    };
+  }
+
   async switchToFree(user: JwtPayload) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { accountId: user.accountId },

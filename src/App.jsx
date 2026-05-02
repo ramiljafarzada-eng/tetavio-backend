@@ -64,6 +64,7 @@ import {
   apiUpdateVendor,
   apiUpgradeSubscription,
   apiSwitchToFree,
+  apiSwitchToDemo,
   setApiSession,
 } from "./lib/api";
 
@@ -18704,8 +18705,14 @@ function renderSettings() {
                           }
                           return;
                         }
-                        if (planIsFree) {
-                          setBooksNotice("Demo plan qeydiyyat zamanı avtomatik aktivləşir.");
+                        if (planIsFree && !isFreeBasic) {
+                          try {
+                            await apiSwitchToDemo(updateBackendSession);
+                            await syncBackendSubscription();
+                            setBooksNotice("Demo plana keçdiniz. 14 günlük sınaq başladı.");
+                          } catch {
+                            setBooksNotice("Keçid zamanı xəta baş verdi.");
+                          }
                           return;
                         }
                         if (currentUser.role !== "super_admin") {
