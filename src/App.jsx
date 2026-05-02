@@ -1494,6 +1494,7 @@ const MONTHS = [
 ];
 
 const SUBSCRIPTION_PLANS = [
+  { id: "free_basic", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: null, summaryKey: "sub_freeSummary", signupOnly: false },
   { id: "free", name: "Demo", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false },
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
@@ -1505,6 +1506,7 @@ const SUBSCRIPTION_PLANS = [
 const FREE_PLAN_ENTITY_LIMITS = { customers: 5, vendors: 5, invoices: 5 };
 
 const BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID = {
+  free_basic: "FREE_BASIC",
   free: "FREE",
   standard: "STANDARD",
   professional: "PROFESSIONAL",
@@ -1514,6 +1516,7 @@ const BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID = {
 };
 
 const LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE = {
+  FREE_BASIC: "free_basic",
   FREE: "free",
   STANDARD: "standard",
   PROFESSIONAL: "professional",
@@ -1553,17 +1556,18 @@ function getPlanById(planId) {
 }
 
 function getPlanDurationDays(plan, billingCycle = "annual") {
-  if (plan.id === "free") return null;
+  if (plan.id === "free" || plan.id === "free_basic") return null;
   return billingCycle === "monthly" ? 30 : 365;
 }
 
 function getPlanDurationLabel(plan, billingCycle = "annual") {
-  if (plan.id === "free") return "Limitsiz müddət";
+  if (plan.id === "free_basic") return "Limitsiz müddət";
+  if (plan.id === "free") return "14 günlük sınaq";
   return billingCycle === "monthly" ? "30 günlük aktiv plan" : "365 günlük aktiv plan";
 }
 
 function getUnpaidTrialDurationDays(plan) {
-  if (!plan || plan.id === "free") return null;
+  if (!plan || plan.id === "free" || plan.id === "free_basic") return null;
   return 14;
 }
 
@@ -1573,6 +1577,7 @@ function getPlanPrice(plan, billingCycle = "annual") {
 }
 
 function getPlanPriceLabel(plan, billingCycle = "annual") {
+  if (plan.id === "free_basic") return "Pulsuz";
   if (plan.id === "free") return "Demo";
   if (billingCycle === "monthly") return `$${getPlanPrice(plan, "monthly")}/1 ay`;
   return `$${getPlanPrice(plan, "annual")}/ay`;
@@ -4531,6 +4536,9 @@ function MainApp() {
     if (backendSubscription?.plan?.code) {
       const planLabel = backendSubscription.plan?.name || "Plan";
       const planCode = String(backendSubscription.plan.code).toUpperCase();
+      if (planCode === "FREE_BASIC") {
+        return "Free";
+      }
       if (planCode === "FREE") {
         if (backendSubscription.isTrialExpired) return `Demo • Sınaq müddəti bitdi`;
         const days = backendSubscription.trialDaysRemaining;
@@ -4750,7 +4758,13 @@ function MainApp() {
   }
 
   function getAccessibleNavItems(user = currentUser) {
-    if (!user || user.role === "super_admin" || !isInternalUser(user)) return NAV;
+    const planCode = backendSubscription?.plan?.code;
+    if (!user || user.role === "super_admin" || !isInternalUser(user)) {
+      if (planCode === "FREE_BASIC") {
+        return NAV.filter((item) => item.id !== "reports" && item.id !== "documents");
+      }
+      return NAV;
+    }
     const allowed = new Set(getStaffRoleConfig(user.staffRole).sections);
     return NAV.filter((item) => allowed.has(item.id));
   }

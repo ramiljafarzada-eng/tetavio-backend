@@ -68,6 +68,44 @@ export class SubscriptionsService {
         ? Math.max(0, Math.ceil((trialExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
         : null;
 
+    // Auto-downgrade expired Demo trial → permanent Free plan
+    if (isFreePlan && isTrialExpired) {
+      const freePermanentPlan = await this.prisma.plan.findUnique({ where: { code: 'FREE_BASIC' } });
+      if (freePermanentPlan) {
+        const downgraded = await this.prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            planId: freePermanentPlan.id,
+            currentPeriodEnd: null,
+            scheduledPlanId: null,
+            scheduledChangeAt: null,
+            cancelAtPeriodEnd: false,
+          },
+        });
+        return {
+          id: downgraded.id,
+          status: downgraded.status,
+          currentPeriodStart: downgraded.currentPeriodStart,
+          currentPeriodEnd: null,
+          plan: {
+            code: freePermanentPlan.code,
+            name: freePermanentPlan.name,
+            priceMinor: freePermanentPlan.priceMinor,
+            currency: freePermanentPlan.currency,
+            interval: freePermanentPlan.interval,
+          },
+          scheduledPlan: null,
+          scheduledChangeAt: null,
+          cancelAtPeriodEnd: false,
+          operationsUsed,
+          operationLimit: null,
+          trialExpiresAt: null,
+          isTrialExpired: false,
+          trialDaysRemaining: null,
+        };
+      }
+    }
+
     return {
       id: subscription.id,
       status: subscription.status,

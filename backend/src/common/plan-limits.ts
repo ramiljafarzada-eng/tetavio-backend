@@ -1,6 +1,7 @@
 export const FREE_TRIAL_DAYS = 14;
 
 export const PLAN_OPERATION_LIMITS: Record<string, number | null> = {
+  FREE_BASIC: null, // permanent free plan; feature-restricted but unlimited ops
   FREE: null, // unlimited during trial; access gated by trial expiry
   STANDARD: 5000,
   PROFESSIONAL: 10000,

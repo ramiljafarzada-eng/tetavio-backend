@@ -2,6 +2,15 @@ import { PlanInterval } from '@prisma/client';
 
 export const CANONICAL_PLANS = [
   {
+    code: 'FREE_BASIC',
+    name: 'Free',
+    priceMinor: 0,
+    currency: 'USD',
+    interval: PlanInterval.NONE,
+    isActive: true,
+    sortOrder: 0,
+  },
+  {
     code: 'FREE',
     name: 'Demo',
     priceMinor: 0,
