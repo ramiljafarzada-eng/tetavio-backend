@@ -10165,3 +10165,134 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   min-width: 24px;
   text-align: right;
 }
+
+/* ── Trial Expired Overlay ──────────────────────────── */
+.trial-expired-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(6, 8, 20, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.trial-expired-modal {
+  background: linear-gradient(145deg, #0f1526, #141b35);
+  border: 1px solid rgba(79, 126, 248, 0.28);
+  border-radius: 24px;
+  padding: 48px 44px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 80px rgba(79, 126, 248, 0.18), 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.trial-expired-icon {
+  font-size: 52px;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.trial-expired-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #eef0f8;
+  margin: 0 0 14px;
+  letter-spacing: -0.02em;
+}
+
+.trial-expired-body {
+  font-size: 15px;
+  color: rgba(238, 240, 248, 0.6);
+  line-height: 1.65;
+  margin: 0 0 32px;
+}
+
+.trial-expired-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trial-expired-btn-primary {
+  background: linear-gradient(135deg, #4b7ef5, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 24px rgba(75, 126, 245, 0.4);
+}
+
+.trial-expired-btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px rgba(75, 126, 245, 0.5);
+}
+
+.trial-expired-btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(238, 240, 248, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.trial-expired-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #eef0f8;
+}
+
+/* ── Trial Warning Bar ──────────────────────────────── */
+.trial-warning-bar {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.12));
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: #fde68a;
+  flex-wrap: wrap;
+}
+
+.trial-warning-bar strong {
+  color: #fbbf24;
+}
+
+.trial-warning-cta {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.trial-warning-cta:hover {
+  background: rgba(245, 158, 11, 0.3);
+}

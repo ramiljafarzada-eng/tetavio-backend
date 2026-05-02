@@ -1,5 +1,7 @@
-export const PLAN_OPERATION_LIMITS: Record<string, number> = {
-  FREE: 10,
+export const FREE_TRIAL_DAYS = 14;
+
+export const PLAN_OPERATION_LIMITS: Record<string, number | null> = {
+  FREE: null, // unlimited during trial; access gated by trial expiry
   STANDARD: 5000,
   PROFESSIONAL: 10000,
   PREMIUM: 25000,
@@ -10,4 +12,4 @@ export const PLAN_OPERATION_LIMITS: Record<string, number> = {
   PREMIUM_MONTHLY: 25000,
 };
 
-export const DEFAULT_OPERATION_LIMIT = 10;
+export const DEFAULT_OPERATION_LIMIT: number | null = null;

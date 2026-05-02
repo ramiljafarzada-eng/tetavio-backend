@@ -81,13 +81,14 @@ export class AuthService {
         },
       });
 
+      const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
       await tx.subscription.create({
         data: {
           accountId: account.id,
           planId: freePlan.id,
           status: SubscriptionStatus.ACTIVE,
           currentPeriodStart: now,
-          currentPeriodEnd: null,
+          currentPeriodEnd: trialEnd,
           cancelAtPeriodEnd: false,
         },
       });

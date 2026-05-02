@@ -78,6 +78,7 @@ const NAV = [
 ];
 
 const BOOKS_LANDING_AUTH_VIEWS = ["signin", "signup", "forgot", "reset", "demo"];
+const FUNNEL_PAGES = ["start", "demo", "pricing", "erp", "case-studies"];
 const COMPLIANCE_LEGAL_PAGES = [
   {
     id: "terms-of-use",
@@ -1493,7 +1494,7 @@ const MONTHS = [
 ];
 
 const SUBSCRIPTION_PLANS = [
-  { id: "free", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: 10, durationDays: null, summaryKey: "sub_freeSummary", signupOnly: false },
+  { id: "free", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false },
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
@@ -2337,7 +2338,14 @@ function MainApp() {
     const route = getLocationRoute();
     if (!route || route === "hub" || route === "homepage") return "hub";
     if (route === "landing" || route.startsWith("landing/") || route === "accounting" || route.startsWith("accounting/")) return "booksLanding";
+    const _fp = route.split("/")[0];
+    if (FUNNEL_PAGES.includes(_fp)) return "funnel";
     return "books";
+  });
+  const [funnelPage, setFunnelPage] = useState(() => {
+    const route = getLocationRoute();
+    const _fp = route.split("/")[0];
+    return FUNNEL_PAGES.includes(_fp) ? _fp : "start";
   });
   const [hubLang, setHubLang] = useState(() => {
     try {
@@ -2494,6 +2502,11 @@ function MainApp() {
   const [showPassword, setShowPassword] = useState(false);
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
   const [booksNotice, setBooksNotice] = useState("");
+  const [fnBilling, setFnBilling] = useState("annual");
+  const [fnDemoForm, setFnDemoForm] = useState({ fname: "", lname: "", email: "", phone: "", company: "", size: "", time: "" });
+  const [fnStartForm, setFnStartForm] = useState({ name: "", email: "" });
+  const [fnDemoSent, setFnDemoSent] = useState(false);
+  const [fnStartSent, setFnStartSent] = useState(false);
   const [pendingPaymentReturn, setPendingPaymentReturn] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const status = searchParams.get("payment");
@@ -3785,6 +3798,7 @@ function MainApp() {
   function buildHashFromState() {
     const _lp = window.location.pathname.replace(/\/+$/, "") || "/";
     if (_lp === "/internal" || _lp.endsWith("/internal")) return "/internal";
+    if (activeProduct === "funnel") return `/${funnelPage}`;
     if (activeProduct === "hub") return "/homepage";
     if (activeProduct === "booksLanding") return booksView && booksView !== "home" ? `/accounting/${booksView}` : "/accounting";
     if (activeSection === "home") return "/dashboard";
@@ -3824,6 +3838,12 @@ function MainApp() {
       setActiveProduct("booksLanding");
       setBooksView(landingRoute.initialBooksView);
       setBooksNotice("");
+      return;
+    }
+
+    if (FUNNEL_PAGES.includes(part1)) {
+      setActiveProduct("funnel");
+      setFunnelPage(part1);
       return;
     }
 
@@ -4267,7 +4287,7 @@ function MainApp() {
     if (window.location.pathname !== routePath) {
       window.history.pushState(null, "", routePath);
     }
-  }, [activeSection, activeModule, activeProduct, currentUser, booksView, settingsTab, bankView, documentView, billView, journalView, chartView, vendorView, goodsView, invoiceView, customerView]);
+  }, [activeSection, activeModule, activeProduct, currentUser, booksView, funnelPage, settingsTab, bankView, documentView, billView, journalView, chartView, vendorView, goodsView, invoiceView, customerView]);
 
   // ── Hash routing: URL → state (mount + back/forward) ──
   useEffect(() => {
@@ -4510,11 +4530,16 @@ function MainApp() {
   function getPlanStatusText(user = currentUser) {
     if (backendSubscription?.plan?.code) {
       const planLabel = backendSubscription.plan?.name || "Plan";
-      const status = String(backendSubscription.status || "ACTIVE");
+      const planCode = String(backendSubscription.plan.code).toUpperCase();
+      if (planCode === "FREE") {
+        if (backendSubscription.isTrialExpired) return `${planLabel} • Sınaq müddəti bitdi`;
+        const days = backendSubscription.trialDaysRemaining;
+        return `${planLabel} sınaq • ${days != null ? `${days} gün qalıb` : "Aktiv"}`;
+      }
       const endsAt = backendSubscription.currentPeriodEnd
         ? String(backendSubscription.currentPeriodEnd).slice(0, 10)
         : null;
-      return `${planLabel} • ${status}${endsAt ? ` • ${endsAt}` : ""}`;
+      return `${planLabel}${endsAt ? ` • ${endsAt}` : ""}`;
     }
     if (!user) return "";
     if (user.role === "super_admin") return "Super admin girişi";
@@ -4523,8 +4548,7 @@ function MainApp() {
     const plan = getCurrentPlan(user);
     const remainingDays = daysUntil(ownerUser?.subscription?.endsAt || user.subscription?.endsAt);
     if (plan.id === "free") {
-      const remainingOperations = Math.max(0, Number(plan.operationLimit || 0) - Number(ownerUser?.operationsUsed || user.operationsUsed || 0));
-      return `${plan.name} • ${remainingOperations} əməliyyat qalıb`;
+      return `${plan.name} sınaq • ${remainingDays != null ? `${remainingDays} gün qalıb` : "Aktiv"}`;
     }
     const staffLabel = isInternalUser(user) && user.staffRole ? ` • ${user.staffRole}` : "";
     const remainingOperations = Math.max(0, Number(plan.operationLimit || 0) - Number(ownerUser?.operationsUsed || 0));
@@ -4535,9 +4559,12 @@ function MainApp() {
   function canUsePaidFeatures(user = currentUser) {
     if (!user) return false;
     if (user.role === "super_admin") return true;
+    // Trial expired → all operations blocked
+    if (backendSubscription?.plan?.code === "FREE" && backendSubscription?.isTrialExpired) return false;
     const ownerEmail = getAccountOwnerEmail(user);
     const ownerUser = ownerEmail === user.email ? user : authUsers.find((entry) => entry.email === ownerEmail);
     const plan = getCurrentPlan(user);
+    if (plan.operationLimit === null) return true; // unlimited (free trial active or paid plan)
     return Number(ownerUser?.operationsUsed || 0) < Number(plan.operationLimit || 0);
   }
 
@@ -13233,6 +13260,645 @@ function renderItemsCatalog() {
     );
   }
 
+  function renderFunnel() {
+    const FN_T = {
+      az: {
+        brandSub: "Məhsul platforması",
+        nav: [
+          { id: "start", label: "Başla" },
+          { id: "demo", label: "Demo" },
+          { id: "pricing", label: "Tariflər" },
+          { id: "erp", label: "ERP" },
+          { id: "case-studies", label: "Müştərilər" },
+        ],
+        login: "Daxil ol",
+        register: "Pulsuz başla",
+        // Start
+        startEyebrow: "14 gün pulsuz sınaq",
+        startH1: "Mühasibatı düzgün qurun — başdan",
+        startSub: "Tetavio ilə satış, alış, bank, hesabat — hamısı bir yerdə. Kredit kartı tələb olunmur.",
+        startSteps: [
+          { title: "Hesab yaradın", text: "E-poçtla 30 saniyədə qeydiyyatdan keçin." },
+          { title: "Şirkəti konfiqurasiya edin", text: "Valyuta, maliyyə ili, komanda rollarını qurun." },
+          { title: "İşə başlayın", text: "Faktura, alış, bank əməliyyatları — hər şey hazırdır." },
+        ],
+        startCtaTitle: "Pulsuz başlayın",
+        startCtaText: "Kredit kartı yoxdur · İstənilən vaxt ləğv edin · 14 gün tam giriş",
+        startEmailPh: "E-poçtunuz",
+        startNamePh: "Adınız",
+        startBtn: "Hesab yarat →",
+        startTrust: ["Kredit kartı tələb olunmur", "İstənilən vaxt ləğv edin", "HTTPS şifrəli bağlantı"],
+        featsTitle: "Niyə Tetavio?",
+        feats: [
+          { icon: "🧾", title: "Sənəd axını", text: "Faktura, qaimə, ödənişlər bir sistemdə." },
+          { icon: "📊", title: "Anlık hesabatlar", text: "Mənfəət-zərər, balans, pul axını hazır formada." },
+          { icon: "🏦", title: "Bank inteqrasiyası", text: "Bank əməliyyatlarını birbaşa platforma daxilindən idarə edin." },
+          { icon: "👥", title: "Komanda rolları", text: "Mühasib, rəhbər, kadrlar — hər rol üçün ayrıca giriş." },
+          { icon: "🔒", title: "Yüksək təhlükəsizlik", text: "Rollar üzrə giriş nəzarəti və audit izi." },
+          { icon: "⚡", title: "Sürətli interfeys", text: "Gündəlik işdə rahat, öyrənməsi asan panel." },
+        ],
+        // Demo
+        demoEyebrow: "Canlı nümayiş",
+        demoH1: "Platformanı öz gözünüzlə görün",
+        demoSub: "30 dəqiqəlik canlı nümayiş sifariş edin. Komandamız Tetavio-nu şirkətinizin iş axınına uyğun şəkildə göstərəcək.",
+        demoBenefits: [
+          { icon: "🎯", title: "Fərdi nümayiş", text: "Demo şirkətinizin sektoru və ölçüsünə uyğun hazırlanır." },
+          { icon: "❓", title: "Suallarınıza cavab", text: "Komandamız hər sualınıza canlı cavab verəcək." },
+          { icon: "⏱", title: "30 dəqiqə kifayətdir", text: "Qısa, konkret, vaxtınıza hörmətlə." },
+          { icon: "🚀", title: "Sınaq hesabı aktivləşdirin", text: "Demo sonrası dərhal 14 günlük pulsuz sınaq başladın." },
+        ],
+        demoFormTitle: "Demo üçün müraciət edin",
+        demoFName: "Adınız",
+        demoLName: "Soyadınız",
+        demoEmail: "E-poçt",
+        demoPhone: "Əlaqə nömrəsi",
+        demoCompany: "Şirkət adı",
+        demoSize: "Şirkət ölçüsü",
+        demoSizes: ["1–5 nəfər", "6–20 nəfər", "21–50 nəfər", "50+ nəfər"],
+        demoTime: "Rahat vaxt",
+        demoTimes: ["Səhər (09:00–12:00)", "Gündüz (12:00–15:00)", "Axşam (15:00–18:00)"],
+        demoBtn: "Demo sifariş et →",
+        demoNote: "Demo sifarişiniz 24 saat ərzində təsdiqlənəcək.",
+        // Pricing
+        pricingEyebrow: "Şəffaf tariflər",
+        pricingH1: "Şirkətinizə uyğun plan seçin",
+        pricingSub: "Bütün planlar əməliyyat limiti, komanda rolu və tam funksionallıqla. İllik ödənişdə qənaət edin.",
+        annualLabel: "İllik", monthlyLabel: "Aylıq", saveLabel: "35% qənaət",
+        freePrice: "Pulsuz",
+        perMonth: "/ay",
+        annualNote: "illik ödənişdə",
+        planDescs: {
+          free: "Başlanğıc və öyrənmə üçün",
+          standard: "Kiçik komandalar üçün baza plan",
+          professional: "Aktiv iş axını üçün",
+          premium: "Geniş istifadə və çeviklik üçün",
+          elite: "Peşəkar istifadəçilər üçün",
+          ultimate: "Maksimum paket",
+        },
+        planFeatures: {
+          free: ["14 günlük tam giriş", "Limitsiz əməliyyat (sınaq müddətində)", "Bütün modullar aktivdir", "1 istifadəçi"],
+          standard: ["5.000 əməliyyat/ay", "Satış və alış modulu", "Bank əməliyyatları", "3 istifadəçi", "E-poçt dəstəyi"],
+          professional: ["10.000 əməliyyat/ay", "Komanda rolları", "Sənəd idarəetməsi", "5 istifadəçi", "Prioritet dəstək"],
+          premium: ["25.000 əməliyyat/ay", "Tam funksionallıq", "İstifadəçi limitsiz", "API çıxışı", "Dəstək SLA"],
+          elite: ["100.000 əməliyyat/ay", "Xüsusi hesabat", "Mühasib paneli", "Audit izi", "Sürətli dəstək"],
+          ultimate: ["200.000 əməliyyat/ay", "Tam xüsiləşdirmə", "Şəxsi mühasib dəstəyi", "SLA zəmanəti", "Öncelikli onboarding"],
+        },
+        recommended: "Tövsiyə olunan",
+        pricingStartBtn: "Pulsuz başla",
+        pricingUpgradeBtn: "Planı seç",
+        faqTitle: "Tez-tez soruşulan suallar",
+        faqs: [
+          { q: "Kredit kartı tələb olunurmu?", a: "Xeyr. Free planda kredit kartı tələb olunmur. Ödənişli planlarda isə ödəniş mərhələsində kart məlumatları daxil edilir." },
+          { q: "Planı sonradan dəyişmək mümkündürmü?", a: "Bəli. Hesabınızdan istənilən vaxt planınızı artıra və ya azalda bilərsiniz." },
+          { q: "İllik ödənişdə nə qazanıram?", a: "İllik ödənişdə aylıq ekvivalent qiymət 35% aşağı olur." },
+          { q: "Komanda üzvləri üçün ayrıca giriş mümkündürmü?", a: "Bəli. Standard plandən etibarən komanda rolları aktivdir." },
+        ],
+        // ERP
+        erpEyebrow: "Tetavio ERP",
+        erpH1: "Mühasibat uçotunun tam həlli",
+        erpSub: "Fakturadan bank əməliyyatlarına, alışdan hesabatlara — bütün maliyyə prosesləri bir platformada. Lokal bazara uyğun, bulud əsaslı, komanda dostu.",
+        erpModulesTitle: "Əsas modullar",
+        erpModules: [
+          { icon: "🧾", name: "Satış & Faktura", desc: "Faktura yaradın, göndərin, ödənişləri izləyin. Debitor borcu avtomatik hesablanır." },
+          { icon: "🛒", name: "Alış & Qaimə", desc: "Təchizatçı, mal, daxil olan qaimə — alış prosesi tam nəzarət altında." },
+          { icon: "🏦", name: "Bank", desc: "Müxtəlif bank hesabları, mədaxil/məxaric, hesab vərəqəsi." },
+          { icon: "📚", name: "Baş kitab", desc: "Müxabirləşmə qeydləri, hesablar planı, manual jurnallar." },
+          { icon: "📊", name: "Hesabatlar", desc: "Mənfəət-zərər, balans vərəqəsi, pul axını, AR ageing." },
+          { icon: "👥", name: "Komanda idarəetməsi", desc: "Rollar, icazələr, çoxsaylı istifadəçi girişi." },
+          { icon: "📁", name: "Sənəd idarəetməsi", desc: "Müqavilə, aktlar, qaimə — hər sənəd əməliyyata bağlı." },
+          { icon: "⚙️", name: "Tənzimləmələr", desc: "Şirkət parametrləri, valyuta, maliyyə ili, plan idarəetməsi." },
+        ],
+        erpSpecsTitle: "Texniki məlumatlar",
+        erpSpecs: [
+          { label: "Platforma növü", value: "Cloud SaaS (Web əsaslı)" },
+          { label: "Giriş cihazları", value: "Desktop, Tablet, Mobil" },
+          { label: "Dil dəstəyi", value: "Azərbaycan, İngilis, Rus, Türk, Alman" },
+          { label: "Valyuta", value: "Çoxvalyutalı dəstək" },
+          { label: "Məlumat ötürülməsi", value: "HTTPS (TLS 1.2+)" },
+          { label: "Uptime zəmanəti", value: "99.9% SLA" },
+          { label: "Yedəkləmə", value: "Gündəlik avtomatik backup" },
+          { label: "Dəstək kanalları", value: "E-poçt, Onboarding, Demo" },
+        ],
+        // Case Studies
+        csEyebrow: "Müştəri uğur hekayələri",
+        csH1: "Şirkətlər Tetavio ilə nə əldə etdi?",
+        csSub: "Müxtəlif sektorlardan real müştəri nəticələri.",
+        csStats: [
+          { num: "50+", label: "Aktiv şirkət" },
+          { num: "200K+", label: "Əməliyyat işləndi" },
+          { num: "99.9%", label: "Uptime" },
+          { num: "4.8★", label: "Orta reytinq" },
+        ],
+        csCards: [
+          {
+            quote: "Tetavio-ya keçdikdən sonra faktura müddəti 3 gündən 4 saata düşdü. Mühasibimiz artıq mənfəət-zərərə bir kliklə baxa bilir.",
+            name: "Əli Məmmədov", role: "Ticarət şirkəti — Baş direktor", init: "Ə",
+            metrics: [{ val: "18×", label: "Sürət artımı" }, { val: "0 xəta", label: "Hesabat" }],
+          },
+          {
+            quote: "Əvvəl Excel cədvəlləri ilə çaşırıq. İndi hər şey bir yerdə — alış, satış, bank. Komandamız 2 gündə öyrəndi.",
+            name: "Lalə Hüseynova", role: "İstehsal müəssisəsi — Mühasib", init: "L",
+            metrics: [{ val: "3 gün", label: "Onboarding" }, { val: "40%", label: "Vaxt qənaəti" }],
+          },
+          {
+            quote: "Hesabat almaq artıq saatlar deyil, saniyələr məsələsidir. Maliyyə direktorumuz qərarları daha sürətli verir.",
+            name: "Rauf Əliyev", role: "Xidmət şirkəti — CFO", init: "R",
+            metrics: [{ val: "∞", label: "Hesabat sürəti" }, { val: "2×", label: "Qərar sürəti" }],
+          },
+          {
+            quote: "Tetavio bizim üçün sadəcə mühasibat proqramı deyil — biznesin maliyyə siniri. Bütün komandamız istifadə edir.",
+            name: "Nigar Quliyeva", role: "E-ticarət — Əməliyyat rəhbəri", init: "N",
+            metrics: [{ val: "5 rol", label: "Komanda girişi" }, { val: "24/7", label: "Mövcudluq" }],
+          },
+        ],
+        // Shared CTA
+        ctaTitle: "Bu gün başlayın",
+        ctaText: "14 günlük pulsuz sınaq. Kredit kartı tələb olunmur.",
+        ctaStartBtn: "Pulsuz hesab aç →",
+        ctaDemoBtn: "Demo sifariş et",
+        footerNote: "© 2025 Tetavio MMC · VÖEN: 2009752131",
+      },
+    };
+
+    const t = FN_T[hubLang] || FN_T.az;
+    const demoForm = fnDemoForm;
+    const setDemoForm = setFnDemoForm;
+    const startForm = fnStartForm;
+    const setStartForm = setFnStartForm;
+    const demoSent = fnDemoSent;
+    const setDemoSent = setFnDemoSent;
+    const startSent = fnStartSent;
+    const setStartSent = setFnStartSent;
+
+    function navigateFunnel(page) {
+      setFunnelPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderFunnelTopbar() {
+      return (
+        <header className="fn-topbar">
+          <div className="fn-topbar-inner">
+            <button className="fn-brand" type="button" onClick={() => setActiveProduct("hub")}>
+              <div className="fn-brand-icon"><img src={logoSrc} alt="Tetavio" className="app-logo" /></div>
+              <div className="fn-brand-copy"><strong>Tetavio</strong><span>{t.brandSub}</span></div>
+            </button>
+            <nav className="fn-topbar-nav">
+              {t.nav.map((item) => (
+                <button key={item.id} type="button" className={`fn-nav-link${funnelPage === item.id ? " fn-active" : ""}`} onClick={() => navigateFunnel(item.id)}>
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="fn-topbar-actions">
+              <button className="fn-btn fn-btn-ghost" type="button" style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => { setActiveProduct("booksLanding"); setBooksView("signin"); setBooksNotice(""); }}>
+                {t.login}
+              </button>
+              <button className="fn-btn fn-btn-primary" type="button" style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                {t.register}
+              </button>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function renderFunnelFooter() {
+      return (
+        <footer className="fn-footer">
+          <div className="fn-footer-inner">
+            <span className="fn-footer-copy">{t.footerNote}</span>
+            <div className="fn-footer-links">
+              {t.nav.map((item) => (
+                <button key={item.id} type="button" className="fn-footer-link" onClick={() => navigateFunnel(item.id)}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    function renderFunnelCta() {
+      return (
+        <section className="fn-cta-section">
+          <div className="fn-wrap">
+            <div className="fn-cta-box fn-anim">
+              <h2>{t.ctaTitle}</h2>
+              <p>{t.ctaText}</p>
+              <div className="fn-cta-buttons">
+                <button className="fn-btn fn-btn-primary fn-btn-lg" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                  {t.ctaStartBtn}
+                </button>
+                <button className="fn-btn fn-btn-ghost fn-btn-lg" type="button" onClick={() => navigateFunnel("demo")}>
+                  {t.ctaDemoBtn}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function renderStartPage() {
+      return (
+        <div className="fn-shell">
+          {renderFunnelTopbar()}
+          <div className="fn-wrap">
+            <div className="fn-start-layout">
+              <div>
+                <div className="fn-eyebrow fn-anim">{t.startEyebrow}</div>
+                <h1 className="fn-h1 fn-anim fn-d1">{t.startH1}</h1>
+                <p className="fn-subtitle fn-anim fn-d2">{t.startSub}</p>
+                <div className="fn-start-steps">
+                  {t.startSteps.map((step, i) => (
+                    <div key={i} className={`fn-start-step fn-anim fn-d${i + 3}`}>
+                      <div className="fn-step-num">{i + 1}</div>
+                      <div className="fn-step-text"><strong>{step.title}</strong><span>{step.text}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="fn-start-cta-card fn-anim fn-d2">
+                  <h3>{t.startCtaTitle}</h3>
+                  <p>{t.startCtaText}</p>
+                  {startSent ? (
+                    <div style={{ textAlign: "center", padding: "16px 0" }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
+                      <strong style={{ color: "var(--fn-green)", fontSize: 15 }}>Hesabınız yaradıldı!</strong>
+                      <p style={{ color: "var(--fn-muted)", fontSize: 13, marginTop: 6 }}>Giriş üçün e-poçtunuzu yoxlayın.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <input className="fn-input" type="text" placeholder={t.startNamePh} value={startForm.name} onChange={(e) => setStartForm((f) => ({ ...f, name: e.target.value }))} />
+                      <input className="fn-input" type="email" placeholder={t.startEmailPh} value={startForm.email} onChange={(e) => setStartForm((f) => ({ ...f, email: e.target.value }))} />
+                      <button className="fn-btn fn-btn-primary fn-btn-full" type="button" onClick={() => { if (startForm.email) { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); } }}>
+                        {t.startBtn}
+                      </button>
+                      <div className="fn-trust-list">
+                        {t.startTrust.map((item, i) => (
+                          <div key={i} className="fn-trust-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <section className="fn-start-features">
+            <div className="fn-wrap">
+              <div className="fn-text-center" style={{ marginBottom: 40 }}>
+                <h2 className="fn-h2 fn-anim">{t.featsTitle}</h2>
+              </div>
+              <div className="fn-grid3">
+                {t.feats.map((feat, i) => (
+                  <div key={i} className={`fn-card fn-anim fn-d${(i % 4) + 1}`}>
+                    <div className="fn-feat-icon">{feat.icon}</div>
+                    <p className="fn-feat-title">{feat.title}</p>
+                    <p className="fn-feat-text">{feat.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          {renderFunnelCta()}
+          {renderFunnelFooter()}
+        </div>
+      );
+    }
+
+    function renderDemoPage() {
+      return (
+        <div className="fn-shell">
+          {renderFunnelTopbar()}
+          <div className="fn-demo-hero">
+            <div className="fn-wrap">
+              <div className="fn-eyebrow fn-anim">{t.demoEyebrow}</div>
+              <h1 className="fn-h1 fn-anim fn-d1">{t.demoH1}</h1>
+              <p className="fn-subtitle fn-anim fn-d2" style={{ marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>{t.demoSub}</p>
+            </div>
+          </div>
+          <div className="fn-demo-layout">
+            <div className="fn-wrap">
+              <div className="fn-demo-grid">
+                <div className="fn-demo-benefits">
+                  {t.demoBenefits.map((b, i) => (
+                    <div key={i} className={`fn-demo-benefit fn-anim fn-d${i + 1}`}>
+                      <div className="fn-demo-icon">{b.icon}</div>
+                      <div><strong>{b.title}</strong><span>{b.text}</span></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="fn-demo-form-card fn-anim fn-d2">
+                  <h3>{t.demoFormTitle}</h3>
+                  {demoSent ? (
+                    <div style={{ textAlign: "center", padding: "24px 0" }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
+                      <strong style={{ color: "var(--fn-green)", fontSize: 16 }}>Müraciətiniz qəbul edildi!</strong>
+                      <p style={{ color: "var(--fn-muted)", fontSize: 14, marginTop: 8 }}>Komandamız 24 saat ərzində sizinlə əlaqə saxlayacaq.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="fn-form-row">
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoFName}</label>
+                          <input className="fn-input" type="text" placeholder={t.demoFName} value={demoForm.fname} onChange={(e) => setDemoForm((f) => ({ ...f, fname: e.target.value }))} />
+                        </div>
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoLName}</label>
+                          <input className="fn-input" type="text" placeholder={t.demoLName} value={demoForm.lname} onChange={(e) => setDemoForm((f) => ({ ...f, lname: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="fn-form-row">
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoEmail}</label>
+                          <input className="fn-input" type="email" placeholder={t.demoEmail} value={demoForm.email} onChange={(e) => setDemoForm((f) => ({ ...f, email: e.target.value }))} />
+                        </div>
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoPhone}</label>
+                          <input className="fn-input" type="tel" placeholder={t.demoPhone} value={demoForm.phone} onChange={(e) => setDemoForm((f) => ({ ...f, phone: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="fn-form-group">
+                        <label className="fn-label">{t.demoCompany}</label>
+                        <input className="fn-input" type="text" placeholder={t.demoCompany} value={demoForm.company} onChange={(e) => setDemoForm((f) => ({ ...f, company: e.target.value }))} />
+                      </div>
+                      <div className="fn-form-row">
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoSize}</label>
+                          <select className="fn-select" value={demoForm.size} onChange={(e) => setDemoForm((f) => ({ ...f, size: e.target.value }))}>
+                            <option value="">Seçin</option>
+                            {t.demoSizes.map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                        <div className="fn-form-group">
+                          <label className="fn-label">{t.demoTime}</label>
+                          <select className="fn-select" value={demoForm.time} onChange={(e) => setDemoForm((f) => ({ ...f, time: e.target.value }))}>
+                            <option value="">Seçin</option>
+                            {t.demoTimes.map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="fn-demo-submit-row">
+                        <button className="fn-btn fn-btn-primary fn-btn-full fn-btn-lg" type="button" onClick={() => { if (demoForm.email && demoForm.fname) setDemoSent(true); }}>
+                          {t.demoBtn}
+                        </button>
+                      </div>
+                      <p className="fn-demo-note">{t.demoNote}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          {renderFunnelCta()}
+          {renderFunnelFooter()}
+        </div>
+      );
+    }
+
+    function renderPricingPage() {
+      function getPlanPrice(plan) {
+        if (plan.id === "free") return t.freePrice;
+        const price = fnBilling === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
+        return `$${price}`;
+      }
+      const topPlans = SUBSCRIPTION_PLANS.slice(0, 3);
+      const bottomPlans = SUBSCRIPTION_PLANS.slice(3);
+      return (
+        <div className="fn-shell">
+          {renderFunnelTopbar()}
+          <div className="fn-pricing-hero">
+            <div className="fn-wrap">
+              <div className="fn-eyebrow fn-anim">{t.pricingEyebrow}</div>
+              <h1 className="fn-h1 fn-anim fn-d1">{t.pricingH1}</h1>
+              <p className="fn-subtitle fn-anim fn-d2">{t.pricingSub}</p>
+              <div className="fn-billing-toggle fn-anim fn-d3">
+                <button className={`fn-billing-btn${fnBilling === "annual" ? " fn-active" : ""}`} type="button" onClick={() => setFnBilling("annual")}>
+                  {t.annualLabel} <span style={{ fontSize: 11, opacity: 0.8, marginLeft: 4 }}>({t.saveLabel})</span>
+                </button>
+                <button className={`fn-billing-btn${fnBilling === "monthly" ? " fn-active" : ""}`} type="button" onClick={() => setFnBilling("monthly")}>
+                  {t.monthlyLabel}
+                </button>
+              </div>
+              <div className="fn-plans-top">
+                {topPlans.map((plan, i) => (
+                  <div key={plan.id} className={`fn-plan-card fn-anim fn-d${i + 1}${plan.id === "professional" ? " fn-featured" : ""}`}>
+                    {plan.id === "professional" ? <div className="fn-plan-badge">{t.recommended}</div> : null}
+                    <div className="fn-plan-name">{plan.name}</div>
+                    <div className="fn-plan-desc">{t.planDescs[plan.id]}</div>
+                    <div className="fn-plan-price">
+                      <span className={`fn-price-num${plan.id !== "free" ? " fn-grad-text" : ""}`}>{getPlanPrice(plan)}</span>
+                      {plan.id !== "free" && <div className="fn-price-period">{t.perMonth}</div>}
+                      {fnBilling === "annual" && plan.id !== "free" && plan.annualMonthlyPrice < plan.monthlyPrice ? (
+                        <div className="fn-price-equiv">≈ ${plan.annualMonthlyPrice * 12} {t.annualNote}</div>
+                      ) : null}
+                    </div>
+                    <div className="fn-plan-divider" />
+                    <ul className="fn-plan-features">
+                      {(t.planFeatures[plan.id] || []).map((f) => <li key={f}>{f}</li>)}
+                    </ul>
+                    <button className={`fn-btn fn-btn-full${plan.id === "professional" ? " fn-btn-primary" : " fn-btn-outline"}`} type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                      {plan.id === "free" ? t.pricingStartBtn : t.pricingUpgradeBtn}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="fn-plans-bottom" style={{ marginTop: 18 }}>
+                {bottomPlans.map((plan, i) => (
+                  <div key={plan.id} className={`fn-plan-card fn-anim fn-d${i + 1}`}>
+                    <div className="fn-plan-name">{plan.name}</div>
+                    <div className="fn-plan-desc">{t.planDescs[plan.id]}</div>
+                    <div className="fn-plan-price">
+                      <span className="fn-price-num fn-grad-text">{getPlanPrice(plan)}</span>
+                      <div className="fn-price-period">{t.perMonth}</div>
+                      {fnBilling === "annual" && plan.annualMonthlyPrice < plan.monthlyPrice ? (
+                        <div className="fn-price-equiv">≈ ${plan.annualMonthlyPrice * 12} {t.annualNote}</div>
+                      ) : null}
+                    </div>
+                    <div className="fn-plan-divider" />
+                    <ul className="fn-plan-features">
+                      {(t.planFeatures[plan.id] || []).map((f) => <li key={f}>{f}</li>)}
+                    </ul>
+                    <button className="fn-btn fn-btn-outline fn-btn-full" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                      {t.pricingUpgradeBtn}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <section className="fn-pricing-faq">
+            <div className="fn-wrap">
+              <div className="fn-text-center" style={{ marginBottom: 40 }}>
+                <h2 className="fn-h2 fn-anim">{t.faqTitle}</h2>
+              </div>
+              <div className="fn-faq-list">
+                {t.faqs.map((faq, i) => (
+                  <div key={i} className={`fn-faq-item fn-anim fn-d${i + 1}`}>
+                    <p className="fn-faq-q">{faq.q}</p>
+                    <p className="fn-faq-a">{faq.a}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          {renderFunnelCta()}
+          {renderFunnelFooter()}
+        </div>
+      );
+    }
+
+    function renderErpPage() {
+      return (
+        <div className="fn-shell">
+          {renderFunnelTopbar()}
+          <section className="fn-erp-hero">
+            <div className="fn-erp-hero-glow" />
+            <div className="fn-wrap">
+              <div className="fn-erp-hero-layout">
+                <div>
+                  <div className="fn-eyebrow fn-anim">{t.erpEyebrow}</div>
+                  <h1 className="fn-h1 fn-anim fn-d1">{t.erpH1}</h1>
+                  <p className="fn-subtitle fn-anim fn-d2">{t.erpSub}</p>
+                  <div className="fn-cta-buttons fn-anim fn-d3" style={{ justifyContent: "flex-start" }}>
+                    <button className="fn-btn fn-btn-primary fn-btn-lg" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                      {t.ctaStartBtn}
+                    </button>
+                    <button className="fn-btn fn-btn-ghost fn-btn-lg" type="button" onClick={() => navigateFunnel("demo")}>
+                      {t.ctaDemoBtn}
+                    </button>
+                  </div>
+                </div>
+                <div className="fn-erp-mockup fn-anim fn-d2">
+                  <div className="fn-mockup-header">
+                    <div className="fn-mockup-dot" />
+                    <div className="fn-mockup-dot" />
+                    <div className="fn-mockup-dot" />
+                  </div>
+                  <div className="fn-mockup-rows">
+                    {[
+                      { label: "Cari ay gəliri", val: "+ $48,200", cls: "up" },
+                      { label: "Ödəniş gözlənilir", val: "$12,400", cls: "" },
+                      { label: "Pul axını balansı", val: "+ $35,800", cls: "up" },
+                      { label: "Gecikən fakturalar", val: "3 faktura", cls: "down" },
+                      { label: "Aktiv müştərilər", val: "142", cls: "" },
+                      { label: "Bu ay əməliyyat", val: "1,847", cls: "" },
+                    ].map((row, i) => (
+                      <div key={i} className="fn-mockup-row">
+                        <span className="fn-mockup-label">{row.label}</span>
+                        <span className={`fn-mockup-val${row.cls ? " " + row.cls : ""}`}>{row.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section className="fn-modules-section">
+            <div className="fn-wrap">
+              <div className="fn-text-center" style={{ marginBottom: 44 }}>
+                <h2 className="fn-h2 fn-anim">{t.erpModulesTitle}</h2>
+              </div>
+              <div className="fn-grid4">
+                {t.erpModules.map((mod, i) => (
+                  <div key={i} className={`fn-module-card fn-anim fn-d${(i % 4) + 1}`}>
+                    <div className="fn-module-icon">{mod.icon}</div>
+                    <p className="fn-module-name">{mod.name}</p>
+                    <p className="fn-module-desc">{mod.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="fn-specs-section">
+            <div className="fn-wrap">
+              <div style={{ marginBottom: 36 }}>
+                <h2 className="fn-h2 fn-anim">{t.erpSpecsTitle}</h2>
+              </div>
+              <table className="fn-specs-table fn-anim fn-d1">
+                <thead>
+                  <tr>
+                    <th>Göstərici</th>
+                    <th>Dəyər</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.erpSpecs.map((row, i) => (
+                    <tr key={i}>
+                      <td>{row.label}</td>
+                      <td>{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          {renderFunnelCta()}
+          {renderFunnelFooter()}
+        </div>
+      );
+    }
+
+    function renderCaseStudiesPage() {
+      return (
+        <div className="fn-shell">
+          {renderFunnelTopbar()}
+          <div className="fn-cs-hero">
+            <div className="fn-wrap">
+              <div className="fn-eyebrow fn-anim">{t.csEyebrow}</div>
+              <h1 className="fn-h1 fn-anim fn-d1">{t.csH1}</h1>
+              <p className="fn-subtitle fn-anim fn-d2">{t.csSub}</p>
+            </div>
+          </div>
+          <div className="fn-wrap">
+            <div className="fn-stats-strip fn-anim fn-d1">
+              {t.csStats.map((s, i) => (
+                <div key={i} className="fn-stat-cell">
+                  <span className="fn-stat-num">{s.num}</span>
+                  <span className="fn-stat-label">{s.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="fn-cs-grid">
+              {t.csCards.map((card, i) => (
+                <div key={i} className={`fn-cs-card fn-anim fn-d${(i % 3) + 1}`}>
+                  <p className="fn-cs-quote">{card.quote}</p>
+                  <div className="fn-cs-metrics">
+                    {card.metrics.map((m, j) => (
+                      <div key={j} className="fn-cs-metric">
+                        <span className="fn-cs-metric-val">{m.val}</span>
+                        <span className="fn-cs-metric-label">{m.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="fn-cs-meta">
+                    <div className="fn-cs-avatar">{card.init}</div>
+                    <div className="fn-cs-author"><strong>{card.name}</strong><span>{card.role}</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {renderFunnelCta()}
+          {renderFunnelFooter()}
+        </div>
+      );
+    }
+
+    if (funnelPage === "demo") return renderDemoPage();
+    if (funnelPage === "pricing") return renderPricingPage();
+    if (funnelPage === "erp") return renderErpPage();
+    if (funnelPage === "case-studies") return renderCaseStudiesPage();
+    return renderStartPage();
+  }
+
   function renderProductHub() {
     const hubCompanyName = "Tetavio LLC";
     const LANGS = [
@@ -13294,7 +13960,7 @@ function renderItemsCatalog() {
         recommended: "Tövsiyə olunan",
         activePlan: "Aktiv plan",
         freePrice: "Pulsuz",
-        freeLimit: "10 əməliyyat limiti",
+        freeLimit: "14 günlük pulsuz sınaq",
         operationLimitSuffix: "əməliyyat limiti",
         annualDuration: "365 günlük aktiv plan",
         monthlyDuration: "30 günlük aktiv plan",
@@ -13321,7 +13987,7 @@ function renderItemsCatalog() {
         contact: "Əlaqə: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "Başlanğıc istifadə üçün pulsuz plan",
+          free: "14 günlük tam pulsuz sınaq",
           standard: "Kiçik komandalar üçün baza plan",
           professional: "Daha aktiv əməliyyat axını üçün",
           premium: "Geniş istifadə və yüksək çeviklik üçün",
@@ -13380,7 +14046,7 @@ function renderItemsCatalog() {
         recommended: "Recommended",
         activePlan: "Active plan",
         freePrice: "Free",
-        freeLimit: "10 operation limit",
+        freeLimit: "14-day free trial",
         operationLimitSuffix: "operation limit",
         annualDuration: "365-day active plan",
         monthlyDuration: "30-day active plan",
@@ -13466,7 +14132,7 @@ function renderItemsCatalog() {
         recommended: "Рекомендуем",
         activePlan: "Активный план",
         freePrice: "Бесплатно",
-        freeLimit: "Лимит 10 операций",
+        freeLimit: "14-дневный бесплатный пробный период",
         operationLimitSuffix: "лимит операций",
         annualDuration: "План активен 365 дней",
         monthlyDuration: "План активен 30 дней",
@@ -13552,7 +14218,7 @@ function renderItemsCatalog() {
         recommended: "Önerilen",
         activePlan: "Aktif plan",
         freePrice: "Ücretsiz",
-        freeLimit: "10 işlem limiti",
+        freeLimit: "14 günlük ücretsiz deneme",
         operationLimitSuffix: "işlem limiti",
         annualDuration: "365 gün aktif plan",
         monthlyDuration: "30 gün aktif plan",
@@ -13638,7 +14304,7 @@ function renderItemsCatalog() {
         recommended: "Empfohlen",
         activePlan: "Aktiver Plan",
         freePrice: "Kostenlos",
-        freeLimit: "10 Vorgänge Limit",
+        freeLimit: "14-tägige kostenlose Testversion",
         operationLimitSuffix: "Vorgänge Limit",
         annualDuration: "365 Tage aktiv",
         monthlyDuration: "30 Tage aktiv",
@@ -13932,7 +14598,7 @@ function renderItemsCatalog() {
                   ) : null}
                   <p className="ph-price-copy">{planDescriptions[plan.id]}</p>
                   <ul className="ph-list ph-list-tight">
-                    <li>{plan.id === "free" ? t.freeLimit : `${Number(plan.operationLimit).toLocaleString("en-US")} ${t.operationLimitSuffix}`}</li>
+                    <li>{plan.id === "free" ? t.freeLimit : plan.operationLimit != null ? `${Number(plan.operationLimit).toLocaleString("en-US")} ${t.operationLimitSuffix}` : t.freeLimit}</li>
                     <li>{getHubPlanDuration(plan)}</li>
                   </ul>
                 </article>
@@ -17835,7 +18501,7 @@ function renderSettings() {
                 rows={authUsers.filter((user) => user.role !== "super_admin").map((user) => {
                   const plan = getPlanById(user.subscription?.planId || "free");
                   const draft = adminPlanDrafts[user.email] || { planId: user.subscription?.planId || "free", billingCycle: user.subscription?.billingCycle === "monthly" ? "monthly" : "annual", durationDays: String(getPlanDurationDays(plan, user.subscription?.billingCycle === "monthly" ? "monthly" : "annual") || 30) };
-                  const left = plan.id === "free" ? `${Math.max(0, Number(user.subscription?.operationLimit || 0) - Number(user.operationsUsed || 0))} əməliyyat` : `${daysUntil(user.subscription?.endsAt) ?? 0} gün`;
+                  const left = plan.id === "free" ? `${daysUntil(user.subscription?.endsAt) ?? 0} gün sınaq` : `${daysUntil(user.subscription?.endsAt) ?? 0} gün`;
                   return (
                     <tr key={user.email}>
                       <td><strong>{user.fullName}</strong><br />{user.email}</td>
@@ -17967,8 +18633,8 @@ function renderSettings() {
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
                   <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{currentPlan.id === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(currentPlan, currentBillingCycle)}</strong></article>
-                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free" ? `${Math.max(0, Number(currentPlan.operationLimit || 0) - Number(ownerUser?.operationsUsed || 0))} ${at.sub_opUnitShort}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
-                  <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{Number(currentPlan.operationLimit || 0).toLocaleString("en-US")}</strong></article>
+                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free" ? (backendSubscription?.trialDaysRemaining != null ? `${backendSubscription.trialDaysRemaining} ${at.sub_days}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? 0} ${at.sub_days}`) : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
+                  <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : "Limitsiz"}</strong></article>
                   <article className="summary-card"><span>{at.sub_statusLabel}</span><strong>{currentUser.role === "super_admin" ? at.sub_fullAccess : at.statusActive}</strong></article>
                 </div>
               </section>
@@ -18371,6 +19037,10 @@ function renderSettings() {
     return renderInternalAdmin();
   }
 
+  if (activeProduct === "funnel") {
+    return renderFunnel();
+  }
+
   if (activeProduct === "hub") {
     return renderProductHub();
   }
@@ -18381,9 +19051,55 @@ function renderSettings() {
   const appActiveLang = APP_LANGS.find((l) => l.code === hubLang) || APP_LANGS[0];
   const backupTone = backupStatus.tone || "info";
 
+  const trialIsExpired = !!(
+    currentUser &&
+    currentUser.role !== "super_admin" &&
+    backendSubscription?.plan?.code === "FREE" &&
+    backendSubscription?.isTrialExpired === true
+  );
+
+  const trialDaysLeft = backendSubscription?.trialDaysRemaining ?? null;
+  const showTrialWarning = !trialIsExpired && trialDaysLeft !== null && trialDaysLeft <= 3 && backendSubscription?.plan?.code === "FREE";
+
   return (
     <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
       <button className={`mobile-nav-overlay${appNavOpen ? " visible" : ""}`} type="button" aria-label={appMenuLabel} onClick={() => setAppNavOpen(false)} />
+
+      {trialIsExpired && (
+        <div className="trial-expired-overlay">
+          <div className="trial-expired-modal">
+            <div className="trial-expired-icon">⏰</div>
+            <h2 className="trial-expired-title">Sınaq müddəti bitdi</h2>
+            <p className="trial-expired-body">
+              14 günlük pulsuz sınaq müddətiniz başa çatdı. Platformadan istifadəni davam etdirmək üçün ödənişli paketlərdən birini seçin.
+            </p>
+            <div className="trial-expired-actions">
+              <button
+                className="trial-expired-btn-primary"
+                type="button"
+                onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}
+              >
+                Plan seç →
+              </button>
+              <button
+                className="trial-expired-btn-ghost"
+                type="button"
+                onClick={logoutUser}
+              >
+                Çıxış et
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTrialWarning && (
+        <div className="trial-warning-bar">
+          <span>⚡ Sınaq müddətindən <strong>{trialDaysLeft} gün</strong> qalıb — platformadan tam yararlanmaq üçün plan seçin.</span>
+          <button type="button" className="trial-warning-cta" onClick={() => setAccountPanel("plans")}>Plan seç</button>
+        </div>
+      )}
+
       <aside className="sidebar" onClick={(event) => event.stopPropagation()}>
         <button className="brand-block" type="button" onClick={() => { setActiveProduct("hub"); setAppNavOpen(false); }}>
           <div className="brand-icon">

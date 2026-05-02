@@ -10,7 +10,7 @@ import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { DowngradeSubscriptionDto } from './dto/downgrade-subscription.dto';
 import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
-import { DEFAULT_OPERATION_LIMIT, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
+import { DEFAULT_OPERATION_LIMIT, FREE_TRIAL_DAYS, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
 
 @Injectable()
 export class SubscriptionsService {
@@ -46,7 +46,10 @@ export class SubscriptionsService {
     }
 
     const planCode = subscription.plan.code;
-    const operationLimit = PLAN_OPERATION_LIMITS[planCode] ?? DEFAULT_OPERATION_LIMIT;
+    const isFreePlan = planCode === 'FREE';
+
+    // For FREE plan: unlimited operations, access gated by trial expiry
+    const operationLimit = isFreePlan ? null : (PLAN_OPERATION_LIMITS[planCode] ?? DEFAULT_OPERATION_LIMIT);
 
     const [invoices, bills, journals] = await Promise.all([
       this.prisma.invoice.count({ where: { accountId: user.accountId, deletedAt: null } }),
@@ -55,6 +58,15 @@ export class SubscriptionsService {
     ]);
 
     const operationsUsed = invoices + bills + journals;
+
+    // Trial metadata (only relevant for FREE plan)
+    const trialExpiresAt = isFreePlan ? subscription.currentPeriodEnd : null;
+    const now = new Date();
+    const isTrialExpired = isFreePlan && trialExpiresAt ? now > trialExpiresAt : false;
+    const trialDaysRemaining =
+      isFreePlan && trialExpiresAt && !isTrialExpired
+        ? Math.max(0, Math.ceil((trialExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : null;
 
     return {
       id: subscription.id,
@@ -67,6 +79,9 @@ export class SubscriptionsService {
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       operationsUsed,
       operationLimit,
+      trialExpiresAt,
+      isTrialExpired,
+      trialDaysRemaining,
     };
   }
 
