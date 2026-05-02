@@ -35,4 +35,10 @@ export class ReportsController {
   getBalanceSheet(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getBalanceSheet(user.accountId);
   }
+
+  @Get('cash-flow')
+  @ApiOperation({ summary: 'Cash flow report for authenticated account' })
+  getCashFlow(@CurrentUser() user: JwtPayload) {
+    return this.reportsService.getCashFlow(user.accountId);
+  }
 }

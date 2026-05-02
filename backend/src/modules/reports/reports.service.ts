@@ -375,4 +375,47 @@ export class ReportsService {
       isBalanced,
     };
   }
+
+  // ─── Cash Flow ──────────────────────────────────────────────────────
+
+  async getCashFlow(accountId: string) {
+    const today = new Date();
+
+    // Get all bank transactions (inflow - positive, outflow - negative)
+    const transactions = await this.prisma.bankTransaction.findMany({
+      where: { accountId, deletedAt: null },
+      select: {
+        type: true,
+        amountMinor: true,
+        transactionDate: true,
+      },
+    });
+
+    // Calculate cash inflows and outflows
+    const inflowsMinor = transactions
+      .filter((tx) => tx.type === 'INFLOW')
+      .reduce((sum, tx) => sum + tx.amountMinor, 0);
+
+    const outflowsMinor = transactions
+      .filter((tx) => tx.type === 'OUTFLOW')
+      .reduce((sum, tx) => sum + tx.amountMinor, 0);
+
+    const netCashFlowMinor = inflowsMinor - outflowsMinor;
+
+    // Get bank account balances
+    const bankAccounts = await this.prisma.bankAccount.findMany({
+      where: { accountId, deletedAt: null },
+      select: { balanceMinor: true },
+    });
+
+    const cashAndBankMinor = bankAccounts.reduce((sum, acc) => sum + acc.balanceMinor, 0);
+
+    return {
+      asOfDate: today.toISOString().slice(0, 10),
+      inflowsMinor,
+      outflowsMinor,
+      netCashFlowMinor,
+      cashAndBankMinor,
+    };
+  }
 }

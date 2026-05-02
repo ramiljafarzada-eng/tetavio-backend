@@ -56,6 +56,8 @@ import {
   apiMe,
   apiMockWebhook,
   apiRegister,
+  apiRequestPasswordReset,
+  apiConfirmPasswordReset,
   apiUpdateCompanySettings,
   apiUpdateCustomer,
   apiUpdateInvoice,
@@ -2363,6 +2365,10 @@ function MainApp() {
   const [accountsError, setAccountsError] = useState("");
   const [journalsLoading, setJournalsLoading] = useState(false);
   const [journalsError, setJournalsError] = useState("");
+  const [billsLoading, setBillsLoading] = useState(false);
+  const [billsError, setBillsError] = useState("");
+  const [bankingLoading, setBankingLoading] = useState(false);
+  const [bankingError, setBankingError] = useState("");
   const [companySettingsLoading, setCompanySettingsLoading] = useState(false);
   const [companySettingsError, setCompanySettingsError] = useState("");
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -2530,6 +2536,8 @@ function MainApp() {
     try {
       if (session) {
         window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        // Sync bills after login
+        syncBillsFromBackend(session);
       } else {
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
       }
@@ -2924,6 +2932,211 @@ function MainApp() {
     }
   }
 
+  async function syncBillsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setBillsLoading(false);
+      setBillsError("");
+      setState((current) => (
+        current.bills.length
+          ? { ...current, bills: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setBillsLoading(true);
+    setBillsError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListBills({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendBill));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, bills: collected }));
+      return collected;
+    } catch (error) {
+      setBillsError(error?.message || "Hesab-fakturalar backend-dən alınmadı.");
+      setState((current) => ({ ...current, bills: [] }));
+      return [];
+    } finally {
+      setBillsLoading(false);
+    }
+  }
+
+  function normalizeBackendBill(bill) {
+    if (!bill || typeof bill !== "object") return null;
+    return {
+      id: String(bill.id || ""),
+      vendorId: String(bill.vendorId || ""),
+      billNumber: String(bill.billNumber || ""),
+      status: String(bill.status || "DRAFT"),
+      issueDate: String(bill.issueDate || today()),
+      dueDate: bill.dueDate ? String(bill.dueDate) : "",
+      currency: String(bill.currency || "AZN"),
+      notes: String(bill.notes || ""),
+      totalMinor: Number(bill.totalMinor || 0),
+      paidAmountMinor: Number(bill.paidAmountMinor || 0),
+      outstandingMinor: Number(bill.outstandingMinor || 0),
+      lines: Array.isArray(bill.lines) ? bill.lines.map((line) => normalizeBackendBillLine(line)) : [],
+      createdAt: bill.createdAt ? String(bill.createdAt) : "",
+      updatedAt: bill.updatedAt ? String(bill.updatedAt) : "",
+    };
+  }
+
+  async function syncBankAccountsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setBankingLoading(false);
+      setBankingError("");
+      setState((current) => (
+        current.bankingAccounts.length
+          ? { ...current, bankingAccounts: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setBankingLoading(true);
+    setBankingError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListBankAccounts({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendBankAccount));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, bankingAccounts: collected }));
+      return collected;
+    } catch (error) {
+      setBankingError(error?.message || "Bank hesabları backend-dən alınmadı.");
+      setState((current) => ({ ...current, bankingAccounts: [] }));
+      return [];
+    } finally {
+      setBankingLoading(false);
+    }
+  }
+
+  async function syncBankTransactionsFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setBankingLoading(false);
+      setBankingError("");
+      setState((current) => (
+        current.bankTransactions.length
+          ? { ...current, bankTransactions: [] }
+          : current
+      ));
+      return [];
+    }
+
+    setBankingLoading(true);
+    setBankingError("");
+
+    try {
+      let page = 1;
+      let totalPages = 1;
+      const collected = [];
+
+      while (page <= totalPages) {
+        const response = await apiListBankTransactions({ page, limit: 100 }, updateBackendSession);
+        const batch = Array.isArray(response?.data) ? response.data : [];
+        collected.push(...batch.map(normalizeBackendBankTransaction));
+
+        const meta = response?.meta || {};
+        totalPages = Math.max(1, Number(meta.totalPages || 1));
+        page += 1;
+      }
+
+      setState((current) => ({ ...current, bankTransactions: collected }));
+      return collected;
+    } catch (error) {
+      setBankingError(error?.message || "Bank əməliyyatları backend-dən alınmadı.");
+      setState((current) => ({ ...current, bankTransactions: [] }));
+      return [];
+    } finally {
+      setBankingLoading(false);
+    }
+  }
+
+  function normalizeBackendBankAccount(record) {
+    if (!record || typeof record !== "object") return null;
+    return {
+      id: String(record.id || ""),
+      accountName: String(record.accountName || ""),
+      accountNumber: String(record.accountNumber || ""),
+      bankName: String(record.bankName || ""),
+      currency: String(record.currency || "AZN"),
+      balance: Number(record.balance || 0),
+      status: String(record.status || "AKTIV"),
+      createdAt: record.createdAt ? String(record.createdAt) : "",
+    };
+  }
+
+  function normalizeBackendBankTransaction(record) {
+    if (!record || typeof record !== "object") return null;
+    return {
+      id: String(record.id || ""),
+      bankAccountId: String(record.bankAccountId || ""),
+      type: String(record.type || "INFLOW"),
+      amountMinor: Number(record.amountMinor || 0),
+      transactionDate: String(record.transactionDate || today()),
+      description: String(record.description || ""),
+      reference: String(record.reference || ""),
+      createdAt: record.createdAt ? String(record.createdAt) : "",
+    };
+  }
+
+  function normalizeBackendBillLine(line) {
+    if (!line || typeof line !== "object") return null;
+    return {
+      id: String(line.id || ""),
+      itemName: String(line.itemName || ""),
+      description: String(line.description || ""),
+      quantity: Number(line.quantity || 0),
+      unitPriceMinor: Number(line.unitPriceMinor || 0),
+      taxCode: String(line.taxCode || ""),
+      taxRate: Number(line.taxRate || 0),
+      lineTotalMinor: Number(line.lineTotalMinor || 0),
+    };
+  }
+
+  async function deleteBillRecord(recordId) {
+    setBillsLoading(true);
+    setBillsError("");
+
+    try {
+      await apiDeleteBill(recordId, updateBackendSession);
+      await syncBillsFromBackend();
+      if (editing.incomingGoodsServices === recordId) {
+        cancelEdit("incomingGoodsServices");
+      }
+    } catch (error) {
+      setBillsError(error?.message || "Hesab-faktura silinmədi.");
+    } finally {
+      setBillsLoading(false);
+    }
+  }
+
   async function submitAccountingAccountModule(activeDraft, editingId) {
     const payload = {
       accountCode: String(activeDraft.accountCode || "").trim(),
@@ -3006,6 +3219,53 @@ function MainApp() {
       setJournalsError(error?.message || "Müxabirləşmə yadda saxlanmadı.");
     } finally {
       setJournalsLoading(false);
+    }
+  }
+
+  async function submitBillModule(activeDraft, editingId) {
+    setBillsLoading(true);
+    setBillsError("");
+
+    try {
+      const payload = moduleId === "incomingGoodsServices"
+        ? (() => {
+            const vendor = state.vendors.find((v) => v.id === activeDraft.vendorId) || null;
+            const lineItems = (activeDraft.lineItems || []).map((item) => {
+              const calc = calculateLineItem(item.quantity, item.rate, item.taxLabel);
+              return {
+                itemName: String(item.itemName || item.name || "").trim(),
+                description: String(item.description || "").trim() || undefined,
+                quantity: Number(item.quantity || 0),
+                unitPriceMinor: Math.round(Number(item.rate || 0) * 100),
+                taxCode: String(item.taxLabel || "").trim() || undefined,
+                taxRate: Number(item.taxRate ?? extractTaxRateFromLabel(item.taxLabel)),
+              };
+            });
+            return {
+              vendorId: vendor?.id || activeDraft.vendorId || "",
+              billNumber: String(activeDraft.billNumber || "").trim() || undefined,
+              status: String(activeDraft.status || "DRAFT").trim(),
+              issueDate: String(activeDraft.billDate || activeDraft.issueDate || today()),
+              dueDate: activeDraft.dueDate ? String(activeDraft.dueDate) : undefined,
+              currency: String(state.settings.currency || "AZN").trim().toUpperCase(),
+              notes: String(activeDraft.notes || "").trim() || undefined,
+              lines: lineItems,
+            };
+          })()
+        : {};
+
+      if (editingId) {
+        await apiUpdateBill(editingId, payload, updateBackendSession);
+      } else {
+        await apiCreateBill(payload, updateBackendSession);
+        markOperationUsage();
+      }
+      await syncBillsFromBackend();
+      cancelEdit("incomingGoodsServices");
+    } catch (error) {
+      setBillsError(error?.message || "Hesab-faktura yadda saxlanmadı.");
+    } finally {
+      setBillsLoading(false);
     }
   }
 
@@ -6869,6 +7129,10 @@ function MainApp() {
       await submitJournalEntryModule(activeDraft, editingId);
       return;
     }
+    if (moduleId === "incomingGoodsServices") {
+      await submitBillModule(activeDraft, editingId);
+      return;
+    }
     const payload = moduleId === "manualJournals"
       ? {
         ...parseDraft(moduleId, activeDraft),
@@ -6889,25 +7153,31 @@ function MainApp() {
         debit: getManualJournalAnalysis(activeDraft).debitTotal,
         credit: getManualJournalAnalysis(activeDraft).creditTotal
       }
-      : moduleId === "incomingGoodsServices"
-        ? (() => {
-          const lineItems = (activeDraft.lineItems || []).map((item) => {
-            const accountCode = normalizeAccountCodeInput(item.accountCode || item.account || "", "205");
-            const calc = calculateLineItem(item.quantity, item.rate, item.taxLabel);
-            return { ...item, accountCode, ...calc };
-          });
-          const totals = calculateBillTotals(lineItems, activeDraft.discount, activeDraft.adjustment);
-          return {
-            billNumber: activeDraft.billNumber || "",
-            billDate: activeDraft.billDate || today(),
-            vendorName: activeDraft.vendorName || "",
-            notes: activeDraft.notes || "",
-            discount: Number(activeDraft.discount || 0),
-            adjustment: Number(activeDraft.adjustment || 0),
-            lineItems,
-            ...totals
-          };
-        })()
+        : moduleId === "incomingGoodsServices"
+          ? (() => {
+            const vendor = state.vendors.find((v) => v.id === activeDraft.vendorId) || null;
+            const lineItems = (activeDraft.lineItems || []).map((item) => {
+              const calc = calculateLineItem(item.quantity, item.rate, item.taxLabel);
+              return {
+                itemName: String(item.itemName || item.name || "").trim(),
+                description: String(item.description || "").trim() || undefined,
+                quantity: Number(item.quantity || 0),
+                unitPriceMinor: Math.round(Number(item.rate || 0) * 100),
+                taxCode: String(item.taxLabel || "").trim() || undefined,
+                taxRate: Number(item.taxRate ?? extractTaxRateFromLabel(item.taxLabel)),
+              };
+            });
+            return {
+              vendorId: vendor?.id || activeDraft.vendorId || "",
+              billNumber: String(activeDraft.billNumber || "").trim() || undefined,
+              status: String(activeDraft.status || "DRAFT").trim(),
+              issueDate: String(activeDraft.billDate || activeDraft.issueDate || today()),
+              dueDate: activeDraft.dueDate ? String(activeDraft.dueDate) : undefined,
+              currency: String(state.settings.currency || "AZN").trim().toUpperCase(),
+              notes: String(activeDraft.notes || "").trim() || undefined,
+              lines: lineItems,
+            };
+          })()
         : moduleId === "invoices"
           ? (() => {
             const parsed = { ...parseDraft(moduleId, activeDraft), ...buildOperationalPayload(moduleId, activeDraft) };
@@ -7025,6 +7295,10 @@ function MainApp() {
     }
     if (moduleId === "invoices") {
       await deleteInvoiceRecord(recordId);
+      return;
+    }
+    if (moduleId === "incomingGoodsServices") {
+      await deleteBillRecord(recordId);
       return;
     }
     if (moduleId === "chartOfAccounts") {
@@ -7245,62 +7519,73 @@ function MainApp() {
     }));
   }
 
-  function submitBank(event) {
+  async function submitBank(event) {
     event.preventDefault();
     if (!editingBank && !guardOperationAccess()) return;
     const bankName = String(bankDraft.bankName || bankDraft.accountName || "").trim();
     const bankCode = String(bankDraft.bankCode || bankDraft.institution || "").trim();
     const settlementAccount = String(bankDraft.settlementAccount || bankDraft.iban || "").trim();
     const payload = {
-      bankName,
-      bankTaxId: String(bankDraft.bankTaxId || "").trim(),
-      bankCode,
-      swift: String(bankDraft.swift || "").trim(),
-      correspondentAccount: String(bankDraft.correspondentAccount || "").trim(),
-      settlementAccount,
       accountName: bankName,
-      institution: bankCode,
-      accountType: bankDraft.accountType || "Cari",
+      accountNumber: settlementAccount,
+      bankName,
+      currency: String(bankDraft.currency || state.settings.currency || "AZN").trim().toUpperCase(),
       balance: Number(bankDraft.balance || 0),
-      iban: settlementAccount,
-      coaCode: bankDraft.coaCode || "",
-      lastSync: today()
+      status: String(bankDraft.status || "AKTIV").trim(),
     };
-    setState((current) => ({
-      ...current,
-      bankingAccounts: editingBank ? current.bankingAccounts.map((item) => item.id === editingBank ? { ...item, ...payload } : item) : [{ id: crypto.randomUUID(), ...payload }, ...current.bankingAccounts]
-    }));
-    if (!editingBank) markOperationUsage();
-    setBankDraft(createEmptyBankDraft());
-    setEditingBank(null);
-    setBankView(bankFormOrigin || "banks");
+
+    setBankingLoading(true);
+    setBankingError("");
+
+    try {
+      if (editingBank) {
+        await apiUpdateBankAccount(editingBank, payload, updateBackendSession);
+      } else {
+        await apiCreateBankAccount(payload, updateBackendSession);
+        markOperationUsage();
+      }
+      await syncBankAccountsFromBackend();
+      setBankDraft(createEmptyBankDraft());
+      setEditingBank(null);
+      setBankView(bankFormOrigin || "banks");
+    } catch (error) {
+      setBankingError(error?.message || "Bank hesabı yadda saxlanmadı.");
+    } finally {
+      setBankingLoading(false);
+    }
   }
 
-  function submitBankTx(event) {
+  async function submitBankTx(event) {
     event.preventDefault();
     if (!bankTxEditId && !guardOperationAccess()) return;
     const payload = {
-      date: bankTxDraft.date || today(),
-      description: bankTxDraft.description,
-      counterpartyName: bankTxDraft.counterpartyName,
-      category: bankTxDraft.category,
-      transactionType: bankTxDraft.transactionType,
-      amount: Number(bankTxDraft.amount || 0),
-      bankAccountId: bankTxDraft.bankAccountId,
-      accountCode: bankTxDraft.accountCode,
-      reference: bankTxDraft.reference,
+      transactionDate: bankTxDraft.date || today(),
+      description: String(bankTxDraft.description || "").trim(),
+      type: String(bankTxDraft.transactionType || "INFLOW").toUpperCase(),
+      amountMinor: Math.round(Number(bankTxDraft.amount || 0) * 100),
+      bankAccountId: String(bankTxDraft.bankAccountId || "").trim(),
+      reference: String(bankTxDraft.reference || "").trim() || undefined,
     };
-    setState((current) => ({
-      ...current,
-      bankTransactions: bankTxEditId
-        ? current.bankTransactions.map((t) => t.id === bankTxEditId ? { ...t, ...payload } : t)
-        : [{ id: crypto.randomUUID(), ...payload }, ...current.bankTransactions]
-    }));
-    if (!bankTxEditId) markOperationUsage();
-    setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
-    setBankTxAccountSearch("");
-    setBankTxEditId(null);
-    setBankView("journal");
+
+    setBankingLoading(true);
+    setBankingError("");
+
+    try {
+      if (bankTxEditId) {
+        await apiUpdateBankTransaction(bankTxEditId, payload, updateBackendSession);
+      } else {
+        await apiCreateBankTransaction(payload, updateBackendSession);
+        markOperationUsage();
+      }
+      await syncBankTransactionsFromBackend();
+      setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" });
+      setBankTxEditId(null);
+      setBankView("journal");
+    } catch (error) {
+      setBankingError(error?.message || "Bank əməliyyatı yadda saxlanmadı.");
+    } finally {
+      setBankingLoading(false);
+    }
   }
 
   function submitDocument(event) {
@@ -8597,8 +8882,114 @@ function renderItemsCatalog() {
     );
   }
 
+  async function syncTrialBalanceFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setReportsLoading(false);
+      setReportsError("");
+      return null;
+    }
+
+    setReportsLoading(true);
+    setReportsError("");
+
+    try {
+      const data = await apiGetTrialBalance(updateBackendSession);
+      return data;
+    } catch (error) {
+      setReportsError(error?.message || "Trial Balance backend-dən alınmadı.");
+      return null;
+    } finally {
+      setReportsLoading(false);
+    }
+  }
+
+  async function syncProfitLossFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setReportsLoading(false);
+      setReportsError("");
+      return null;
+    }
+
+    setReportsLoading(true);
+    setReportsError("");
+
+    try {
+      const data = await apiGetProfitLoss(updateBackendSession);
+      return data;
+    } catch (error) {
+      setReportsError(error?.message || "Profit & Loss backend-dən alınmadı.");
+      return null;
+    } finally {
+      setReportsLoading(false);
+    }
+  }
+
+  async function syncBalanceSheetFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setReportsLoading(false);
+      setReportsError("");
+      return null;
+    }
+
+    setReportsLoading(true);
+    setReportsError("");
+
+    try {
+      const data = await apiGetBalanceSheet(updateBackendSession);
+      return data;
+    } catch (error) {
+      setReportsError(error?.message || "Balance Sheet backend-dən alınmadı.");
+      return null;
+    } finally {
+      setReportsLoading(false);
+    }
+  }
+
+  async function syncCashFlowFromBackend(sessionOverride = null) {
+    const session = sessionOverride || backendSession;
+    if (!session?.accessToken) {
+      setReportsLoading(false);
+      setReportsError("");
+      return null;
+    }
+
+    setReportsLoading(true);
+    setReportsError("");
+
+    try {
+      const data = await apiGetCashFlow(updateBackendSession);
+      return data;
+    } catch (error) {
+      setReportsError(error?.message || "Cash Flow backend-dən alınmadı.");
+      return null;
+    } finally {
+      setReportsLoading(false);
+    }
+  }
+
   function renderTrialBalance() {
-    const rows = getTrialBalanceRows();
+    const backendData = useMemo(() => {
+      if (reportsLoading) return null;
+      if (reportsError) return null;
+      // Return null to force sync
+      return null;
+    }, [reportsLoading, reportsError]);
+
+    const rows = useMemo(() => {
+      if (backendData) return backendData.accounts || [];
+      return getTrialBalanceRows();
+    }, [backendData]);
+
+    // Sync on mount if needed
+    useMemo(() => {
+      if (backendSession?.accessToken && !backendData) {
+        syncTrialBalanceFromBackend();
+      }
+    }, [backendSession, backendData]);
+
     const filterMap = {
       [at.tb_tabAll]: null,
       [at.tb_acAsset]: "Aktiv",
@@ -13310,10 +13701,10 @@ function renderItemsCatalog() {
     };
 
     return (
-      <div className="ph-shell" onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (hubNavOpen) setHubNavOpen(false); }}>
+      <div className="ph-shell" onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (hubNavOpen) setHubNavOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); }}>
         <header className="ph-topbar">
           <div className="ph-topbar-inner">
-            <div className="lp-brand">
+            <button className="lp-brand" type="button" onClick={() => setActiveProduct("hub")}>
               <div className="lp-brand-icon">
                 <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
@@ -13321,7 +13712,7 @@ function renderItemsCatalog() {
                 <strong>Tetavio</strong>
                 <span>{t.platform}</span>
               </div>
-            </div>
+            </button>
             <div className="ph-topbar-right">
               <nav className="ph-nav-links" aria-label="Ana səhifə bölmələri">
                 {t.nav.map((item) => (
@@ -13356,9 +13747,54 @@ function renderItemsCatalog() {
                   </div>
                 )}
               </div>
-              <div className="ph-company-pill">
-                <span className="ph-company-dot" />
-                <span>{hubCompanyName}</span>
+              <div className={`profile-menu ${profileMenuOpen ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+                <button className="profile-trigger" type="button" onClick={() => setProfileMenuOpen((current) => !current)}>
+                  {currentUser ? (
+                    <span className="profile-avatar">{String(currentUser.fullName || currentUser.email || "U").trim().charAt(0).toUpperCase()}</span>
+                  ) : (
+                    <span className="profile-avatar profile-avatar-guest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+                  )}
+                </button>
+                {profileMenuOpen ? (
+                  currentUser ? (
+                    <div className="profile-dropdown">
+                      <div className="profile-dropdown-copy">
+                        <strong>{activeCompanyName || currentUser.fullName}</strong>
+                        <small>{currentUser.email}</small>
+                      </div>
+                      {(currentUser.role === "super_admin" || !isInternalUser(currentUser)) ? (
+                        <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}>
+                          {at.menuPlan}
+                        </button>
+                      ) : null}
+                      {canManageTeam(currentUser) ? (
+                        <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("team"); setProfileMenuOpen(false); }}>
+                          {at.menuTeam}
+                        </button>
+                      ) : null}
+                      {currentUser.role === "super_admin" ? (
+                        <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("admin"); setProfileMenuOpen(false); }}>
+                          {at.menuAdmin}
+                        </button>
+                      ) : null}
+                      <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
+                        {at.menuPass}
+                      </button>
+                      <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
+                        {at.menuLogout}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="profile-dropdown">
+                      <button className="profile-signin-btn" type="button" onClick={() => { setProfileMenuOpen(false); setActiveProduct("booksLanding"); setBooksView("signin"); setBooksNotice(""); }}>
+                        {at.menuSignin}
+                      </button>
+                      <button className="profile-signup-btn" type="button" onClick={() => { setProfileMenuOpen(false); setActiveProduct("booksLanding"); setBooksView("signup"); setBooksNotice(""); }}>
+                        {at.menuSignup}
+                      </button>
+                    </div>
+                  )
+                ) : null}
               </div>
             </div>
           </div>
@@ -13379,7 +13815,13 @@ function renderItemsCatalog() {
               <h1 className="ph-headline">{t.heroTitle}</h1>
               <p className="ph-subtitle">{t.heroSubtitle}</p>
               <div className="ph-hero-cta-row">
-                <button className="ph-btn-primary" type="button" onClick={() => { setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice(""); }}>
+                <button className="ph-btn-primary" type="button" onClick={() => {
+                  if (currentUser) {
+                    setActiveProduct("books");
+                  } else {
+                    setActiveProduct("booksLanding"); setBooksView("home"); setBooksNotice("");
+                  }
+                }}>
                   {t.heroPrimary}
                 </button>
                 <button className="ph-btn-secondary" type="button" onClick={() => scrollToSection("pricing")}>{t.heroSecondary}</button>
@@ -13685,16 +14127,28 @@ function renderItemsCatalog() {
     setBooksNotice("Parol bərpası lokal olaraq saxlanılmır. Bu funksiya backend üzərindən ayrıca aktiv edilməlidir.");
   }
 
-  function submitForgotPassword(event) {
+  async function submitForgotPassword(event) {
     event.preventDefault();
-    setBooksNotice("Parol bərpası backend üzərindən aktiv edilməlidir. Local reset token saxlanması söndürülüb.");
+    try {
+      await apiRequestPasswordReset(forgotDraft.email);
+      setBooksNotice("Parol bərpası linki email ünvanınıza göndərildi. Emailinizi yoxlayın.");
+      setForgotDraft({ email: "" });
+    } catch (error) {
+      setBooksNotice(`Xəta: ${error.message}`);
+    }
   }
 
-  function submitResetPassword(event) {
+  async function submitResetPassword(event) {
     event.preventDefault();
-    setResetDraft({ password: "", confirmPassword: "" });
-    setActiveResetToken("");
-    setBooksNotice("Local reset axını söndürülüb. Şifrə yeniləmə backend endpoint-i ilə təmin olunmalıdır.");
+    try {
+      await apiConfirmPasswordReset(resetToken, resetDraft.password);
+      setResetDraft({ password: "", confirmPassword: "" });
+      setActiveResetToken("");
+      setBooksNotice("Şifrə uğurla yeniləndi. İndi yeni şifrə ilə daxil ola bilərsiniz.");
+      setBooksView("signin");
+    } catch (error) {
+      setBooksNotice(`Xəta: ${error.message}`);
+    }
   }
 
   function renderBooksLanding() {
@@ -14083,7 +14537,7 @@ function renderItemsCatalog() {
         <div className="lp-shell" onClick={() => hubLangOpen && setHubLangOpen(false)}>
           <header className="lp-topbar">
             <div className="lp-topbar-inner">
-              <div className="lp-brand">
+              <button className="lp-brand" type="button" onClick={() => setActiveProduct("hub")}>
                 <div className="lp-brand-icon">
                   <img src={logoSrc} alt="Tetavio" className="app-logo" />
                 </div>
@@ -14091,7 +14545,7 @@ function renderItemsCatalog() {
                   <strong>Tetavio</strong>
                   <span>{t.brandSub}</span>
                 </div>
-              </div>
+              </button>
               <div className="lp-nav">
                 <button
                   className="lp-nav-ghost"
@@ -14279,12 +14733,12 @@ function renderItemsCatalog() {
     }
 
     return (
-      <div className="lp-shell" onClick={() => hubLangOpen && setHubLangOpen(false)}>
+      <div className="lp-shell" onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); }}>
 
         {/* ── Topbar ── */}
         <header className="lp-topbar">
           <div className="lp-topbar-inner">
-            <div className="lp-brand">
+            <button className="lp-brand" type="button" onClick={() => setActiveProduct("hub")}>
               <div className="lp-brand-icon">
                 <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
@@ -14292,7 +14746,7 @@ function renderItemsCatalog() {
                 <strong>Tetavio</strong>
                 <span>{t.brandSub}</span>
               </div>
-            </div>
+            </button>
             <div className="lp-nav">
               {/* Language switcher */}
               <div className="ph-lang-wrap" onClick={(e) => e.stopPropagation()}>
@@ -14315,17 +14769,67 @@ function renderItemsCatalog() {
                   </div>
                 )}
               </div>
-              <button className="lp-nav-ghost" type="button" onClick={() => setActiveProduct("hub")}>{t.navProducts}</button>
-              <button className="lp-nav-ghost" type="button" onClick={() => goAuth("signin")}>{t.navSignin}</button>
-              <button className="lp-nav-cta" type="button" onClick={() => goAuth("signup")}>{t.navSignup}</button>
-            </div>
-          </div>
-        </header>
+               <button className="lp-nav-ghost" type="button" onClick={() => setActiveProduct("hub")}>{t.navProducts}</button>
+               <div className={`profile-menu ${profileMenuOpen ? "open" : ""}`}>
+                 <button className="profile-trigger" type="button" onClick={() => setProfileMenuOpen((current) => !current)}>
+                   {currentUser ? (
+                     <span className="profile-avatar">{String(currentUser.fullName || currentUser.email || "U").trim().charAt(0).toUpperCase()}</span>
+                   ) : (
+                     <span className="profile-avatar profile-avatar-guest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+                   )}
+                 </button>
+                 {profileMenuOpen ? (
+                   currentUser ? (
+                     <div className="profile-dropdown">
+                       <div className="profile-dropdown-copy">
+                         <strong>{activeCompanyName || currentUser.fullName}</strong>
+                         <small>{currentUser.email}</small>
+                       </div>
+                       {(currentUser.role === "super_admin" || !isInternalUser(currentUser)) ? (
+                         <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}>
+                           {at.menuPlan}
+                         </button>
+                       ) : null}
+                       {canManageTeam(currentUser) ? (
+                         <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("team"); setProfileMenuOpen(false); }}>
+                           {at.menuTeam}
+                         </button>
+                       ) : null}
+                       {currentUser.role === "super_admin" ? (
+                         <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("admin"); setProfileMenuOpen(false); }}>
+                           {at.menuAdmin}
+                         </button>
+                       ) : null}
+                       <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
+                         {at.menuPass}
+                       </button>
+                       <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
+                         {at.menuLogout}
+                       </button>
+                     </div>
+                   ) : (
+                     <div className="profile-dropdown">
+                       <button className="profile-signin-btn" type="button" onClick={() => { setProfileMenuOpen(false); goAuth("signin"); }}>
+                         {t.navSignin}
+                       </button>
+                       <button className="profile-signup-btn" type="button" onClick={() => { setProfileMenuOpen(false); goAuth("signup"); }}>
+                         {t.navSignup?.replace(" →", "") || "Qeydiyyat"}
+                       </button>
+                     </div>
+                   )
+                 ) : null}
+               </div>
+               {!currentUser ? (
+                 <button className="lp-nav-cta" type="button" onClick={() => goAuth("signup")}>{t.navSignup}</button>
+               ) : null}
+             </div>
+           </div>
+           </header>
 
         {/* ── Hero ── */}
         {isLegalView ? renderLandingLegalSection() : null}
 
-        {!isLegalView ? (
+        {!isLegalView && !authSectionExpanded ? (
         <>
         <section className="lp-hero">
           <div className="lp-hero-copy">
@@ -14334,7 +14838,13 @@ function renderItemsCatalog() {
             <h1 className="lp-headline">{t.headline1}<br /><span className="lp-headline-accent">{t.headline2}</span></h1>
             <p className="lp-subtitle">{t.subtitle}</p>
             <div className="lp-cta-row">
-              <button className="lp-btn-primary" type="button" onClick={() => goAuth("signup")}>{t.ctaPrimary}</button>
+              <button className="lp-btn-primary" type="button" onClick={() => {
+                if (currentUser) {
+                  setActiveProduct("books");
+                } else {
+                  goAuth("signup");
+                }
+              }}>{t.ctaPrimary}</button>
               <button className="lp-btn-ghost" type="button" onClick={() => goAuth("signin")}>{t.ctaGhost}</button>
             </div>
             <div className="lp-features">
@@ -14369,7 +14879,7 @@ function renderItemsCatalog() {
 
         {!isLegalView && authSectionExpanded ? renderLandingAuthSection() : null}
 
-        {!isLegalView ? (
+        {!isLegalView && !authSectionExpanded ? (
         <>
         <div className="lp-highlights">
           {t.highlights.map((h) => (
@@ -14619,7 +15129,7 @@ function renderItemsCatalog() {
                   <span className="bank-acc-chip-balance">{currency(acc.balance, state.settings.currency)}</span>
                   <div className="bank-acc-chip-actions">
                     <button className="table-btn" onClick={() => { setBankDraft(buildBankDraftFromRecord(acc)); setEditingBank(acc.id); setBankFormOrigin("journal"); setBankView("form"); }}>{at.edit}</button>
-                    <button className="table-btn danger-btn" onClick={() => { setState((c) => ({ ...c, bankingAccounts: c.bankingAccounts.filter((a) => a.id !== acc.id) })); if (editingBank === acc.id) { setBankDraft(createEmptyBankDraft()); setEditingBank(null); } }}>{at.delete}</button>
+                    <button className="table-btn danger-btn" onClick={async () => { try { setBankingLoading(true); await apiDeleteBankAccount(acc.id, updateBackendSession); await syncBankAccountsFromBackend(); if (editingBank === acc.id) { setBankDraft(createEmptyBankDraft()); setEditingBank(null); } } catch (error) { setBankingError(error?.message || "Bank hesabı silinmədi."); } finally { setBankingLoading(false); } }}>{at.delete}</button>
                   </div>
                 </div>
               </div>
@@ -14701,7 +15211,7 @@ function renderItemsCatalog() {
                         </span>
                         <div className="bank-tx-item-actions">
                           <button className="table-btn" onClick={() => { setBankTxDraft({ date: record.date || "", amount: String(record.amount), transactionType: record.transactionType, description: record.description || "", counterpartyName: record.counterpartyName || "", bankAccountId: record.bankAccountId || "", accountCode: record.accountCode || "", reference: record.reference || "", category: record.category || "" }); setBankTxEditId(record.id); setBankTxAccountSearch(""); setBankView("tx-form"); }}>Düzəliş et</button>
-                          <button className="table-btn danger-btn" onClick={() => setState((c) => ({ ...c, bankTransactions: c.bankTransactions.filter(t => t.id !== record.id) }))}>Sil</button>
+                           <button className="table-btn danger-btn" onClick={async () => { try { setBankingLoading(true); await apiDeleteBankTransaction(record.id, updateBackendSession); await syncBankTransactionsFromBackend(); } catch (error) { setBankingError(error?.message || "Bank əməliyyatı silinmədi."); } finally { setBankingLoading(false); } }}>Sil</button>
                         </div>
                       </div>
                     </div>
@@ -17493,7 +18003,7 @@ function renderSettings() {
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
                       <strong>{planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`}</strong>
-                      {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${monthlyPrice.toFixed(2)} / ay</small> : null}
+                      {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
                       <p>{plan.code}</p>
                       <small>{planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
@@ -17875,7 +18385,7 @@ function renderSettings() {
     <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
       <button className={`mobile-nav-overlay${appNavOpen ? " visible" : ""}`} type="button" aria-label={appMenuLabel} onClick={() => setAppNavOpen(false)} />
       <aside className="sidebar" onClick={(event) => event.stopPropagation()}>
-        <button className="brand-block" type="button" onClick={() => { setActiveSection("home"); setActiveModule(null); setExpandedSections(new Set(["home"])); setAppNavOpen(false); }}>
+        <button className="brand-block" type="button" onClick={() => { setActiveProduct("hub"); setAppNavOpen(false); }}>
           <div className="brand-icon">
             <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>

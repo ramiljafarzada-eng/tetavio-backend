@@ -158,6 +158,20 @@ export function apiRegister(payload) {
   });
 }
 
+export function apiRequestPasswordReset(email) {
+  return apiRequest("/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function apiConfirmPasswordReset(token, password) {
+  return apiRequest("/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export function refreshTokens(refreshToken) {
   return apiRequest("/auth/refresh", {
     method: "POST",
@@ -588,4 +602,111 @@ export function apiUpdateJournalEntry(id, payload, onSessionUpdate) {
 
 export function apiDeleteJournalEntry(id, onSessionUpdate) {
   return authRequest(`/accounting/journals/${id}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+export function apiListBills(query = {}, onSessionUpdate) {
+  return authRequest(`/bills${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetBill(id, onSessionUpdate) {
+  return authRequest(`/bills/${id}`, { method: "GET" }, onSessionUpdate);
+}
+
+function sanitizeBillLinePayload(line = {}) {
+  return {
+    itemName: line.itemName,
+    description: line.description,
+    quantity: line.quantity,
+    unitPriceMinor: line.unitPriceMinor,
+    taxCode: line.taxCode,
+    taxRate: line.taxRate,
+  };
+}
+
+function sanitizeBillPayload(payload = {}) {
+  return {
+    vendorId: payload.vendorId,
+    billNumber: payload.billNumber,
+    status: payload.status,
+    issueDate: payload.issueDate,
+    dueDate: payload.dueDate,
+    currency: payload.currency,
+    notes: payload.notes,
+    ...(Array.isArray(payload.lines)
+      ? { lines: payload.lines.map((line) => sanitizeBillLinePayload(line)) }
+      : {}),
+  };
+}
+
+export function apiCreateBill(payload, onSessionUpdate) {
+  return authRequest("/bills", {
+    method: "POST",
+    body: JSON.stringify(sanitizeBillPayload(payload)),
+  }, onSessionUpdate);
+}
+
+export function apiUpdateBill(id, payload, onSessionUpdate) {
+  return authRequest(`/bills/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(sanitizeBillPayload(payload)),
+  }, onSessionUpdate);
+}
+
+export function apiDeleteBill(id, onSessionUpdate) {
+  return authRequest(`/bills/${id}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+// Banking API functions
+export function apiListBankAccounts(query = {}, onSessionUpdate) {
+  return authRequest(`/banking/accounts${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateBankAccount(payload, onSessionUpdate) {
+  return authRequest("/banking/accounts", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }, onSessionUpdate);
+}
+
+export function apiUpdateBankAccount(id, payload, onSessionUpdate) {
+  return authRequest(`/banking/accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  }, onSessionUpdate);
+}
+
+export function apiDeleteBankAccount(id, onSessionUpdate) {
+  return authRequest(`/banking/accounts/${id}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+export function apiListBankTransactions(query = {}, onSessionUpdate) {
+  return authRequest(`/banking/transactions${buildQueryString(query)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateBankTransaction(payload, onSessionUpdate) {
+  return authRequest("/banking/transactions", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }, onSessionUpdate);
+}
+
+export function apiDeleteBankTransaction(id, onSessionUpdate) {
+  return authRequest(`/banking/transactions/${id}`, { method: "DELETE" }, onSessionUpdate);
+}
+
+// Reports API functions
+export function apiGetTrialBalance(onSessionUpdate) {
+  return authRequest("/reports/trial-balance", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetProfitLoss(onSessionUpdate) {
+  return authRequest("/reports/profit-loss", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetBalanceSheet(onSessionUpdate) {
+  return authRequest("/reports/balance-sheet", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetCashFlow(onSessionUpdate) {
+  return authRequest("/reports/cash-flow", { method: "GET" }, onSessionUpdate);
 }
