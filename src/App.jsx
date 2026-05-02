@@ -1494,7 +1494,7 @@ const MONTHS = [
 ];
 
 const SUBSCRIPTION_PLANS = [
-  { id: "free", name: "Free", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false },
+  { id: "free", name: "Demo", monthlyPrice: 0, annualMonthlyPrice: 0, currency: "USD", operationLimit: null, durationDays: 14, summaryKey: "sub_freeSummary", signupOnly: false },
   { id: "standard", name: "Standard", monthlyPrice: 12, annualMonthlyPrice: 10, currency: "USD", operationLimit: 5000, durationDays: 30, summaryKey: "sub_standardSummary", signupOnly: false },
   { id: "professional", name: "Professional", monthlyPrice: 24, annualMonthlyPrice: 20, currency: "USD", operationLimit: 10000, durationDays: 30, summaryKey: "sub_professionalSummary", signupOnly: false },
   { id: "premium", name: "Premium", monthlyPrice: 36, annualMonthlyPrice: 30, currency: "USD", operationLimit: 25000, durationDays: 30, summaryKey: "sub_premiumSummary", signupOnly: false },
@@ -1573,7 +1573,7 @@ function getPlanPrice(plan, billingCycle = "annual") {
 }
 
 function getPlanPriceLabel(plan, billingCycle = "annual") {
-  if (plan.id === "free") return "Pulsuz";
+  if (plan.id === "free") return "Demo";
   if (billingCycle === "monthly") return `$${getPlanPrice(plan, "monthly")}/1 ay`;
   return `$${getPlanPrice(plan, "annual")}/ay`;
 }
@@ -2688,29 +2688,29 @@ function MainApp() {
 
   const FREE_LIMIT_MESSAGES = {
     az: {
-      customers: "Pulsuz plan limiti dolub. 5-dən çox müştəri əlavə etmək üçün planı yüksəldin.",
-      vendors:   "Pulsuz plan limiti dolub. 5-dən çox vendor əlavə etmək üçün planı yüksəldin.",
-      invoices:  "Pulsuz plan limiti dolub. 5-dən çox invoice yaratmaq üçün planı yüksəldin.",
+      customers: "Demo plan limiti dolub. 5-dən çox müştəri əlavə etmək üçün planı yüksəldin.",
+      vendors:   "Demo plan limiti dolub. 5-dən çox vendor əlavə etmək üçün planı yüksəldin.",
+      invoices:  "Demo plan limiti dolub. 5-dən çox invoice yaratmaq üçün planı yüksəldin.",
     },
     en: {
-      customers: "Free plan limit reached. Upgrade to add more than 5 customers.",
-      vendors:   "Free plan limit reached. Upgrade to add more than 5 vendors.",
-      invoices:  "Free plan limit reached. Upgrade to create more than 5 invoices.",
+      customers: "Demo plan limit reached. Upgrade to add more than 5 customers.",
+      vendors:   "Demo plan limit reached. Upgrade to add more than 5 vendors.",
+      invoices:  "Demo plan limit reached. Upgrade to create more than 5 invoices.",
     },
     ru: {
-      customers: "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы добавить более 5 клиентов.",
-      vendors:   "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы добавить более 5 поставщиков.",
-      invoices:  "Достигнут лимит бесплатного плана. Перейдите на платный, чтобы создать более 5 счетов.",
+      customers: "Достигнут лимит Demo плана. Перейдите на платный, чтобы добавить более 5 клиентов.",
+      vendors:   "Достигнут лимит Demo плана. Перейдите на платный, чтобы добавить более 5 поставщиков.",
+      invoices:  "Достигнут лимит Demo плана. Перейдите на платный, чтобы создать более 5 счетов.",
     },
     tr: {
-      customers: "Ücretsiz plan limitine ulaşıldı. 5'ten fazla müşteri eklemek için planı yükseltin.",
-      vendors:   "Ücretsiz plan limitine ulaşıldı. 5'ten fazla tedarikçi eklemek için planı yükseltin.",
-      invoices:  "Ücretsiz plan limitine ulaşıldı. 5'ten fazla fatura oluşturmak için planı yükseltin.",
+      customers: "Demo plan limitine ulaşıldı. 5'ten fazla müşteri eklemek için planı yükseltin.",
+      vendors:   "Demo plan limitine ulaşıldı. 5'ten fazla tedarikçi eklemek için planı yükseltin.",
+      invoices:  "Demo plan limitine ulaşıldı. 5'ten fazla fatura oluşturmak için planı yükseltin.",
     },
     de: {
-      customers: "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Kunden hinzuzufügen.",
-      vendors:   "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Lieferanten hinzuzufügen.",
-      invoices:  "Limit des kostenlosen Plans erreicht. Upgraden Sie, um mehr als 5 Rechnungen zu erstellen.",
+      customers: "Limit des Demo-Plans erreicht. Upgraden Sie, um mehr als 5 Kunden hinzuzufügen.",
+      vendors:   "Limit des Demo-Plans erreicht. Upgraden Sie, um mehr als 5 Lieferanten hinzuzufügen.",
+      invoices:  "Limit des Demo-Plans erreicht. Upgraden Sie, um mehr als 5 Rechnungen zu erstellen.",
     },
   };
   const freeLimitMsg = FREE_LIMIT_MESSAGES[hubLang] || FREE_LIMIT_MESSAGES.en;
@@ -13272,9 +13272,9 @@ function renderItemsCatalog() {
           { id: "case-studies", label: "Müştərilər" },
         ],
         login: "Daxil ol",
-        register: "Pulsuz başla",
+        register: "Demo başla",
         // Start
-        startEyebrow: "14 gün pulsuz sınaq",
+        startEyebrow: "14 gün Demo sınaq",
         startH1: "Mühasibatı düzgün qurun — başdan",
         startSub: "Tetavio ilə satış, alış, bank, hesabat — hamısı bir yerdə. Kredit kartı tələb olunmur.",
         startSteps: [
@@ -13282,7 +13282,7 @@ function renderItemsCatalog() {
           { title: "Şirkəti konfiqurasiya edin", text: "Valyuta, maliyyə ili, komanda rollarını qurun." },
           { title: "İşə başlayın", text: "Faktura, alış, bank əməliyyatları — hər şey hazırdır." },
         ],
-        startCtaTitle: "Pulsuz başlayın",
+        startCtaTitle: "Demo sınağı başlayın",
         startCtaText: "Kredit kartı yoxdur · İstənilən vaxt ləğv edin · 14 gün tam giriş",
         startEmailPh: "E-poçtunuz",
         startNamePh: "Adınız",
@@ -13324,11 +13324,11 @@ function renderItemsCatalog() {
         pricingH1: "Şirkətinizə uyğun plan seçin",
         pricingSub: "Bütün planlar əməliyyat limiti, komanda rolu və tam funksionallıqla. İllik ödənişdə qənaət edin.",
         annualLabel: "İllik", monthlyLabel: "Aylıq", saveLabel: "35% qənaət",
-        freePrice: "Pulsuz",
+        freePrice: "Demo",
         perMonth: "/ay",
         annualNote: "illik ödənişdə",
         planDescs: {
-          free: "Başlanğıc və öyrənmə üçün",
+          free: "14 günlük Demo sınaq",
           standard: "Kiçik komandalar üçün baza plan",
           professional: "Aktiv iş axını üçün",
           premium: "Geniş istifadə və çeviklik üçün",
@@ -13344,11 +13344,11 @@ function renderItemsCatalog() {
           ultimate: ["200.000 əməliyyat/ay", "Tam xüsiləşdirmə", "Şəxsi mühasib dəstəyi", "SLA zəmanəti", "Öncelikli onboarding"],
         },
         recommended: "Tövsiyə olunan",
-        pricingStartBtn: "Pulsuz başla",
+        pricingStartBtn: "Demo başla",
         pricingUpgradeBtn: "Planı seç",
         faqTitle: "Tez-tez soruşulan suallar",
         faqs: [
-          { q: "Kredit kartı tələb olunurmu?", a: "Xeyr. Free planda kredit kartı tələb olunmur. Ödənişli planlarda isə ödəniş mərhələsində kart məlumatları daxil edilir." },
+          { q: "Kredit kartı tələb olunurmu?", a: "Xeyr. Demo planda kredit kartı tələb olunmur. Ödənişli planlarda isə ödəniş mərhələsində kart məlumatları daxil edilir." },
           { q: "Planı sonradan dəyişmək mümkündürmü?", a: "Bəli. Hesabınızdan istənilən vaxt planınızı artıra və ya azalda bilərsiniz." },
           { q: "İllik ödənişdə nə qazanıram?", a: "İllik ödənişdə aylıq ekvivalent qiymət 35% aşağı olur." },
           { q: "Komanda üzvləri üçün ayrıca giriş mümkündürmü?", a: "Bəli. Standard plandən etibarən komanda rolları aktivdir." },
@@ -13413,8 +13413,8 @@ function renderItemsCatalog() {
         ],
         // Shared CTA
         ctaTitle: "Bu gün başlayın",
-        ctaText: "14 günlük pulsuz sınaq. Kredit kartı tələb olunmur.",
-        ctaStartBtn: "Pulsuz hesab aç →",
+        ctaText: "14 günlük Demo sınaq. Kredit kartı tələb olunmur.",
+        ctaStartBtn: "Demo hesab aç →",
         ctaDemoBtn: "Demo sifariş et",
         footerNote: "© 2025 Tetavio MMC · VÖEN: 2009752131",
       },
@@ -13959,8 +13959,8 @@ function renderItemsCatalog() {
         annual: "İllik",
         recommended: "Tövsiyə olunan",
         activePlan: "Aktiv plan",
-        freePrice: "Pulsuz",
-        freeLimit: "14 günlük pulsuz sınaq",
+        freePrice: "Demo",
+        freeLimit: "14 günlük Demo sınaq",
         operationLimitSuffix: "əməliyyat limiti",
         annualDuration: "365 günlük aktiv plan",
         monthlyDuration: "30 günlük aktiv plan",
@@ -13977,7 +13977,7 @@ function renderItemsCatalog() {
         faqTitle: "Tez-tez verilən suallar",
         faqs: [
           { q: "Tetavio bulud əsaslı sistemdirmi?", a: "Bəli. Platformaya internet olan istənilən cihazdan daxil ola bilərsiniz." },
-          { q: "Free planda limit nə qədərdir?", a: "Free plan başlanğıc istifadə üçün nəzərdə tutulub və 5 əməliyyat limiti təqdim edir." },
+          { q: "Demo planda limit nə qədərdir?", a: "Demo plan 14 günlük tam giriş təqdim edir. Müddət bitdikdən sonra ödənişli plana keçmək tələb olunur." },
           { q: "Planı sonradan dəyişmək mümkündürmü?", a: "Bəli. Hesabınızdan istənilən vaxt daha uyğun plana keçə bilərsiniz." },
           { q: "Komanda üzvləri üçün ayrıca giriş mümkündürmü?", a: "Bəli. Rol əsaslı istifadəçi girişi və icazə idarəetməsi mövcuddur." }
         ],
@@ -13987,7 +13987,7 @@ function renderItemsCatalog() {
         contact: "Əlaqə: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "14 günlük tam pulsuz sınaq",
+          free: "14 günlük Demo sınaq",
           standard: "Kiçik komandalar üçün baza plan",
           professional: "Daha aktiv əməliyyat axını üçün",
           premium: "Geniş istifadə və yüksək çeviklik üçün",
@@ -14045,8 +14045,8 @@ function renderItemsCatalog() {
         annual: "Annual",
         recommended: "Recommended",
         activePlan: "Active plan",
-        freePrice: "Free",
-        freeLimit: "14-day free trial",
+        freePrice: "Demo",
+        freeLimit: "14-day Demo trial",
         operationLimitSuffix: "operation limit",
         annualDuration: "365-day active plan",
         monthlyDuration: "30-day active plan",
@@ -14063,7 +14063,7 @@ function renderItemsCatalog() {
         faqTitle: "Frequently asked questions",
         faqs: [
           { q: "Is Tetavio cloud-based?", a: "Yes. You can access the platform from any device with internet." },
-          { q: "What is the Free plan limit?", a: "The Free plan is for getting started and includes a 5-operation limit." },
+          { q: "What is the Demo plan?", a: "The Demo plan gives you 14 days of full access. After the trial, you need to upgrade to a paid plan." },
           { q: "Can I change plan later?", a: "Yes. You can switch to another plan anytime." },
           { q: "Can team members have separate access?", a: "Yes. Role-based user access and permissions are available." }
         ],
@@ -14073,7 +14073,7 @@ function renderItemsCatalog() {
         contact: "Contact: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "Free starter plan",
+          free: "14-day Demo trial",
           standard: "Base plan for small teams",
           professional: "For more active operations",
           premium: "For broader usage and flexibility",
@@ -14131,8 +14131,8 @@ function renderItemsCatalog() {
         annual: "Годовой",
         recommended: "Рекомендуем",
         activePlan: "Активный план",
-        freePrice: "Бесплатно",
-        freeLimit: "14-дневный бесплатный пробный период",
+        freePrice: "Demo",
+        freeLimit: "14-дневный Demo период",
         operationLimitSuffix: "лимит операций",
         annualDuration: "План активен 365 дней",
         monthlyDuration: "План активен 30 дней",
@@ -14149,7 +14149,7 @@ function renderItemsCatalog() {
         faqTitle: "Частые вопросы",
         faqs: [
           { q: "Tetavio — облачная система?", a: "Да. Доступ возможен с любого устройства с интернетом." },
-          { q: "Какой лимит у Free?", a: "Free-план включает 5 операций." },
+          { q: "Что такое Demo план?", a: "Demo план даёт 14 дней полного доступа. После окончания пробного периода нужно перейти на платный план." },
           { q: "Можно ли сменить план позже?", a: "Да, план можно изменить в любой момент." },
           { q: "Можно ли дать отдельный доступ сотрудникам?", a: "Да, доступ и права настраиваются по ролям." }
         ],
@@ -14159,7 +14159,7 @@ function renderItemsCatalog() {
         contact: "Контакт: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "Бесплатный стартовый план",
+          free: "14-дневный Demo план",
           standard: "Базовый план для маленьких команд",
           professional: "Для более активных операций",
           premium: "Для гибкого и широкого использования",
@@ -14217,8 +14217,8 @@ function renderItemsCatalog() {
         annual: "Yıllık",
         recommended: "Önerilen",
         activePlan: "Aktif plan",
-        freePrice: "Ücretsiz",
-        freeLimit: "14 günlük ücretsiz deneme",
+        freePrice: "Demo",
+        freeLimit: "14 günlük Demo denemesi",
         operationLimitSuffix: "işlem limiti",
         annualDuration: "365 gün aktif plan",
         monthlyDuration: "30 gün aktif plan",
@@ -14235,7 +14235,7 @@ function renderItemsCatalog() {
         faqTitle: "Sık sorulan sorular",
         faqs: [
           { q: "Tetavio bulut tabanlı mı?", a: "Evet. İnternet olan her cihazdan erişebilirsiniz." },
-          { q: "Free plan limiti nedir?", a: "Free plan başlangıç için 5 işlem limiti sunar." },
+          { q: "Demo plan nedir?", a: "Demo plan 14 günlük tam erişim sunar. Süre bitince ücretli plana geçmeniz gerekir." },
           { q: "Planı sonradan değiştirebilir miyim?", a: "Evet, planınızı istediğiniz zaman değiştirebilirsiniz." },
           { q: "Ekip üyeleri için ayrı erişim var mı?", a: "Evet, rol bazlı erişim ve yetki yönetimi vardır." }
         ],
@@ -14245,7 +14245,7 @@ function renderItemsCatalog() {
         contact: "İletişim: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "Başlangıç için ücretsiz plan",
+          free: "14 günlük Demo denemesi",
           standard: "Küçük ekipler için temel plan",
           professional: "Daha yoğun işlem akışı için",
           premium: "Geniş kullanım ve esneklik için",
@@ -14303,8 +14303,8 @@ function renderItemsCatalog() {
         annual: "Jährlich",
         recommended: "Empfohlen",
         activePlan: "Aktiver Plan",
-        freePrice: "Kostenlos",
-        freeLimit: "14-tägige kostenlose Testversion",
+        freePrice: "Demo",
+        freeLimit: "14-tägige Demo-Testversion",
         operationLimitSuffix: "Vorgänge Limit",
         annualDuration: "365 Tage aktiv",
         monthlyDuration: "30 Tage aktiv",
@@ -14321,7 +14321,7 @@ function renderItemsCatalog() {
         faqTitle: "Häufige Fragen",
         faqs: [
           { q: "Ist Tetavio cloudbasiert?", a: "Ja. Zugriff ist von jedem Gerät mit Internet möglich." },
-          { q: "Was ist das Free-Limit?", a: "Der Free-Plan enthält ein Limit von 5 Vorgängen." },
+          { q: "Was ist der Demo-Plan?", a: "Der Demo-Plan bietet 14 Tage vollen Zugriff. Nach Ablauf ist ein Upgrade auf einen kostenpflichtigen Plan erforderlich." },
           { q: "Kann ich später den Plan wechseln?", a: "Ja, ein Planwechsel ist jederzeit möglich." },
           { q: "Gibt es separaten Zugang für Teammitglieder?", a: "Ja, rollenbasierter Zugang und Rechteverwaltung sind verfügbar." }
         ],
@@ -14331,7 +14331,7 @@ function renderItemsCatalog() {
         contact: "Kontakt: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
-          free: "Kostenloser Einstiegsplan",
+          free: "14-tägige Demo-Testversion",
           standard: "Basisplan für kleine Teams",
           professional: "Für aktivere Abläufe",
           premium: "Für breite Nutzung und Flexibilität",
@@ -14842,7 +14842,7 @@ function renderItemsCatalog() {
         headline1:       "Maliyyəni daha",
         headline2:       "sürətli idarə edin",
         subtitle:        "Satış, alış, əməliyyatlar və hesabatlar bir platformada. Tetavio ilə biznesinizi tam nəzarət altında saxlayın.",
-        ctaPrimary:      "Pulsuz sınağı başlat",
+        ctaPrimary:      "Demo sınağı başlat",
         ctaGhost:        "Daxil ol →",
         pills:           ["📊 Hesabatlar", "🧾 Fakturalar", "🏦 Bank", "📦 Mal uçotu", "⚡ Real vaxt"],
         statsTitle:      "Canlı statistika",
@@ -14857,7 +14857,7 @@ function renderItemsCatalog() {
         ],
         authInfoTitle:   "Mühasibat proqramı\ngiriş paneli",
         authInfoDesc:    "Daxil ol etdikdən sonra birbaşa Tetavio mühasibat proqramına daxil olacaqsınız. Qeydiyyat yeni hesab yaradır.",
-        bullets:         ["✓ Pulsuz plan mövcuddur", "✓ 14 günlük demo müddəti", "✓ Bulud əsaslı məlumat saxlaması"],
+        bullets:         ["✓ Demo plan mövcuddur", "✓ 14 günlük tam giriş", "✓ Bulud əsaslı məlumat saxlaması"],
         tabSignin:       "Daxil ol",
         tabSignup:       "Qeydiyyat",
         fEmail:          "E-poçt",
@@ -19071,7 +19071,7 @@ function renderSettings() {
             <div className="trial-expired-icon">⏰</div>
             <h2 className="trial-expired-title">Sınaq müddəti bitdi</h2>
             <p className="trial-expired-body">
-              14 günlük pulsuz sınaq müddətiniz başa çatdı. Platformadan istifadəni davam etdirmək üçün ödənişli paketlərdən birini seçin.
+              14 günlük Demo sınaq müddətiniz başa çatdı. Platformadan istifadəni davam etdirmək üçün ödənişli paketlərdən birini seçin.
             </p>
             <div className="trial-expired-actions">
               <button
