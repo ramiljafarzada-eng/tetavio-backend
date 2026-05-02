@@ -18452,9 +18452,11 @@ function renderSettings() {
     const paidUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId !== "free");
     const freeUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId === "free");
     const teamUsers = authUsers.filter((user) => getAccountOwnerEmail(user) === ownerEmail && isInternalUser(user));
-    const effectivePlans = backendPlans
-      .filter((plan) => plan && plan.isActive !== false)
-      .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0));
+    const hasFreeBasic = backendPlans.some((p) => String(p.code || "").toUpperCase() === "FREE_BASIC");
+    const effectivePlans = [
+      ...(!hasFreeBasic ? [{ code: "FREE_BASIC", name: "Free", priceMinor: 0, currency: "USD", isActive: true, sortOrder: 0 }] : []),
+      ...backendPlans.filter((plan) => plan && plan.isActive !== false),
+    ].sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0));
     const currentBackendPlanCode = backendSubscription?.plan?.code || "";
     const selectedPaymentPlan = effectivePlans.find((plan) => plan.code === paymentDraft.planCode) || null;
     const isSubscriptionSuperAdmin =
@@ -18668,7 +18670,7 @@ function renderSettings() {
                     <small>Ödəniş və upgrade üçün əvvəlcə backend planlarını sinxron edin.</small>
                   </article>
                 ) : effectivePlans.map((plan) => {
-                  const planIsFree = String(plan.code || "").toUpperCase() === "FREE" || Number(plan.priceMinor || 0) <= 0;
+                  const planIsFree = ["FREE", "FREE_BASIC"].includes(String(plan.code || "").toUpperCase()) || Number(plan.priceMinor || 0) <= 0;
                   const isCurrentBackendPlan = currentBackendPlanCode && String(currentBackendPlanCode) === String(plan.code);
                   const fePlan = SUBSCRIPTION_PLANS.find((p) => BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID[p.id] === plan.code);
                   const priceLabel = planIsFree
@@ -18679,16 +18681,23 @@ function renderSettings() {
                   const annualPrice = planIsFree ? 0 : (fePlan?.annualMonthlyPrice || 0) * 12;
                   const annualMonthlyPrice = planIsFree ? 0 : fePlan?.annualMonthlyPrice || 0;
                   const monthlyPrice = planIsFree ? 0 : fePlan?.monthlyPrice || 0;
+                  const isFreeBasic = String(plan.code || "").toUpperCase() === "FREE_BASIC";
+                  const priceDisplay = isFreeBasic ? "Pulsuz" : planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
+                  const durationDisplay = isFreeBasic ? "Limitsiz müddət" : planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`);
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
-                      <strong>{planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`}</strong>
+                      <strong>{priceDisplay}</strong>
                       {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
                       <p>{plan.code}</p>
-                      <small>{planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)}</small>
+                      <small>{durationDisplay}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={() => {
+                        if (isFreeBasic) {
+                          setBooksNotice("Pulsuz plana keçid Demo müddəti bitdikdə avtomatik baş verir.");
+                          return;
+                        }
                         if (planIsFree) {
-                          setBooksNotice("FREE plana keçid backend downgrade axını ilə idarə olunur.");
+                          setBooksNotice("Demo plan qeydiyyat zamanı avtomatik aktivləşir.");
                           return;
                         }
                         if (currentUser.role !== "super_admin") {
