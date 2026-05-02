@@ -4532,9 +4532,9 @@ function MainApp() {
       const planLabel = backendSubscription.plan?.name || "Plan";
       const planCode = String(backendSubscription.plan.code).toUpperCase();
       if (planCode === "FREE") {
-        if (backendSubscription.isTrialExpired) return `${planLabel} • Sınaq müddəti bitdi`;
+        if (backendSubscription.isTrialExpired) return `Demo • Sınaq müddəti bitdi`;
         const days = backendSubscription.trialDaysRemaining;
-        return `${planLabel} sınaq • ${days != null ? `${days} gün qalıb` : "Aktiv"}`;
+        return `Demo sınaq • ${days != null ? `${days} gün qalıb` : "Aktiv"}`;
       }
       const endsAt = backendSubscription.currentPeriodEnd
         ? String(backendSubscription.currentPeriodEnd).slice(0, 10)
@@ -4548,7 +4548,7 @@ function MainApp() {
     const plan = getCurrentPlan(user);
     const remainingDays = daysUntil(ownerUser?.subscription?.endsAt || user.subscription?.endsAt);
     if (plan.id === "free") {
-      return `${plan.name} sınaq • ${remainingDays != null ? `${remainingDays} gün qalıb` : "Aktiv"}`;
+      return `Demo sınaq • ${remainingDays != null ? `${remainingDays} gün qalıb` : "Aktiv"}`;
     }
     const staffLabel = isInternalUser(user) && user.staffRole ? ` • ${user.staffRole}` : "";
     const remainingOperations = Math.max(0, Number(plan.operationLimit || 0) - Number(ownerUser?.operationsUsed || 0));
