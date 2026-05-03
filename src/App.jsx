@@ -19332,29 +19332,71 @@ function renderSettings() {
       }
 
       const now = audioContext.currentTime;
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const master = audioContext.createGain();
+      master.gain.setValueAtTime(0.16, now);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+      master.connect(audioContext.destination);
 
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(784, now);
-      oscillator.frequency.exponentialRampToValueAtTime(988, now + 0.12);
+      const buildVoice = (frequency, startTime, duration, waveType, gainLevel) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const filter = audioContext.createBiquadFilter();
 
-      gainNode.gain.setValueAtTime(0.0001, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(frequency, startTime);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 1.06, startTime + duration * 0.7);
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      oscillator.start(now);
-      oscillator.stop(now + 0.32);
-      oscillator.onended = () => {
-        try {
-          oscillator.disconnect();
-          gainNode.disconnect();
-        } catch {}
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1800, startTime);
+        filter.Q.setValueAtTime(0.8, startTime);
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(gainLevel, startTime + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.02);
+        osc.onended = () => {
+          try {
+            osc.disconnect();
+            filter.disconnect();
+            gain.disconnect();
+          } catch {}
+        };
       };
+
+      buildVoice(880, now, 0.16, "triangle", 0.22);
+      buildVoice(1174.66, now + 0.13, 0.18, "sine", 0.18);
+      buildVoice(1567.98, now + 0.28, 0.22, "triangle", 0.14);
     } catch {}
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const unlockSupportAudio = () => {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) return;
+      if (!supportAudioContextRef.current) {
+        supportAudioContextRef.current = new AudioContextCtor();
+      }
+      const audioContext = supportAudioContextRef.current;
+      if (audioContext?.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+    };
+
+    window.addEventListener("pointerdown", unlockSupportAudio, { passive: true, once: true });
+    window.addEventListener("keydown", unlockSupportAudio, { passive: true, once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockSupportAudio);
+      window.removeEventListener("keydown", unlockSupportAudio);
+    };
+  }, []);
 
   async function updateSupportThreadStatus(threadId, status) {
     try {
