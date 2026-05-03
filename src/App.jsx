@@ -19260,6 +19260,14 @@ function renderSettings() {
     }
   }
 
+  function handleSupportReplyKeyDown(event, submitHandler) {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    if (typeof submitHandler === "function") {
+      submitHandler();
+    }
+  }
+
   async function updateSupportThreadStatus(threadId, status) {
     try {
       const backendStatus = status === "waiting_user" ? "WAITING_ACCOUNT" : status === "waiting_support" ? "WAITING_SUPPORT" : status === "closed" ? "CLOSED" : "OPEN";
@@ -19361,6 +19369,7 @@ function renderSettings() {
                         onChange={(event) => setSupportReplyDraft(event.target.value)}
                         placeholder="Cavabınızı yazın..."
                         rows={3}
+                        onKeyDown={(event) => handleSupportReplyKeyDown(event, handleReplyToSupportThread)}
                       />
                       <div className="support-widget-actions">
                         {activeThread.status === "closed" ? (
@@ -19475,7 +19484,13 @@ function renderSettings() {
                   <div ref={supportAdminScrollRef} />
                 </div>
                 <div className="support-admin-reply">
-                  <textarea value={supportAdminReplyDraft} onChange={(event) => setSupportAdminReplyDraft(event.target.value)} placeholder="İstifadəçiyə cavab yazın..." rows={4} />
+                  <textarea
+                    value={supportAdminReplyDraft}
+                    onChange={(event) => setSupportAdminReplyDraft(event.target.value)}
+                    placeholder="İstifadəçiyə cavab yazın..."
+                    rows={4}
+                    onKeyDown={(event) => handleSupportReplyKeyDown(event, () => handleAdminSupportReply(activeThread.id))}
+                  />
                   <div className="support-widget-actions">
                     <button type="button" className="primary-btn" disabled={!supportAdminReplyDraft.trim()} onClick={() => handleAdminSupportReply(activeThread.id)}>Cavab göndər</button>
                   </div>
