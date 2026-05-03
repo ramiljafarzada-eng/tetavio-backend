@@ -10329,6 +10329,97 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   line-height: 1.5;
 }
 
+.iac-settings-hero {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.iac-settings-card {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.iac-settings-card span,
+.iac-settings-row span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.iac-settings-card strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.iac-settings-card small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.iac-settings-card--accent {
+  border-color: rgba(19, 104, 214, 0.22);
+  background: linear-gradient(180deg, rgba(19, 104, 214, 0.06), rgba(255, 255, 255, 0.98));
+}
+
+.iac-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.iac-settings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.iac-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.iac-settings-row strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.iac-settings-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.iac-settings-link {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.iac-settings-link:hover {
+  border-color: rgba(19, 104, 214, 0.36);
+  color: #1368d6;
+}
+
 /* --- Mobile responsive --- */
 @media (max-width: 768px) {
   .iac-shell { flex-direction: column; }
@@ -10359,6 +10450,10 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   .iac-content { padding: 16px; }
   .iac-topbar { padding: 14px 16px; flex-wrap: wrap; }
   .iac-topbar-title { font-size: 16px; }
+  .iac-settings-hero,
+  .iac-settings-grid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 480px) {
   .iac-kpi-row { grid-template-columns: 1fr; }

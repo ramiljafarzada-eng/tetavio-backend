@@ -12364,6 +12364,119 @@ function renderItemsCatalog() {
       );
     }
 
+    function renderAdminSettingsTab() {
+      const adminUsersCount = authUsers.filter((user) => isInternalUser(user)).length;
+      const companyName = state.settings.companyName || "Qeyd olunmayıb";
+      const entityType = state.settings.entityType || "Qeyd olunmayıb";
+      const taxId = state.settings.taxId || "Qeyd olunmayıb";
+      const currency = state.settings.currency || "Qeyd olunmayıb";
+      const invoicePrefix = state.settings.invoicePrefix || "—";
+      const quotePrefix = state.settings.quotePrefix || "—";
+      const paymentTerm = state.settings.defaultPaymentTerm || "—";
+      const taxLabel = state.settings.defaultTaxLabel || "—";
+      const autoBackup = state.settings.autoBackup || "—";
+      const stockWarning = state.settings.stockWarning || "—";
+      const negativeStock = state.settings.negativeStock || "—";
+      const uiScale = state.settings.uiScale || "Avtomatik";
+
+      return (
+        <section className="iac-section">
+          <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+            <div>
+              <span className="iac-section-lbl">Settings</span>
+              <h2>Platform configuration</h2>
+            </div>
+            <span className="iac-badge iac-badge--ro">Read-only</span>
+          </div>
+
+          <div className="iac-settings-hero">
+            <article className="iac-settings-card iac-settings-card--accent">
+              <span>Company</span>
+              <strong>{companyName}</strong>
+              <small>{entityType}</small>
+            </article>
+            <article className="iac-settings-card">
+              <span>Internal users</span>
+              <strong>{adminUsersCount}</strong>
+              <small>Active staff accounts</small>
+            </article>
+            <article className="iac-settings-card">
+              <span>Currency</span>
+              <strong>{currency}</strong>
+              <small>Accounting base currency</small>
+            </article>
+            <article className="iac-settings-card">
+              <span>Backup</span>
+              <strong>{autoBackup}</strong>
+              <small>{backupStatus.message || "No system alerts"}</small>
+            </article>
+          </div>
+
+          <div className="iac-settings-grid">
+            <div className="iac-section">
+              <div className="iac-section-hd">
+                <div>
+                  <span className="iac-section-lbl">Company Profile</span>
+                  <h3>Identification and contact data</h3>
+                </div>
+              </div>
+              <div className="iac-settings-list">
+                <div className="iac-settings-row"><span>Company name</span><strong>{companyName}</strong></div>
+                <div className="iac-settings-row"><span>Entity type</span><strong>{entityType}</strong></div>
+                <div className="iac-settings-row"><span>Tax ID</span><strong>{taxId}</strong></div>
+                <div className="iac-settings-row"><span>Mobile</span><strong>{state.settings.mobilePhone || "Qeyd olunmayıb"}</strong></div>
+              </div>
+            </div>
+
+            <div className="iac-section">
+              <div className="iac-section-hd">
+                <div>
+                  <span className="iac-section-lbl">Document Rules</span>
+                  <h3>Numbering and fiscal defaults</h3>
+                </div>
+              </div>
+              <div className="iac-settings-list">
+                <div className="iac-settings-row"><span>Invoice prefix</span><strong>{invoicePrefix}</strong></div>
+                <div className="iac-settings-row"><span>Quote prefix</span><strong>{quotePrefix}</strong></div>
+                <div className="iac-settings-row"><span>Payment term</span><strong>{paymentTerm}</strong></div>
+                <div className="iac-settings-row"><span>Default tax label</span><strong>{taxLabel}</strong></div>
+              </div>
+            </div>
+
+            <div className="iac-section">
+              <div className="iac-section-hd">
+                <div>
+                  <span className="iac-section-lbl">Risk Controls</span>
+                  <h3>Backup and stock behavior</h3>
+                </div>
+              </div>
+              <div className="iac-settings-list">
+                <div className="iac-settings-row"><span>Automatic backup</span><strong>{autoBackup}</strong></div>
+                <div className="iac-settings-row"><span>Low stock warning</span><strong>{stockWarning}</strong></div>
+                <div className="iac-settings-row"><span>Negative stock</span><strong>{negativeStock}</strong></div>
+                <div className="iac-settings-row"><span>UI scale</span><strong>{uiScale}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="iac-section" style={{ marginTop: 18 }}>
+            <div className="iac-section-hd" style={{ marginBottom: 16 }}>
+              <div>
+                <span className="iac-section-lbl">Quick Navigation</span>
+                <h3>Open related admin views</h3>
+              </div>
+            </div>
+            <div className="iac-settings-links">
+              <button className="iac-settings-link" type="button" onClick={() => setAdminActiveTab("accounts")}>Accounts</button>
+              <button className="iac-settings-link" type="button" onClick={() => setAdminActiveTab("finance")}>Finance</button>
+              <button className="iac-settings-link" type="button" onClick={() => setAdminActiveTab("subscriptions")}>Subscriptions</button>
+              <button className="iac-settings-link" type="button" onClick={() => setAdminActiveTab("system")}>System health</button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     function renderAccountDeepView() {
       if (!adminAccountDetailId) return null;
       const d = adminAccountDetail;
@@ -12841,7 +12954,8 @@ function renderItemsCatalog() {
             {adminActiveTab === "activity" && renderActivityTab()}
             {adminActiveTab === "anomalies" && renderAnomaliesTab()}
             {adminActiveTab === "system" && renderSystemHealthTab()}
-            {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "anomalies" && adminActiveTab !== "system" && renderComingSoonTab(adminActiveTab)}
+            {adminActiveTab === "settings" && renderAdminSettingsTab()}
+            {adminActiveTab !== "overview" && adminActiveTab !== "accounts" && adminActiveTab !== "finance" && adminActiveTab !== "subscriptions" && adminActiveTab !== "activity" && adminActiveTab !== "anomalies" && adminActiveTab !== "system" && adminActiveTab !== "settings" && renderComingSoonTab(adminActiveTab)}
           </div>
         </div>
         {renderAccountDeepView()}
