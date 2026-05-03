@@ -6,7 +6,11 @@ if (!configuredApiBaseUrl) {
   );
 }
 
-export const API_BASE_URL = configuredApiBaseUrl.replace(/\/$/, "");
+const normalizedApiBaseUrl = configuredApiBaseUrl.trim().replace(/\/$/, "");
+
+export const API_BASE_URL = /^https?:\/\//i.test(normalizedApiBaseUrl)
+  ? normalizedApiBaseUrl
+  : `https://${normalizedApiBaseUrl}${normalizedApiBaseUrl.endsWith('/api/v1') ? '' : '/api/v1'}`;
 
 let activeSession = null;
 
@@ -312,6 +316,83 @@ export function apiGetFinancialTrends(onSessionUpdate) {
 
 export function apiGetAccountsReceivableAging(onSessionUpdate) {
   return authRequest("/reports/accounts-receivable-aging", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiListSupportThreads(onSessionUpdate) {
+  return authRequest("/support/threads", { method: "GET" }, onSessionUpdate);
+}
+
+export function apiCreateSupportThread(payload, onSessionUpdate) {
+  return authRequest(
+    "/support/threads",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        subject: payload?.subject,
+        category: payload?.category,
+        priority: payload?.priority,
+        context: payload?.context,
+        body: payload?.body,
+      }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiGetSupportThread(threadId, onSessionUpdate) {
+  return authRequest(`/support/threads/${threadId}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiReplySupportThread(threadId, payload, onSessionUpdate) {
+  return authRequest(
+    `/support/threads/${threadId}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ body: payload?.body }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateSupportThreadStatus(threadId, payload, onSessionUpdate) {
+  return authRequest(
+    `/support/threads/${threadId}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status: payload?.status }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiListInternalSupportThreads(params = {}, onSessionUpdate) {
+  return authRequest(`/internal/support/threads${buildQueryString(params)}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiGetInternalSupportThread(threadId, onSessionUpdate) {
+  return authRequest(`/internal/support/threads/${threadId}`, { method: "GET" }, onSessionUpdate);
+}
+
+export function apiReplyInternalSupportThread(threadId, payload, onSessionUpdate) {
+  return authRequest(
+    `/internal/support/threads/${threadId}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ body: payload?.body }),
+    },
+    onSessionUpdate,
+  );
+}
+
+export function apiUpdateInternalSupportThreadStatus(threadId, payload, onSessionUpdate) {
+  return authRequest(
+    `/internal/support/threads/${threadId}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status: payload?.status }),
+    },
+    onSessionUpdate,
+  );
 }
 
 export function apiLogout(refreshToken) {

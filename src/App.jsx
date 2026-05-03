@@ -40,6 +40,8 @@ import {
   apiListCustomers,
   apiListInvoices,
   apiListVendors,
+  apiListInternalSupportThreads,
+  apiListSupportThreads,
   apiAddInvoicePayment,
   apiDownloadInvoicePdf,
   apiSendInvoiceEmail,
@@ -59,6 +61,11 @@ import {
   apiRegister,
   apiRequestPasswordReset,
   apiConfirmPasswordReset,
+  apiCreateSupportThread,
+  apiReplyInternalSupportThread,
+  apiReplySupportThread,
+  apiUpdateInternalSupportThreadStatus,
+  apiUpdateSupportThreadStatus,
   apiUpdateCompanySettings,
   apiUpdateCustomer,
   apiUpdateInvoice,
@@ -303,7 +310,7 @@ const PUBLIC_MARKETING_LANGS = [
 ];
 const PUBLIC_MARKETING_TOPBAR_T = {
   az: {
-    platform: "Məhsul platforması",
+    platform: "Mühasibat proqramı",
     nav: [
       { id: "features", label: "Üstünlüklər" },
       { id: "how", label: "Necə işləyir" },
@@ -1474,11 +1481,54 @@ const ITEM_MOVEMENT_TYPES = ["Alış", "Satış"];
 const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
 const HUB_LANG_KEY = "finotam-hub-lang-v1";
 const SESSION_STORAGE_KEY = "finotam-session-v1";
+const SUPPORT_THREADS_STORAGE_KEY = "tetavio-support-threads-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
   fullName: "Tetavio Super Admin",
   email: "admin@finotam.local",
   role: "super_admin"
+};
+
+const SUPPORT_CATEGORY_OPTIONS = ["Texniki xəta", "Plan və ödəniş", "Giriş problemi", "Hesabat", "Digər"];
+const SUPPORT_PRIORITY_OPTIONS = ["Normal", "Təcili"];
+const SUPPORT_STATUS_LABELS = {
+  open: "Açıq",
+  waiting_support: "Dəstək cavabı gözlənilir",
+  waiting_user: "Sizin cavabınız gözlənilir",
+  closed: "Bağlanıb",
+};
+
+function loadSupportThreadsFromStorage() {
+  try {
+    const raw = window.localStorage.getItem(SUPPORT_THREADS_STORAGE_KEY);
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+const SUPPORT_CATEGORY_TO_BACKEND = {
+  "Texniki xЙ™ta": "TECHNICAL",
+  "Plan vЙ™ Г¶dЙ™niЕџ": "BILLING",
+  "GiriЕџ problemi": "AUTH",
+  "Hesabat": "REPORTING",
+  "DigЙ™r": "OTHER",
+};
+const SUPPORT_CATEGORY_FROM_BACKEND = {
+  TECHNICAL: "Texniki xЙ™ta",
+  BILLING: "Plan vЙ™ Г¶dЙ™niЕџ",
+  AUTH: "GiriЕџ problemi",
+  REPORTING: "Hesabat",
+  OTHER: "DigЙ™r",
+};
+const SUPPORT_PRIORITY_TO_BACKEND = {
+  Normal: "NORMAL",
+  "TЙ™cili": "URGENT",
+};
+const SUPPORT_PRIORITY_FROM_BACKEND = {
+  NORMAL: "Normal",
+  URGENT: "TЙ™cili",
 };
 
 const MONTHS = [
@@ -2547,6 +2597,14 @@ function MainApp() {
   const [paymentDraft, setPaymentDraft] = useState({ planCode: "", billingCycle: "monthly" });
   const [paymentTermsAccepted, setPaymentTermsAccepted] = useState(false);
   const [legalOverlay, setLegalOverlay] = useState(null);
+  const [supportThreads, setSupportThreads] = useState([]);
+  const [supportWidgetOpen, setSupportWidgetOpen] = useState(false);
+  const [supportActiveThreadId, setSupportActiveThreadId] = useState(null);
+  const [supportDraft, setSupportDraft] = useState({ subject: "", category: SUPPORT_CATEGORY_OPTIONS[0], priority: SUPPORT_PRIORITY_OPTIONS[0], message: "" });
+  const [supportReplyDraft, setSupportReplyDraft] = useState("");
+  const [supportAdminReplyDraft, setSupportAdminReplyDraft] = useState("");
+  const [supportAdminFilter, setSupportAdminFilter] = useState("all");
+  const [supportAdminActiveThreadId, setSupportAdminActiveThreadId] = useState(null);
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
@@ -2588,6 +2646,7 @@ function MainApp() {
 
     const normalizedUser = normalizeAuthUser({
       id: me.id,
+      accountId: me.accountId,
       fullName: me.fullName || me.email,
       email: me.email,
       role: String(me.role || "").toLowerCase() || "owner",
@@ -2608,6 +2667,81 @@ function MainApp() {
     });
 
     setCurrentUser(normalizedUser);
+  }
+
+  function normalizeSupportThread(thread) {
+    const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+    const backendStatus = String(thread?.status || "open").toLowerCase();
+    const displayStatus = backendStatus === "waiting_account" ? "waiting_user" : backendStatus;
+    const backendCategory = String(thread?.category || "").toUpperCase();
+    const backendPriority = String(thread?.priority || "").toUpperCase();
+
+    return {
+      id: thread?.id || crypto.randomUUID(),
+      accountKey: thread?.accountKey || thread?.accountId || "",
+      accountId: thread?.accountId || "",
+      ownerEmail: thread?.ownerEmail || "",
+      ownerName: thread?.ownerName || thread?.ownerEmail || "",
+      companyName: thread?.companyName || "",
+      subject: String(thread?.subject || "").trim(),
+      category: SUPPORT_CATEGORY_FROM_BACKEND[backendCategory] || thread?.category || SUPPORT_CATEGORY_OPTIONS[0],
+      priority: SUPPORT_PRIORITY_FROM_BACKEND[backendPriority] || thread?.priority || SUPPORT_PRIORITY_OPTIONS[0],
+      status: displayStatus,
+      context: String(thread?.context || "").trim(),
+      createdAt: thread?.createdAt || new Date().toISOString(),
+      updatedAt: thread?.updatedAt || new Date().toISOString(),
+      unreadForAdmin: Number(thread?.unreadForAdmin || 0),
+      unreadForUser: Number(thread?.unreadForUser || 0),
+      messages: messages.map((message) => ({
+        id: message?.id || crypto.randomUUID(),
+        authorType: message?.authorType === "admin" ? "admin" : "user",
+        authorName: String(message?.authorName || "").trim(),
+        authorEmail: String(message?.authorEmail || "").trim(),
+        body: String(message?.body || "").trim(),
+        createdAt: message?.createdAt || new Date().toISOString(),
+      })),
+    };
+  }
+
+  async function syncSupportThreadsFromBackend(sessionOverride = null, userOverride = null) {
+    const session = sessionOverride || backendSession;
+    const user = userOverride || currentUser;
+
+    if (!session?.accessToken || !user) {
+      setSupportThreads([]);
+      return [];
+    }
+
+    try {
+      let threads = [];
+
+      if (user.role === "super_admin") {
+        let page = 1;
+        let totalPages = 1;
+        const collected = [];
+
+        while (page <= totalPages) {
+          const response = await apiListInternalSupportThreads({ page, limit: 100 }, updateBackendSession);
+          const batch = Array.isArray(response?.data) ? response.data : [];
+          collected.push(...batch.map(normalizeSupportThread));
+
+          const meta = response?.meta || {};
+          totalPages = Math.max(1, Number(meta.totalPages || 1));
+          page += 1;
+        }
+
+        threads = collected;
+      } else {
+        const response = await apiListSupportThreads(updateBackendSession);
+        threads = Array.isArray(response) ? response.map(normalizeSupportThread) : [];
+      }
+
+      setSupportThreads(threads);
+      return threads;
+    } catch {
+      setSupportThreads([]);
+      return [];
+    }
   }
 
   function normalizeBackendCustomer(record) {
@@ -3931,6 +4065,14 @@ function MainApp() {
       window.localStorage.setItem(HUB_LANG_KEY, hubLang || "en");
     } catch { /* ignore */ }
   }, [hubLang]);
+
+  useEffect(() => {
+    if (!backendSession?.accessToken || !currentUser) {
+      setSupportThreads([]);
+      return;
+    }
+    void syncSupportThreadsFromBackend(backendSession, currentUser);
+  }, [backendSession?.accessToken, currentUser?.id, currentUser?.role, currentUser?.accountId]);
 
   useEffect(() => {
     setApiSession(backendSession);
@@ -11008,6 +11150,7 @@ function renderItemsCatalog() {
     function renderOverviewTab() {
       return (
         <>
+          {renderSupportAdminPanel()}
           {adminOverviewLoading && (
             <div className="iac-state-msg">
               <span className="internal-admin-spinner" />
@@ -13970,7 +14113,7 @@ function renderItemsCatalog() {
     ];
     const HUB_T = {
       az: {
-        platform: "Məhsul platforması",
+        platform: "Mühasibat proqramı",
         nav: [
           { id: "features", label: "Üstünlüklər" },
           { id: "how", label: "Necə işləyir" },
@@ -14720,6 +14863,8 @@ function renderItemsCatalog() {
           </div>
           <small>{t.footerNote}</small>
         </footer>
+        {renderSupportWidget()}
+        {renderSubscriptionPanel()}
       </div>
     );
   }
@@ -18693,7 +18838,7 @@ function renderSettings() {
                 </div>
                 <div className="summary-grid compact">
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
-                  <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{currentPlan.id === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
+                  <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{String(currentPlan.id || "").toLowerCase() === "free_basic" ? "Pulsuz" : String(currentPlan.id || "").toLowerCase() === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(currentPlan, currentBillingCycle)}</strong></article>
                   <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? "Müddətsiz" : currentPlan.id === "free" ? (backendSubscription?.trialDaysRemaining != null ? `${backendSubscription.trialDaysRemaining} ${at.sub_days}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? 0} ${at.sub_days}`) : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
                   <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : "Limitsiz"}</strong></article>
@@ -18730,6 +18875,8 @@ function renderSettings() {
                   const isFreeBasic = String(plan.code || "").toUpperCase() === "FREE_BASIC";
                   const priceDisplay = isFreeBasic ? "Pulsuz" : planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
                   const durationDisplay = isFreeBasic ? "Limitsiz müddət" : planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`);
+                  const resolvedOperationLimit = plan.operationLimit ?? fePlan?.operationLimit ?? null;
+                  const operationLimitDisplay = resolvedOperationLimit != null ? Number(resolvedOperationLimit).toLocaleString("en-US") : "Limitsiz";
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
@@ -18737,6 +18884,7 @@ function renderSettings() {
                       {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
                       <p>{plan.code}</p>
                       <small>{durationDisplay}</small>
+                      <small>{at.sub_opLimit}: {operationLimitDisplay}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={async () => {
                         if (isCurrentBackendPlan) return;
                         if (isFreeBasic) {
@@ -18796,6 +18944,7 @@ function renderSettings() {
               </div>
             );
           })() : null}
+          {renderSupportWidget()}
         </section>
       </div>
     );
@@ -18995,6 +19144,299 @@ function renderSettings() {
   const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
   const standaloneLegalRoute = getStandaloneLegalRouteInfo();
   const standaloneLegalSlugMatched = COMPLIANCE_LEGAL_PAGES.some((page) => page.id === standaloneLegalRoute.slug);
+  const supportAccountKey = currentUser?.accountId || "";
+  const userSupportThreads = supportAccountKey
+    ? supportThreads
+        .filter((thread) => thread.accountKey === supportAccountKey)
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+    : [];
+  const supportUnreadCount = currentUser?.role === "super_admin"
+    ? supportThreads.reduce((sum, thread) => sum + Number(thread.unreadForAdmin || 0), 0)
+    : userSupportThreads.reduce((sum, thread) => sum + Number(thread.unreadForUser || 0), 0);
+
+  function getSupportContextLabel() {
+    if (activeProduct === "hub") return "Homepage";
+    if (activeProduct === "booksLanding") return `Giriş paneli / ${booksView}`;
+    if (activeSection && activeModule) return `${activeSection} / ${activeModule}`;
+    if (activeSection) return activeSection;
+    return "dashboard";
+  }
+
+  async function handleCreateSupportThread(event) {
+    event.preventDefault();
+    const messageBody = String(supportDraft.message || "").trim();
+    const subject = String(supportDraft.subject || "").trim();
+    if (!currentUser || !messageBody || !subject) return;
+
+    try {
+      const created = await apiCreateSupportThread({
+        subject,
+        category: SUPPORT_CATEGORY_TO_BACKEND[supportDraft.category] || "OTHER",
+        priority: SUPPORT_PRIORITY_TO_BACKEND[supportDraft.priority] || "NORMAL",
+        context: getSupportContextLabel(),
+        body: messageBody,
+      }, updateBackendSession);
+
+      const normalized = normalizeSupportThread(created);
+      setSupportActiveThreadId(normalized.id);
+      setSupportDraft({ subject: "", category: SUPPORT_CATEGORY_OPTIONS[0], priority: SUPPORT_PRIORITY_OPTIONS[0], message: "" });
+      setSupportWidgetOpen(true);
+      await syncSupportThreadsFromBackend();
+    } catch (error) {
+      console.error("Failed to create support thread", error);
+    }
+  }
+
+  async function handleReplyToSupportThread(event) {
+    event.preventDefault();
+    const body = String(supportReplyDraft || "").trim();
+    if (!currentUser || !supportActiveThreadId || !body) return;
+
+    try {
+      await apiReplySupportThread(supportActiveThreadId, { body }, updateBackendSession);
+      setSupportReplyDraft("");
+      await syncSupportThreadsFromBackend();
+    } catch (error) {
+      console.error("Failed to reply to support thread", error);
+    }
+  }
+
+  async function handleAdminSupportReply(threadId) {
+    const body = String(supportAdminReplyDraft || "").trim();
+    if (!currentUser || !threadId || !body) return;
+
+    try {
+      await apiReplyInternalSupportThread(threadId, { body }, updateBackendSession);
+      setSupportAdminReplyDraft("");
+      await syncSupportThreadsFromBackend();
+    } catch (error) {
+      console.error("Failed to send admin support reply", error);
+    }
+  }
+
+  async function updateSupportThreadStatus(threadId, status) {
+    try {
+      const backendStatus = status === "waiting_user" ? "WAITING_ACCOUNT" : status === "waiting_support" ? "WAITING_SUPPORT" : status === "closed" ? "CLOSED" : "OPEN";
+      if (currentUser?.role === "super_admin") {
+        await apiUpdateInternalSupportThreadStatus(threadId, { status: backendStatus }, updateBackendSession);
+      } else {
+        const userStatus = backendStatus === "WAITING_ACCOUNT" ? "WAITING_SUPPORT" : backendStatus;
+        await apiUpdateSupportThreadStatus(threadId, { status: userStatus === "OPEN" ? "WAITING_SUPPORT" : userStatus }, updateBackendSession);
+      }
+      await syncSupportThreadsFromBackend();
+    } catch (error) {
+      console.error("Failed to update support thread status", error);
+    }
+  }
+
+  useEffect(() => {
+    if (!supportWidgetOpen || !supportActiveThreadId || currentUser?.role === "super_admin") return;
+    setSupportThreads((current) => current.map((thread) => thread.id === supportActiveThreadId ? { ...thread, unreadForUser: 0 } : thread));
+  }, [supportWidgetOpen, supportActiveThreadId, currentUser?.role]);
+
+  useEffect(() => {
+    if (currentUser?.role === "super_admin") return;
+    if (!userSupportThreads.length) {
+      setSupportActiveThreadId(null);
+      return;
+    }
+    if (supportActiveThreadId === "new") return;
+    if (!supportActiveThreadId || !userSupportThreads.some((thread) => thread.id === supportActiveThreadId)) {
+      setSupportActiveThreadId(userSupportThreads[0].id);
+    }
+  }, [currentUser?.role, supportActiveThreadId, userSupportThreads]);
+
+  useEffect(() => {
+    if (currentUser?.role !== "super_admin") return;
+    if (!supportThreads.length) {
+      setSupportAdminActiveThreadId(null);
+      return;
+    }
+    if (!supportAdminActiveThreadId || !supportThreads.some((thread) => thread.id === supportAdminActiveThreadId)) {
+      setSupportAdminActiveThreadId(supportThreads[0].id);
+    }
+  }, [currentUser?.role, supportAdminActiveThreadId, supportThreads]);
+
+  function renderSupportWidget() {
+    if (!currentUser || currentUser.role === "super_admin") return null;
+
+    const activeThread = userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null;
+
+    return (
+      <div className={`support-widget${supportWidgetOpen ? " open" : ""}`}>
+        {supportWidgetOpen ? (
+          <section className="support-widget-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="support-widget-head">
+              <div>
+                <strong>Dəstək</strong>
+                <small>Real operator sizə buradan cavab verəcək</small>
+              </div>
+              <button className="icon-btn" type="button" onClick={() => setSupportWidgetOpen(false)}>×</button>
+            </div>
+
+            {userSupportThreads.length > 0 ? (
+              <>
+                <div className="support-thread-tabs">
+                  {userSupportThreads.slice(0, 4).map((thread) => (
+                    <button
+                      key={thread.id}
+                      type="button"
+                      className={`support-thread-tab${thread.id === supportActiveThreadId ? " active" : ""}`}
+                      onClick={() => setSupportActiveThreadId(thread.id)}
+                    >
+                      <span>{thread.subject}</span>
+                      <small>{SUPPORT_STATUS_LABELS[thread.status] || thread.status}</small>
+                    </button>
+                  ))}
+                </div>
+
+                {activeThread ? (
+                  <>
+                    <div className="support-thread-meta">
+                      <span>{activeThread.category}</span>
+                      <span>{activeThread.priority}</span>
+                      <span>{activeThread.context}</span>
+                    </div>
+                    <div className="support-message-list">
+                      {activeThread.messages.map((message) => (
+                        <article key={message.id} className={`support-message ${message.authorType === "admin" ? "admin" : "user"}`}>
+                          <strong>{message.authorType === "admin" ? "Dəstək komandası" : "Siz"}</strong>
+                          <p>{message.body}</p>
+                          <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
+                        </article>
+                      ))}
+                    </div>
+                    <form className="support-reply-form" onSubmit={handleReplyToSupportThread}>
+                      <textarea
+                        value={supportReplyDraft}
+                        onChange={(event) => setSupportReplyDraft(event.target.value)}
+                        placeholder="Cavabınızı yazın..."
+                        rows={3}
+                      />
+                      <div className="support-widget-actions">
+                        {activeThread.status === "closed" ? (
+                          <button className="ghost-btn" type="button" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_support")}>Yenidən aç</button>
+                        ) : null}
+                        <button className="primary-btn" type="submit" disabled={!supportReplyDraft.trim()}>Göndər</button>
+                      </div>
+                    </form>
+                  </>
+                ) : null}
+
+                <button className="ghost-btn support-new-thread-btn" type="button" onClick={() => setSupportActiveThreadId("new")}>Yeni müraciət</button>
+              </>
+            ) : null}
+
+            {!activeThread ? (
+              <form className="support-create-form" onSubmit={handleCreateSupportThread}>
+                <label><span>Mövzu</span><input value={supportDraft.subject} onChange={(event) => setSupportDraft((current) => ({ ...current, subject: event.target.value }))} placeholder="Qısa başlıq" required /></label>
+                <div className="support-create-grid">
+                  <label><span>Kateqoriya</span><select value={supportDraft.category} onChange={(event) => setSupportDraft((current) => ({ ...current, category: event.target.value }))}>{SUPPORT_CATEGORY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+                  <label><span>Prioritet</span><select value={supportDraft.priority} onChange={(event) => setSupportDraft((current) => ({ ...current, priority: event.target.value }))}>{SUPPORT_PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+                </div>
+                <label><span>Mesaj</span><textarea value={supportDraft.message} onChange={(event) => setSupportDraft((current) => ({ ...current, message: event.target.value }))} placeholder="Problemi və ya sualınızı yazın..." rows={5} required /></label>
+                <div className="support-widget-note">Kontekst avtomatik əlavə olunur: {getSupportContextLabel()}</div>
+                <div className="support-widget-actions">
+                  {userSupportThreads.length > 0 ? <button className="ghost-btn" type="button" onClick={() => setSupportActiveThreadId(userSupportThreads[0].id)}>Mövcud yazışmaya qayıt</button> : null}
+                  <button className="primary-btn" type="submit">Müraciət göndər</button>
+                </div>
+              </form>
+            ) : null}
+          </section>
+        ) : null}
+
+        <button className="support-widget-trigger" type="button" onClick={() => setSupportWidgetOpen((current) => !current)}>
+          <span>Dəstək</span>
+          {supportUnreadCount > 0 ? <strong>{supportUnreadCount}</strong> : null}
+        </button>
+      </div>
+    );
+  }
+
+  function renderSupportAdminPanel() {
+    const filteredThreads = supportThreads
+      .filter((thread) => supportAdminFilter === "all" ? true : thread.status === supportAdminFilter)
+      .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+    const activeThread = filteredThreads.find((thread) => thread.id === supportAdminActiveThreadId)
+      || filteredThreads[0]
+      || supportThreads.find((thread) => thread.id === supportAdminActiveThreadId)
+      || supportThreads[0]
+      || null;
+
+    return (
+      <div className="iac-section">
+        <div className="iac-section-hd">
+          <span className="iac-dot iac-dot--growth" />
+          <span className="iac-section-lbl">Support Inbox</span>
+          <span className="iac-meta-count">{supportThreads.length} total</span>
+        </div>
+        <div className="support-admin-toolbar">
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "open" ? " active" : ""}`} onClick={() => setSupportAdminFilter("open")}>Açıq</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_support" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_support")}>Dəstək gözlənir</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_user" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_user")}>İstifadəçi gözlənir</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "closed" ? " active" : ""}`} onClick={() => setSupportAdminFilter("closed")}>Bağlı</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "all" ? " active" : ""}`} onClick={() => setSupportAdminFilter("all")}>Hamısı</button>
+        </div>
+
+        {filteredThreads.length === 0 ? (
+          <div className="iac-fin-empty">Hələ support müraciəti yoxdur.</div>
+        ) : (
+          <div className="support-admin-layout">
+            <div className="support-admin-list">
+              {filteredThreads.map((thread) => (
+                <button
+                  key={thread.id}
+                  type="button"
+                  className={`support-admin-thread${activeThread?.id === thread.id ? " active" : ""}`}
+                  onClick={() => {
+                    setSupportAdminActiveThreadId(thread.id);
+                    setSupportThreads((current) => current.map((item) => item.id === thread.id ? { ...item, unreadForAdmin: 0 } : item));
+                  }}
+                >
+                  <div className="support-admin-thread-top">
+                    <strong>{thread.subject}</strong>
+                    {thread.unreadForAdmin ? <span className="support-admin-unread">{thread.unreadForAdmin}</span> : null}
+                  </div>
+                  <span>{thread.companyName}</span>
+                  <small>{thread.category} · {thread.priority} · {SUPPORT_STATUS_LABELS[thread.status] || thread.status}</small>
+                </button>
+              ))}
+            </div>
+            {activeThread ? (
+              <section className="support-admin-detail">
+                <div className="support-admin-detail-head">
+                  <div>
+                    <h3>{activeThread.subject}</h3>
+                    <p>{activeThread.companyName} · {activeThread.ownerEmail} · {activeThread.context}</p>
+                  </div>
+                  <div className="support-admin-status-actions">
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_user")}>Cavab verildi</button>
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "closed")}>Bağla</button>
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "open")}>Açıq saxla</button>
+                  </div>
+                </div>
+                <div className="support-message-list admin">
+                  {activeThread.messages.map((message) => (
+                    <article key={message.id} className={`support-message ${message.authorType === "admin" ? "admin" : "user"}`}>
+                      <strong>{message.authorType === "admin" ? "Operator" : message.authorName || message.authorEmail}</strong>
+                      <p>{message.body}</p>
+                      <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
+                    </article>
+                  ))}
+                </div>
+                <div className="support-admin-reply">
+                  <textarea value={supportAdminReplyDraft} onChange={(event) => setSupportAdminReplyDraft(event.target.value)} placeholder="İstifadəçiyə cavab yazın..." rows={4} />
+                  <div className="support-widget-actions">
+                    <button type="button" className="primary-btn" disabled={!supportAdminReplyDraft.trim()} onClick={() => handleAdminSupportReply(activeThread.id)}>Cavab göndər</button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   function renderStandaloneLegalRouteGuard(routeInfo) {
     const legalPage = routeInfo?.legalPage || null;
@@ -19184,12 +19626,12 @@ function renderSettings() {
       )}
 
       <aside className="sidebar" onClick={(event) => event.stopPropagation()}>
-        <button className="brand-block" type="button" onClick={() => { setActiveProduct("hub"); setAppNavOpen(false); }}>
-          <div className="brand-icon">
+        <button className="brand-block lp-brand" type="button" onClick={() => { setActiveProduct("hub"); setAppNavOpen(false); }}>
+          <div className="lp-brand-icon">
             <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>
-          <div className="brand-copy">
-            <strong>Tetavio <span className="brand-erp">ERP</span></strong>
+          <div className="lp-brand-copy">
+            <strong>Tetavio</strong>
             <span>{at.brandSub}</span>
           </div>
         </button>

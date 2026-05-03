@@ -1,7 +1,7 @@
 const I18N = {
   az: {
     // ── App chrome ──────────────────────────────────────────────
-    brandSub: "Web əsaslı mühasibat sistemi",
+    brandSub: "Mühasibat proqramı",
     nav: { home: "İdarəetmə paneli", accountant: "Baş kitab", purchases: "Alış", sales: "Satış", banking: "Bank", reports: "Hesabatlar", documents: "Sənədlər", settings: "Tənzimləmələr", goods: "Mal və xidmət" },
     chipActive: "Aktiv", chipLoading: "Yüklənir",
     profileIndiv: "Fərdi sahibkar profili aktivdir.", profileCompany: "Şirkət profili aktivdir.",

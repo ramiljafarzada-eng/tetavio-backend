@@ -68,6 +68,31 @@ enum WebhookProcessingStatus {
   FAILED
 }
 
+enum SupportThreadStatus {
+  OPEN
+  WAITING_SUPPORT
+  WAITING_ACCOUNT
+  CLOSED
+}
+
+enum SupportThreadPriority {
+  NORMAL
+  URGENT
+}
+
+enum SupportThreadCategory {
+  TECHNICAL
+  BILLING
+  AUTH
+  REPORTING
+  OTHER
+}
+
+enum SupportAuthorType {
+  ACCOUNT_USER
+  SUPER_ADMIN
+}
+
 model Account {
   id                 String          @id @default(uuid()) @db.Uuid
   name               String
@@ -90,6 +115,7 @@ model Account {
   bills              Bill[]
   bankAccounts       BankAccount[]
   bankTransactions   BankTransaction[]
+  supportThreads     SupportThread[]
 
   @@map("accounts")
 }
@@ -115,6 +141,8 @@ model User {
   clearedFlags            AdminAccountFlag[]        @relation("AdminFlagClearer")
   anomalyReviews          AdminAnomalyReview[]      @relation("AdminAnomalyReviewer")
   adminAuditLogs          AdminAuditLog[]           @relation("AdminAuditActor")
+  supportThreadsCreated   SupportThread[]           @relation("SupportThreadCreator")
+  supportMessages         SupportMessage[]          @relation("SupportMessageAuthor")
 
   @@index([accountId])
   @@map("users")
@@ -596,4 +624,43 @@ model BankTransaction {
   @@index([accountId])
   @@index([bankAccountId])
   @@map("bank_transactions")
+}
+
+model SupportThread {
+  id              String                @id @default(uuid()) @db.Uuid
+  accountId       String                @map("account_id") @db.Uuid
+  account         Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  subject         String
+  category        SupportThreadCategory
+  priority        SupportThreadPriority @default(NORMAL)
+  status          SupportThreadStatus   @default(OPEN)
+  context         String?
+  createdByUserId String                @map("created_by_user_id") @db.Uuid
+  createdByUser   User                  @relation("SupportThreadCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  unreadForAccount Int                  @default(0) @map("unread_for_account")
+  unreadForAdmin  Int                   @default(0) @map("unread_for_admin")
+  lastMessageAt   DateTime              @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  messages        SupportMessage[]
+
+  @@index([accountId])
+  @@index([accountId, status])
+  @@index([lastMessageAt])
+  @@map("support_threads")
+}
+
+model SupportMessage {
+  id           String            @id @default(uuid()) @db.Uuid
+  threadId      String           @map("thread_id") @db.Uuid
+  thread        SupportThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorUserId  String?          @map("author_user_id") @db.Uuid
+  authorUser    User?            @relation("SupportMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  authorType    SupportAuthorType @map("author_type")
+  body          String
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([threadId])
+  @@index([threadId, createdAt])
+  @@map("support_messages")
 }

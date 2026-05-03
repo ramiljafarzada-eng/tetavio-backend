@@ -27,3 +27,11 @@ Offline accounting application scaffold prepared for desktop packaging.
 ## PASHA payment setup
 
 For Render environment variables and PASHA checkout/return wiring, see `backend/PASHA_RENDER_SETUP.md`.
+
+## Render deployment
+
+This repo now includes a `render.yaml` blueprint for deploying the backend, frontend, and Postgres.
+
+The backend deployment runs Prisma migrations with `npm run prisma:deploy` before start, so the support chat tables are created automatically on deploy.
+
+If you connect the blueprint in Render, you still need to review the secret environment variables that are marked `sync: false`, especially `CORS_ORIGINS` and `FRONTEND_PRODUCTION_URL`.
