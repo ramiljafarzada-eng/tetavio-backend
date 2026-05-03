@@ -19258,9 +19258,11 @@ function renderSettings() {
   }, [currentUser?.role, supportAdminActiveThreadId, supportThreads]);
 
   function renderSupportWidget() {
-    if (!currentUser || currentUser.role === "super_admin") return null;
+    if (currentUser?.role === "super_admin") return null;
 
-    const activeThread = userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null;
+    const activeThread = currentUser
+      ? (userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null)
+      : null;
 
     return (
       <div className={`support-widget${supportWidgetOpen ? " open" : ""}`}>
@@ -19776,6 +19778,7 @@ function renderSettings() {
             )}
             {content}
             {renderSubscriptionPanel()}
+            {renderSupportWidget()}
           </>
         )}
       </main>
