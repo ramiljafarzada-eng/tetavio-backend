@@ -19260,11 +19260,15 @@ function renderSettings() {
     }
   }
 
-  function handleSupportReplyKeyDown(event, submitHandler) {
-    if (event.key !== "Enter" || event.shiftKey) return;
+  function handleSupportTextareaKeyDown(event) {
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    const form = event.currentTarget.form;
+    if (!form) return;
     event.preventDefault();
-    if (typeof submitHandler === "function") {
-      submitHandler();
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+    } else {
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     }
   }
 
@@ -19369,7 +19373,7 @@ function renderSettings() {
                         onChange={(event) => setSupportReplyDraft(event.target.value)}
                         placeholder="Cavabınızı yazın..."
                         rows={3}
-                        onKeyDown={(event) => handleSupportReplyKeyDown(event, handleReplyToSupportThread)}
+                        onKeyDown={handleSupportTextareaKeyDown}
                       />
                       <div className="support-widget-actions">
                         {activeThread.status === "closed" ? (
@@ -19397,7 +19401,7 @@ function renderSettings() {
                   <textarea
                     value={supportDraft.message}
                     onChange={(event) => setSupportDraft((current) => ({ ...current, message: event.target.value }))}
-                    onKeyDown={(event) => handleSupportReplyKeyDown(event, handleCreateSupportThread)}
+                    onKeyDown={handleSupportTextareaKeyDown}
                     placeholder="Problemi və ya sualınızı yazın..."
                     rows={5}
                     required
