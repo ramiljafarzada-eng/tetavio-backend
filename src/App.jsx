@@ -19392,7 +19392,17 @@ function renderSettings() {
                   <label><span>Kateqoriya</span><select value={supportDraft.category} onChange={(event) => setSupportDraft((current) => ({ ...current, category: event.target.value }))}>{SUPPORT_CATEGORY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
                   <label><span>Prioritet</span><select value={supportDraft.priority} onChange={(event) => setSupportDraft((current) => ({ ...current, priority: event.target.value }))}>{SUPPORT_PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
                 </div>
-                <label><span>Mesaj</span><textarea value={supportDraft.message} onChange={(event) => setSupportDraft((current) => ({ ...current, message: event.target.value }))} placeholder="Problemi və ya sualınızı yazın..." rows={5} required /></label>
+                <label>
+                  <span>Mesaj</span>
+                  <textarea
+                    value={supportDraft.message}
+                    onChange={(event) => setSupportDraft((current) => ({ ...current, message: event.target.value }))}
+                    onKeyDown={(event) => handleSupportReplyKeyDown(event, handleCreateSupportThread)}
+                    placeholder="Problemi və ya sualınızı yazın..."
+                    rows={5}
+                    required
+                  />
+                </label>
                 <div className="support-widget-note">Kontekst avtomatik əlavə olunur: {getSupportContextLabel()}</div>
                 <div className="support-widget-actions">
                   {userSupportThreads.length > 0 ? <button className="ghost-btn" type="button" onClick={() => setSupportActiveThreadId(userSupportThreads[0].id)}>Mövcud yazışmaya qayıt</button> : null}
