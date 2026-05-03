@@ -2607,6 +2607,8 @@ function MainApp() {
   const [supportAdminActiveThreadId, setSupportAdminActiveThreadId] = useState(null);
   const supportUserScrollRef = useRef(null);
   const supportAdminScrollRef = useRef(null);
+  const supportAudioContextRef = useRef(null);
+  const supportNotificationSnapshotRef = useRef({ role: "", accountKey: "", latestByThread: new Map() });
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
   const supportAccountKey = currentUser?.accountId || "";
   const userSupportThreads = supportAccountKey
@@ -4129,6 +4131,46 @@ function MainApp() {
     activeAdminSupportThread?.messages?.length,
     activeAdminSupportThread?.updatedAt,
   ]);
+
+  useEffect(() => {
+    const role = currentUser?.role || "";
+    const accountKey = currentUser?.accountId || "";
+    const isAdmin = role === "super_admin";
+    const relevantThreads = isAdmin ? supportThreads : userSupportThreads;
+    const snapshot = supportNotificationSnapshotRef.current;
+    const nextLatestByThread = new Map();
+
+    if (snapshot.role !== role || snapshot.accountKey !== accountKey) {
+      relevantThreads.forEach((thread) => {
+        const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+        const lastMessage = messages[messages.length - 1] || null;
+        nextLatestByThread.set(thread.id, lastMessage?.id || "");
+      });
+      supportNotificationSnapshotRef.current = { role, accountKey, latestByThread: nextLatestByThread };
+      return;
+    }
+
+    let shouldPlaySound = false;
+    relevantThreads.forEach((thread) => {
+      const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+      const lastMessage = messages[messages.length - 1] || null;
+      const lastMessageId = lastMessage?.id || "";
+      nextLatestByThread.set(thread.id, lastMessageId);
+
+      const previousLastMessageId = snapshot.latestByThread.get(thread.id) || "";
+      if (!lastMessageId || lastMessageId === previousLastMessageId) return;
+
+      const incomingAuthorType = isAdmin ? "user" : "admin";
+      if (String(lastMessage.authorType || "").toLowerCase() === incomingAuthorType) {
+        shouldPlaySound = true;
+      }
+    });
+
+    supportNotificationSnapshotRef.current = { role, accountKey, latestByThread: nextLatestByThread };
+    if (shouldPlaySound) {
+      playSupportNotificationSound();
+    }
+  }, [supportThreads, currentUser?.role, currentUser?.accountId, userSupportThreads]);
 
   useEffect(() => {
     setApiSession(backendSession);
@@ -19270,6 +19312,48 @@ function renderSettings() {
     } else {
       form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     }
+  }
+
+  function playSupportNotificationSound() {
+    if (typeof window === "undefined") return;
+
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return;
+
+    try {
+      let audioContext = supportAudioContextRef.current;
+      if (!audioContext) {
+        audioContext = new AudioContextCtor();
+        supportAudioContextRef.current = audioContext;
+      }
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+
+      const now = audioContext.currentTime;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(784, now);
+      oscillator.frequency.exponentialRampToValueAtTime(988, now + 0.12);
+
+      gainNode.gain.setValueAtTime(0.0001, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.32);
+      oscillator.onended = () => {
+        try {
+          oscillator.disconnect();
+          gainNode.disconnect();
+        } catch {}
+      };
+    } catch {}
   }
 
   async function updateSupportThreadStatus(threadId, status) {
