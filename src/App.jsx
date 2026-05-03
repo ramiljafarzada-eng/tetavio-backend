@@ -4093,6 +4093,27 @@ function MainApp() {
   }, [backendSession?.accessToken, currentUser?.id, currentUser?.role, supportWidgetOpen]);
 
   useEffect(() => {
+    if (!supportWidgetOpen || currentUser?.role === "super_admin" || !supportUserScrollRef.current) return;
+    supportUserScrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [
+    supportWidgetOpen,
+    currentUser?.role,
+    supportActiveThreadId,
+    activeUserSupportThread?.messages?.length,
+    activeUserSupportThread?.updatedAt,
+  ]);
+
+  useEffect(() => {
+    if (currentUser?.role !== "super_admin" || !supportAdminScrollRef.current) return;
+    supportAdminScrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [
+    currentUser?.role,
+    supportAdminActiveThreadId,
+    activeAdminSupportThread?.messages?.length,
+    activeAdminSupportThread?.updatedAt,
+  ]);
+
+  useEffect(() => {
     setApiSession(backendSession);
   }, [backendSession]);
 
@@ -19171,6 +19192,14 @@ function renderSettings() {
   const supportUnreadCount = currentUser?.role === "super_admin"
     ? supportThreads.reduce((sum, thread) => sum + Number(thread.unreadForAdmin || 0), 0)
     : userSupportThreads.reduce((sum, thread) => sum + Number(thread.unreadForUser || 0), 0);
+  const activeUserSupportThread = currentUser && currentUser.role !== "super_admin"
+    ? (userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null)
+    : null;
+  const activeAdminSupportThread = currentUser?.role === "super_admin"
+    ? (supportThreads.find((thread) => thread.id === supportAdminActiveThreadId) || null)
+    : null;
+  const supportUserScrollRef = useRef(null);
+  const supportAdminScrollRef = useRef(null);
 
   function getSupportContextLabel() {
     if (activeProduct === "hub") return "Homepage";
@@ -19316,6 +19345,7 @@ function renderSettings() {
                       <span>{activeThread.category}</span>
                       <span>{activeThread.priority}</span>
                       <span>{activeThread.context}</span>
+                      <div ref={supportUserScrollRef} />
                     </div>
                     <div className="support-message-list">
                       {activeThread.messages.map((message) => (
@@ -19443,6 +19473,7 @@ function renderSettings() {
                       <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
                     </article>
                   ))}
+                  <div ref={supportAdminScrollRef} />
                 </div>
                 <div className="support-admin-reply">
                   <textarea value={supportAdminReplyDraft} onChange={(event) => setSupportAdminReplyDraft(event.target.value)} placeholder="İstifadəçiyə cavab yazın..." rows={4} />
