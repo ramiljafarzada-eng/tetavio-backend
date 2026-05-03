@@ -2291,6 +2291,12 @@ button:disabled {
   .support-widget-panel {
     width: min(100vw - 18px, 26rem);
   }
+
+  .settings-overview-grid,
+  .settings-section-grid,
+  .settings-mini-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .subscription-actions {
@@ -3576,6 +3582,70 @@ button:disabled {
 .system-actions-grid {
   display: grid;
   gap: 12px;
+}
+
+.settings-dashboard {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-overview-card,
+.settings-mini-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.settings-overview-card {
+  padding: 14px 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.settings-overview-card span,
+.settings-mini-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.settings-overview-card strong,
+.settings-mini-card strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.settings-overview-card small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.settings-section-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-mini-card {
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.settings-quick-links {
+  margin-top: 2px;
 }
 
 .system-action-card {

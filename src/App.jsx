@@ -18395,6 +18395,169 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
 
 function renderSettings() {
     const activeLangObj = APP_LANGS.find((l) => l.code === hubLang) || APP_LANGS[0];
+    const internalUsersCount = authUsers.filter((user) => isInternalUser(user)).length;
+    const companySnapshot = [
+      { label: "Şirkət", value: state.settings.companyName || "Qeyd olunmayıb" },
+      { label: "Forma", value: state.settings.entityType || "Qeyd olunmayıb" },
+      { label: "VÖEN", value: state.settings.taxId || "Qeyd olunmayıb" },
+      { label: "Valyuta", value: state.settings.currency || "Qeyd olunmayıb" },
+    ];
+    const operationSnapshot = [
+      { label: "Faktura prefiksi", value: state.settings.invoicePrefix || "—" },
+      { label: "Kotirovka prefiksi", value: state.settings.quotePrefix || "—" },
+      { label: "Ödəniş müddəti", value: state.settings.defaultPaymentTerm || "—" },
+      { label: "Vergi etiketi", value: state.settings.defaultTaxLabel || "—" },
+    ];
+    const safetySnapshot = [
+      { label: "Avtomatik backup", value: state.settings.autoBackup || "—" },
+      { label: "Aşağı stok xəbərdarlığı", value: state.settings.stockWarning || "—" },
+      { label: "Mənfi stok", value: state.settings.negativeStock || "—" },
+      { label: "İşçi sahəsi", value: state.settings.uiScale || "Avtomatik" },
+    ];
+
+    if (!settingsTab) {
+      return (
+        <section className="view active">
+          <div className="settings-dashboard">
+            <div className="settings-hero panel">
+              <div className="panel-head">
+                <div>
+                  <h3>{at.nav.settings}</h3>
+                  <p className="panel-copy">Şirkət profili, iş qaydaları, komanda, dil və sistem əməliyyatlarını bir yerdə idarə edin.</p>
+                </div>
+                <span>{activeLangObj.label}</span>
+              </div>
+              <div className="settings-overview-grid">
+                <article className="settings-overview-card">
+                  <span>Şirkət</span>
+                  <strong>{state.settings.companyName || "Qeyd olunmayıb"}</strong>
+                  <small>{state.settings.entityType || "Hüquqi status yoxdur"}</small>
+                </article>
+                <article className="settings-overview-card">
+                  <span>Komanda</span>
+                  <strong>{internalUsersCount}</strong>
+                  <small>Aktiv daxili istifadəçi</small>
+                </article>
+                <article className="settings-overview-card">
+                  <span>Dil</span>
+                  <strong>{activeLangObj.label}</strong>
+                  <small>İnterfeys dili</small>
+                </article>
+                <article className="settings-overview-card">
+                  <span>Backup</span>
+                  <strong>{state.settings.autoBackup || "—"}</strong>
+                  <small>{backupStatus.message ? "Son sistem xəbərdarlığı var" : "Status gözləmədədir"}</small>
+                </article>
+              </div>
+            </div>
+
+            <div className="settings-section-grid">
+              <div className="settings-snapshot panel">
+                <div className="panel-head">
+                  <div><h3>Şirkət xülasəsi</h3><p className="panel-copy">Əsas identifikasiya və maliyyə məlumatları.</p></div>
+                  <span>🏢</span>
+                </div>
+                <div className="settings-mini-grid">
+                  {companySnapshot.map((item) => (
+                    <article key={item.label} className="settings-mini-card">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-snapshot panel">
+                <div className="panel-head">
+                  <div><h3>Qaydalar</h3><p className="panel-copy">Sənədləşmə və əməliyyat parametrləri.</p></div>
+                  <span>⚙️</span>
+                </div>
+                <div className="settings-mini-grid">
+                  {operationSnapshot.map((item) => (
+                    <article key={item.label} className="settings-mini-card">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-snapshot panel">
+                <div className="panel-head">
+                  <div><h3>Təhlükəsizlik və ehtiyat</h3><p className="panel-copy">Məlumat qorunması və interfeys davranışı.</p></div>
+                  <span>🛡️</span>
+                </div>
+                <div className="settings-mini-grid">
+                  {safetySnapshot.map((item) => (
+                    <article key={item.label} className="settings-mini-card">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bill-hub settings-quick-links" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", maxWidth: "100%" }}>
+              <div className="bill-hub-card" onClick={() => setSettingsTab("profile")}>
+                <div className="bill-hub-icon">🏢</div>
+                <div className="bill-hub-info">
+                  <h3>{at.settings_companyInfo}</h3>
+                  <p>{at.settings_profileDesc}</p>
+                  <span className="bill-hub-count">{at.settings_profileBadge}</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+              <div className="bill-hub-card" onClick={() => setSettingsTab("language")}>
+                <div className="bill-hub-icon">{activeLangObj.flag}</div>
+                <div className="bill-hub-info">
+                  <h3>{at.settings_language}</h3>
+                  <p>{at.settings_languageDesc}</p>
+                  <span className="bill-hub-count">{activeLangObj.label}</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+              <div className="bill-hub-card" onClick={() => setSettingsTab("params")}>
+                <div className="bill-hub-icon">⚙️</div>
+                <div className="bill-hub-info">
+                  <h3>{at.settings_params}</h3>
+                  <p>{at.settings_paramsDesc}</p>
+                  <span className="bill-hub-count">{at.settings_paramsBtn}</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+              <div className="bill-hub-card" onClick={() => setAccountPanel("changePassword")}>
+                <div className="bill-hub-icon">🔒</div>
+                <div className="bill-hub-info">
+                  <h3>Parol və təhlükəsizlik</h3>
+                  <p>Giriş parolunu dəyişin və hesab təhlükəsizliyini yeniləyin.</p>
+                  <span className="bill-hub-count">Aç</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+              <div className="bill-hub-card" onClick={() => { setSettingsTab("team"); loadTeamMembers(); }}>
+                <div className="bill-hub-icon">👥</div>
+                <div className="bill-hub-info">
+                  <h3>Komanda</h3>
+                  <p>Hesab üzvlərini idarə edin.</p>
+                  <span className="bill-hub-count">{teamMembers.length || "—"} üzv</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+              <div className="bill-hub-card" onClick={() => setSettingsTab("system")}>
+                <div className="bill-hub-icon">🛡️</div>
+                <div className="bill-hub-info">
+                  <h3>{at.settings_systemTitle}</h3>
+                  <p>Reset, restore or back up application data.</p>
+                  <span className="bill-hub-count">3 actions</span>
+                </div>
+                <span className="bill-hub-arrow">→</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
 
     // ── Hub view ──────────────────────────────────────────
     if (!settingsTab) {
