@@ -43,7 +43,7 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a user and create FREE subscription' })
+  @ApiOperation({ summary: 'Register a user and create the selected Free or Demo subscription' })
   @ApiBody({ type: RegisterDto })
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   register(@Body() dto: RegisterDto, @Req() req: Request) {

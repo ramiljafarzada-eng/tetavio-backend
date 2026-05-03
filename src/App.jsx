@@ -1636,11 +1636,24 @@ function getPlanPriceLabel(plan, billingCycle = "annual") {
   return `$${getPlanPrice(plan, "annual")}/ay`;
 }
 
-function daysUntil(dateValue) {
+function daysUntil(dateValue, nowValue = Date.now()) {
   if (!dateValue) return null;
   const target = new Date(`${dateValue}T23:59:59`);
   if (Number.isNaN(target.getTime())) return null;
-  return Math.max(0, Math.ceil((target.getTime() - Date.now()) / 86400000));
+  return Math.max(0, Math.ceil((target.getTime() - nowValue) / 86400000));
+}
+
+function formatRemainingTime(dateValue, nowValue = Date.now()) {
+  if (!dateValue) return null;
+  const target = new Date(dateValue);
+  if (Number.isNaN(target.getTime())) return null;
+  const remainingMs = Math.max(0, target.getTime() - nowValue);
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return { days, hours, minutes, seconds, totalSeconds };
 }
 
 function normalizeSubscription(user) {
@@ -1743,10 +1756,12 @@ function decodeJwtPayload(token) {
   }
 }
 
-function buildOptimisticAuthUser(authResponse) {
+function buildOptimisticAuthUser(authResponse, signupPlanCode = "FREE") {
   const user = authResponse?.user;
   const claims = decodeJwtPayload(authResponse?.tokens?.accessToken);
   const role = String(user?.role || claims?.role || "owner").toLowerCase();
+  const normalizedPlanCode = String(signupPlanCode || "FREE").toUpperCase();
+  const isDemoPlan = normalizedPlanCode === "FREE";
 
   if (!user?.email) {
     return null;
@@ -1765,10 +1780,10 @@ function buildOptimisticAuthUser(authResponse) {
     },
     operationsUsed: 0,
     subscription: {
-      planId: "free",
-      billingCycle: "monthly",
+      planId: isDemoPlan ? "free" : "free_basic",
+      billingCycle: isDemoPlan ? "demo" : "free",
       startedAt: today(),
-      endsAt: null,
+      endsAt: isDemoPlan ? addDays(today(), 14) : null,
       autoDowngraded: "Xeyr",
     },
   });
@@ -2318,6 +2333,7 @@ function MainApp() {
   const [state, setState] = useState(() => normalizeAppState(createResetData()));
   const [isReady, setIsReady] = useState(false);
   const [timeTick, setTimeTick] = useState(() => Date.now());
+  const [trialTick, setTrialTick] = useState(() => Date.now());
   const publicBackendWarmupStartedRef = useRef(false);
   const [activeSection, setActiveSection] = useState(() => {
     const parts = getInitialRouteParts();
@@ -2549,7 +2565,7 @@ function MainApp() {
     email: "",
     password: "",
     rememberMe: false,
-    signupPlan: "free",
+    signupPlan: "free_basic",
     entityType: "Hüquqi şəxs",
     companyName: "",
     taxId: "",
@@ -4557,6 +4573,18 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
+    const shouldTrackTrial = backendSubscription?.plan?.code === "FREE" && !backendSubscription?.isTrialExpired;
+    if (!shouldTrackTrial) {
+      setTrialTick(Date.now());
+      return undefined;
+    }
+    const timerId = window.setInterval(() => {
+      setTrialTick(Date.now());
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [backendSubscription?.plan?.code, backendSubscription?.isTrialExpired, backendSubscription?.currentPeriodEnd]);
+
+  useEffect(() => {
     if (!signInStartedAt && !internalLoginStartedAt) {
       return undefined;
     }
@@ -4786,8 +4814,9 @@ function MainApp() {
       }
       if (planCode === "FREE") {
         if (backendSubscription.isTrialExpired) return `Demo • Sınaq müddəti bitdi`;
-        const days = backendSubscription.trialDaysRemaining;
-        return `Demo • ${days != null ? `${days} gün qalıb` : "Aktiv"}`;
+        const remaining = formatRemainingTime(backendSubscription.currentPeriodEnd, trialTick);
+        if (!remaining) return "Demo • Aktiv";
+        return `Demo • ${remaining.days}g ${remaining.hours}s ${remaining.minutes}d ${remaining.seconds}san qalıb`;
       }
       const endsAt = backendSubscription.currentPeriodEnd
         ? String(backendSubscription.currentPeriodEnd).slice(0, 10)
@@ -4799,9 +4828,11 @@ function MainApp() {
     const ownerEmail = getAccountOwnerEmail(user);
     const ownerUser = ownerEmail === user.email ? user : authUsers.find((entry) => entry.email === ownerEmail);
     const plan = getCurrentPlan(user);
-    const remainingDays = daysUntil(ownerUser?.subscription?.endsAt || user.subscription?.endsAt);
+    const remainingDays = daysUntil(ownerUser?.subscription?.endsAt || user.subscription?.endsAt, timeTick);
     if (plan.id === "free") {
-      return `Demo • ${remainingDays != null ? `${remainingDays} gün qalıb` : "Aktiv"}`;
+      const remaining = formatRemainingTime(ownerUser?.subscription?.endsAt || user.subscription?.endsAt, trialTick);
+      if (!remaining) return "Demo • Aktiv";
+      return `Demo • ${remaining.days}g ${remaining.hours}s ${remaining.minutes}d ${remaining.seconds}san qalıb`;
     }
     const staffLabel = isInternalUser(user) && user.staffRole ? ` • ${user.staffRole}` : "";
     const remainingOperations = Math.max(0, Number(plan.operationLimit || 0) - Number(ownerUser?.operationsUsed || 0));
@@ -15128,10 +15159,12 @@ function renderItemsCatalog() {
     }
 
     try {
+      const signupPlanCode = toBackendPlanCode(authDraft.signupPlan || "free_basic");
       const response = await apiRegister({
         fullName: authDraft.fullName,
         email,
         password: authDraft.password,
+        signupPlan: signupPlanCode,
       });
 
       const session = {
@@ -15139,14 +15172,14 @@ function renderItemsCatalog() {
         refreshToken: response?.tokens?.refreshToken,
       };
 
-      const optimisticUser = buildOptimisticAuthUser(response);
+      const optimisticUser = buildOptimisticAuthUser(response, signupPlanCode);
 
       updateBackendSession(session);
       if (optimisticUser) {
         setCurrentUser(optimisticUser);
       }
 
-      setBooksNotice("Qeydiyyat tamamlandı və Free plan aktiv edildi.");
+      setBooksNotice(signupPlanCode === "FREE" ? "Qeydiyyat tamamlandı və Demo plan aktiv edildi." : "Qeydiyyat tamamlandı və Free plan aktiv edildi.");
       setActiveProduct("books");
       setBooksView("home");
 
@@ -15750,9 +15783,24 @@ function renderItemsCatalog() {
                   </div>
                   <div className="lp-form-field">
                     <label>{t.fPlan}</label>
-                    <select value={authDraft.signupPlan || "free"} onChange={(e) => setAuthDraft((c) => ({ ...c, signupPlan: e.target.value }))}>
-                      <option value="free">Free</option>
-                    </select>
+                    <div className="lp-plan-choice" role="radiogroup" aria-label={t.fPlan}>
+                      <button
+                        type="button"
+                        className={`lp-plan-choice-btn${(authDraft.signupPlan || "free_basic") === "free_basic" ? " active" : ""}`}
+                        onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free_basic" }))}
+                      >
+                        <strong>Free</strong>
+                        <span>Free plan</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`lp-plan-choice-btn${authDraft.signupPlan === "free" ? " active" : ""}`}
+                        onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free" }))}
+                      >
+                        <strong>Demo</strong>
+                        <span>14 günlük sınaq</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="lp-form-field">
@@ -16059,9 +16107,24 @@ function renderItemsCatalog() {
                   </div>
                   <div className="lp-form-field">
                     <label>{t.fPlan}</label>
-                    <select value={authDraft.signupPlan || "free"} onChange={(e) => setAuthDraft((c) => ({ ...c, signupPlan: e.target.value }))}>
-                      <option value="free">Free</option>
-                    </select>
+                    <div className="lp-plan-choice" role="radiogroup" aria-label={t.fPlan}>
+                      <button
+                        type="button"
+                        className={`lp-plan-choice-btn${(authDraft.signupPlan || "free_basic") === "free_basic" ? " active" : ""}`}
+                        onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free_basic" }))}
+                      >
+                        <strong>Free</strong>
+                        <span>Free plan</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`lp-plan-choice-btn${authDraft.signupPlan === "free" ? " active" : ""}`}
+                        onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free" }))}
+                      >
+                        <strong>Demo</strong>
+                        <span>14 günlük sınaq</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="lp-form-field">
@@ -19012,7 +19075,7 @@ function renderSettings() {
     const currentPlan = getCurrentPlan(currentUser);
     const ownerEmail = getAccountOwnerEmail(currentUser);
     const ownerUser = ownerEmail === currentUser.email ? currentUser : authUsers.find((entry) => entry.email === ownerEmail);
-    const remainingDays = daysUntil(ownerUser?.subscription?.endsAt);
+    const remainingDays = daysUntil(ownerUser?.subscription?.endsAt, timeTick);
     const currentBillingCycle = ownerUser?.subscription?.billingCycle === "demo"
       ? "demo"
       : ownerUser?.subscription?.planId === "demo"
@@ -19020,6 +19083,10 @@ function renderSettings() {
         : ownerUser?.subscription?.billingCycle === "monthly"
         ? "monthly"
         : "annual";
+    const demoTrialEndsAt = backendSubscription?.currentPeriodEnd || ownerUser?.subscription?.endsAt || null;
+    const demoTrialDaysLeft = backendSubscription?.plan?.code === "FREE"
+      ? formatRemainingTime(demoTrialEndsAt, trialTick)
+      : null;
     const paidUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId !== "free");
     const freeUsers = authUsers.filter((user) => user.role !== "super_admin" && user.subscription?.planId === "free");
     const teamUsers = authUsers.filter((user) => getAccountOwnerEmail(user) === ownerEmail && isInternalUser(user));
@@ -19220,7 +19287,7 @@ function renderSettings() {
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
                   <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{String(currentPlan.id || "").toLowerCase() === "free_basic" ? "Pulsuz" : String(currentPlan.id || "").toLowerCase() === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(currentPlan, currentBillingCycle)}</strong></article>
-                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? "Müddətsiz" : currentPlan.id === "free" ? (backendSubscription?.trialDaysRemaining != null ? `${backendSubscription.trialDaysRemaining} ${at.sub_days}` : `${daysUntil(ownerUser?.subscription?.endsAt) ?? 0} ${at.sub_days}`) : `${daysUntil(ownerUser?.subscription?.endsAt) ?? remainingDays ?? 0} ${at.sub_days}`}</strong></article>
+                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? "Müddətsiz" : currentPlan.id === "free" ? (demoTrialDaysLeft ? `${demoTrialDaysLeft.days}g ${demoTrialDaysLeft.hours}s ${demoTrialDaysLeft.minutes}d ${demoTrialDaysLeft.seconds}san` : `${remainingDays ?? 0} ${at.sub_days}`) : `${remainingDays ?? 0} ${at.sub_days}`}</strong></article>
                   <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : "Limitsiz"}</strong></article>
                   <article className="summary-card"><span>{at.sub_statusLabel}</span><strong>{currentUser.role === "super_admin" ? at.sub_fullAccess : at.statusActive}</strong></article>
                 </div>
@@ -20071,8 +20138,10 @@ function renderSettings() {
     backendSubscription?.isTrialExpired === true
   );
 
-  const trialDaysLeft = backendSubscription?.trialDaysRemaining ?? null;
-  const showTrialWarning = !trialIsExpired && trialDaysLeft !== null && trialDaysLeft <= 3 && backendSubscription?.plan?.code === "FREE";
+  const trialDaysLeft = backendSubscription?.plan?.code === "FREE"
+    ? formatRemainingTime(backendSubscription?.currentPeriodEnd, trialTick)
+    : null;
+  const showTrialWarning = !trialIsExpired && trialDaysLeft !== null && trialDaysLeft.totalSeconds > 0 && trialDaysLeft.totalSeconds <= 3 * 86400 && backendSubscription?.plan?.code === "FREE";
 
   return (
     <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
@@ -20108,7 +20177,7 @@ function renderSettings() {
 
       {showTrialWarning && (
         <div className="trial-warning-bar">
-          <span>⚡ Sınaq müddətindən <strong>{trialDaysLeft} gün</strong> qalıb — platformadan tam yararlanmaq üçün plan seçin.</span>
+          <span>⚡ Sınaq müddətindən <strong>{trialDaysLeft.days}g {trialDaysLeft.hours}s {trialDaysLeft.minutes}d {trialDaysLeft.seconds}san</strong> qalıb — platformadan tam yararlanmaq üçün plan seçin.</span>
           <button type="button" className="trial-warning-cta" onClick={() => setAccountPanel("plans")}>Plan seç</button>
         </div>
       )}
@@ -20193,10 +20262,6 @@ function renderSettings() {
                   <div className={`profile-menu ${profileMenuOpen ? "open" : ""}`}>
                     <button className="profile-trigger" type="button" onClick={() => setProfileMenuOpen((current) => !current)}>
                       <span className="profile-avatar">{String(currentUser.fullName || currentUser.email || "U").trim().charAt(0).toUpperCase()}</span>
-                      <span className="profile-copy">
-                        <strong>{at.profileLabel}</strong>
-                        <small>{getPlanStatusText(currentUser)}</small>
-                      </span>
                     </button>
                     {profileMenuOpen ? (
                       <div className="profile-dropdown">

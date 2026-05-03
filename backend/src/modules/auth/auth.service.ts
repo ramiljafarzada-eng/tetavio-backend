@@ -54,9 +54,11 @@ export class AuthService {
       throw new ConflictException('This email is already in use');
     }
 
-    const freePlan = await this.prisma.plan.findUnique({ where: { code: 'FREE' } });
-    if (!freePlan || !freePlan.isActive) {
-      throw new BadRequestException('Free plan is not configured');
+    const requestedPlanCode = String(dto.signupPlan || 'FREE_BASIC').toUpperCase();
+    const signupPlanCode = requestedPlanCode === 'FREE' ? 'FREE' : 'FREE_BASIC';
+    const selectedPlan = await this.prisma.plan.findUnique({ where: { code: signupPlanCode } });
+    if (!selectedPlan || !selectedPlan.isActive) {
+      throw new BadRequestException('Selected plan is not configured');
     }
 
     const passwordHash = await hash(dto.password, 12);
@@ -85,10 +87,10 @@ export class AuthService {
       await tx.subscription.create({
         data: {
           accountId: account.id,
-          planId: freePlan.id,
+          planId: selectedPlan.id,
           status: SubscriptionStatus.ACTIVE,
           currentPeriodStart: now,
-          currentPeriodEnd: trialEnd,
+          currentPeriodEnd: selectedPlan.code === 'FREE' ? trialEnd : null,
           cancelAtPeriodEnd: false,
         },
       });
