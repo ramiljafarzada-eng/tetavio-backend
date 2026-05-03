@@ -19472,6 +19472,7 @@ function renderSettings() {
                     >
                       <span>{thread.subject}</span>
                       <small>{SUPPORT_STATUS_LABELS[thread.status] || thread.status}</small>
+                      {thread.unreadForUser ? <span className="support-thread-unread">{thread.unreadForUser}</span> : null}
                     </button>
                   ))}
                 </div>

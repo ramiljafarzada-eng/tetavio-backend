@@ -2016,10 +2016,12 @@ button:disabled {
   height: 1.5rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: #dc2626;
   display: inline-grid;
   place-items: center;
   font-size: 0.78rem;
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 .support-widget-panel {
@@ -2082,6 +2084,11 @@ button:disabled {
   background: #f8fafc;
   border-radius: 12px;
   padding: 0.75rem 0.8rem;
+}
+
+.support-thread-tab {
+  display: grid;
+  gap: 0.28rem;
 }
 
 .support-thread-tab.active,
@@ -2242,6 +2249,20 @@ button:disabled {
   color: #fff;
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.support-thread-unread {
+  min-width: 1.3rem;
+  height: 1.3rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  justify-self: start;
 }
 
 .support-admin-detail {
