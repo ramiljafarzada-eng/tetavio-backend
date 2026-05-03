@@ -4075,6 +4075,24 @@ function MainApp() {
   }, [backendSession?.accessToken, currentUser?.id, currentUser?.role, currentUser?.accountId]);
 
   useEffect(() => {
+    if (!backendSession?.accessToken || !currentUser) {
+      return undefined;
+    }
+
+    const intervalMs = currentUser.role === "super_admin"
+      ? 5000
+      : supportWidgetOpen
+        ? 3000
+        : 10000;
+
+    const intervalId = window.setInterval(() => {
+      void syncSupportThreadsFromBackend(backendSession, currentUser);
+    }, intervalMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [backendSession?.accessToken, currentUser?.id, currentUser?.role, supportWidgetOpen]);
+
+  useEffect(() => {
     setApiSession(backendSession);
   }, [backendSession]);
 
