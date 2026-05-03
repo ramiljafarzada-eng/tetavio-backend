@@ -19333,7 +19333,7 @@ function renderSettings() {
 
       const now = audioContext.currentTime;
       const master = audioContext.createGain();
-      master.gain.setValueAtTime(0.16, now);
+      master.gain.setValueAtTime(0.42, now);
       master.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
       master.connect(audioContext.destination);
 
@@ -19344,14 +19344,14 @@ function renderSettings() {
 
         osc.type = waveType;
         osc.frequency.setValueAtTime(frequency, startTime);
-        osc.frequency.exponentialRampToValueAtTime(frequency * 1.06, startTime + duration * 0.7);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 1.08, startTime + duration * 0.7);
 
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(1800, startTime);
+        filter.frequency.setValueAtTime(2600, startTime);
         filter.Q.setValueAtTime(0.8, startTime);
 
         gain.gain.setValueAtTime(0.0001, startTime);
-        gain.gain.exponentialRampToValueAtTime(gainLevel, startTime + 0.025);
+        gain.gain.exponentialRampToValueAtTime(gainLevel, startTime + 0.015);
         gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
         osc.connect(filter);
@@ -19368,9 +19368,9 @@ function renderSettings() {
         };
       };
 
-      buildVoice(880, now, 0.16, "triangle", 0.22);
-      buildVoice(1174.66, now + 0.13, 0.18, "sine", 0.18);
-      buildVoice(1567.98, now + 0.28, 0.22, "triangle", 0.14);
+      buildVoice(784, now, 0.14, "square", 0.55);
+      buildVoice(988, now + 0.11, 0.15, "triangle", 0.45);
+      buildVoice(1318.51, now + 0.24, 0.18, "sine", 0.34);
     } catch {}
   }
 
