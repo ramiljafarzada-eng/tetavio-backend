@@ -19344,7 +19344,6 @@ function renderSettings() {
                       <span>{activeThread.category}</span>
                       <span>{activeThread.priority}</span>
                       <span>{activeThread.context}</span>
-                      <div ref={supportUserScrollRef} />
                     </div>
                     <div className="support-message-list">
                       {activeThread.messages.map((message) => (
@@ -19354,6 +19353,7 @@ function renderSettings() {
                           <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
                         </article>
                       ))}
+                      <div ref={supportUserScrollRef} />
                     </div>
                     <form className="support-reply-form" onSubmit={handleReplyToSupportThread}>
                       <textarea
