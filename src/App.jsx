@@ -12905,7 +12905,12 @@ function renderItemsCatalog() {
     return (
       <div className="iac-shell">
         <aside className="iac-sidebar">
-          <div className="iac-sidebar-brand">
+          <a
+            className="iac-sidebar-brand"
+            href="/homepage"
+            aria-label="Tetavio homepage"
+            style={{ color: "inherit", textDecoration: "none" }}
+          >
             <div className="brand-icon" style={{ width: 30, height: 30, flexShrink: 0 }}>
               <img src={logoSrc} alt="Tetavio" className="app-logo" />
             </div>
@@ -12913,7 +12918,7 @@ function renderItemsCatalog() {
               <div className="iac-brand-name">Tetavio</div>
               <div className="iac-brand-env">Admin Console</div>
             </div>
-          </div>
+          </a>
           <nav className="iac-nav">
             {IAC_NAV.map(({ key, label, icon }) => (
               <button
