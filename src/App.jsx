@@ -2605,7 +2605,24 @@ function MainApp() {
   const [supportAdminReplyDraft, setSupportAdminReplyDraft] = useState("");
   const [supportAdminFilter, setSupportAdminFilter] = useState("all");
   const [supportAdminActiveThreadId, setSupportAdminActiveThreadId] = useState(null);
+  const supportUserScrollRef = useRef(null);
+  const supportAdminScrollRef = useRef(null);
   const [journalInlineCreate, setJournalInlineCreate] = useState({});
+  const supportAccountKey = currentUser?.accountId || "";
+  const userSupportThreads = supportAccountKey
+    ? supportThreads
+        .filter((thread) => thread.accountKey === supportAccountKey)
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+    : [];
+  const supportUnreadCount = currentUser?.role === "super_admin"
+    ? supportThreads.reduce((sum, thread) => sum + Number(thread.unreadForAdmin || 0), 0)
+    : userSupportThreads.reduce((sum, thread) => sum + Number(thread.unreadForUser || 0), 0);
+  const activeUserSupportThread = currentUser && currentUser.role !== "super_admin"
+    ? (userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null)
+    : null;
+  const activeAdminSupportThread = currentUser?.role === "super_admin"
+    ? (supportThreads.find((thread) => thread.id === supportAdminActiveThreadId) || null)
+    : null;
   const suspendAutoSaveRef = useRef(false);
   const demoPreviewStats = useMemo(() => buildDemoPreviewStats(timeTick), [timeTick]);
   const [animatedPreviewStats, setAnimatedPreviewStats] = useState(() => buildDemoPreviewStats(Date.now()));
@@ -19183,24 +19200,6 @@ function renderSettings() {
   const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
   const standaloneLegalRoute = getStandaloneLegalRouteInfo();
   const standaloneLegalSlugMatched = COMPLIANCE_LEGAL_PAGES.some((page) => page.id === standaloneLegalRoute.slug);
-  const supportAccountKey = currentUser?.accountId || "";
-  const userSupportThreads = supportAccountKey
-    ? supportThreads
-        .filter((thread) => thread.accountKey === supportAccountKey)
-        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
-    : [];
-  const supportUnreadCount = currentUser?.role === "super_admin"
-    ? supportThreads.reduce((sum, thread) => sum + Number(thread.unreadForAdmin || 0), 0)
-    : userSupportThreads.reduce((sum, thread) => sum + Number(thread.unreadForUser || 0), 0);
-  const activeUserSupportThread = currentUser && currentUser.role !== "super_admin"
-    ? (userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null)
-    : null;
-  const activeAdminSupportThread = currentUser?.role === "super_admin"
-    ? (supportThreads.find((thread) => thread.id === supportAdminActiveThreadId) || null)
-    : null;
-  const supportUserScrollRef = useRef(null);
-  const supportAdminScrollRef = useRef(null);
-
   function getSupportContextLabel() {
     if (activeProduct === "hub") return "Homepage";
     if (activeProduct === "booksLanding") return `Giriş paneli / ${booksView}`;
