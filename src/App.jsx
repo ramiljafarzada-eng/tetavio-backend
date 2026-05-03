@@ -19497,18 +19497,18 @@ function renderSettings() {
                   ))}
                   <div ref={supportAdminScrollRef} />
                 </div>
-                <div className="support-admin-reply">
+                <form className="support-admin-reply" onSubmit={(event) => { event.preventDefault(); void handleAdminSupportReply(activeThread.id); }}>
                   <textarea
                     value={supportAdminReplyDraft}
                     onChange={(event) => setSupportAdminReplyDraft(event.target.value)}
                     placeholder="İstifadəçiyə cavab yazın..."
                     rows={4}
-                    onKeyDown={(event) => handleSupportReplyKeyDown(event, () => handleAdminSupportReply(activeThread.id))}
+                    onKeyDown={handleSupportTextareaKeyDown}
                   />
                   <div className="support-widget-actions">
-                    <button type="button" className="primary-btn" disabled={!supportAdminReplyDraft.trim()} onClick={() => handleAdminSupportReply(activeThread.id)}>Cavab göndər</button>
+                    <button type="submit" className="primary-btn" disabled={!supportAdminReplyDraft.trim()}>Cavab göndər</button>
                   </div>
-                </div>
+                </form>
               </section>
             ) : null}
           </div>
