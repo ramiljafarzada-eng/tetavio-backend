@@ -2579,6 +2579,8 @@ function MainApp() {
     mobilePhone: ""
   });
   const [forgotDraft, setForgotDraft] = useState({ email: "" });
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState("");
   const [resetDraft, setResetDraft] = useState({ password: "", confirmPassword: "" });
   const [resetRequests, setResetRequests] = useState([]);
   const [activeResetToken, setActiveResetToken] = useState(() => {
@@ -15255,10 +15257,9 @@ function renderItemsCatalog() {
     event.preventDefault();
     try {
       await apiRequestPasswordReset(forgotDraft.email);
-      setBooksNotice("Parol bərpası linki email ünvanınıza göndərildi. Emailinizi yoxlayın.");
-      setForgotDraft({ email: "" });
+      setForgotSent(true);
     } catch (error) {
-      setBooksNotice(`Xəta: ${error.message}`);
+      setForgotError(error.message || "Xəta baş verdi. Yenidən cəhd edin.");
     }
   }
 
@@ -15829,16 +15830,28 @@ function renderItemsCatalog() {
               </form>
 
             ) : booksView === "forgot" ? (
-              <form className="lp-form" onSubmit={submitForgotPassword}>
-                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); }}>{t.fForgotBack}</button></div>
-                <p className="lp-form-title">{t.fForgotTitle}</p>
-                <p className="lp-form-hint">{t.fForgotHint}</p>
-                <div className="lp-form-field">
-                  <label>{t.fEmail}</label>
-                  <input type="email" value={forgotDraft.email} onChange={(e) => setForgotDraft({ email: e.target.value })} required />
+              forgotSent ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✉️</div>
+                    <p className="lp-form-title">Email göndərildi</p>
+                    <p className="lp-form-hint">Parol bərpası linki <strong>{forgotDraft.email}</strong> ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).</p>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                  </div>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fForgotBtn}</button>
-              </form>
+              ) : (
+                <form className="lp-form" onSubmit={submitForgotPassword}>
+                  <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); setForgotError(""); }}>{t.fForgotBack}</button></div>
+                  <p className="lp-form-title">{t.fForgotTitle}</p>
+                  <p className="lp-form-hint">{t.fForgotHint}</p>
+                  <div className="lp-form-field">
+                    <label>{t.fEmail}</label>
+                    <input type="email" value={forgotDraft.email} onChange={(e) => { setForgotDraft({ email: e.target.value }); setForgotError(""); }} required />
+                  </div>
+                  {forgotError ? <p className="lp-form-error">{forgotError}</p> : null}
+                  <button className="lp-submit-btn" type="submit">{t.fForgotBtn}</button>
+                </form>
+              )
 
             ) : booksView === "reset" ? (
               <form className="lp-form" onSubmit={submitResetPassword}>
@@ -15858,6 +15871,7 @@ function renderItemsCatalog() {
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
+                {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
                 <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
               </form>
 
@@ -16153,16 +16167,28 @@ function renderItemsCatalog() {
               </form>
 
             ) : booksView === "forgot" ? (
-              <form className="lp-form" onSubmit={submitForgotPassword}>
-                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); }}>{t.fForgotBack}</button></div>
-                <p className="lp-form-title">{t.fForgotTitle}</p>
-                <p className="lp-form-hint">{t.fForgotHint}</p>
-                <div className="lp-form-field">
-                  <label>{t.fEmail}</label>
-                  <input type="email" value={forgotDraft.email} onChange={(e) => setForgotDraft({ email: e.target.value })} required />
+              forgotSent ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✉️</div>
+                    <p className="lp-form-title">Email göndərildi</p>
+                    <p className="lp-form-hint">Parol bərpası linki <strong>{forgotDraft.email}</strong> ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).</p>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                  </div>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fForgotBtn}</button>
-              </form>
+              ) : (
+                <form className="lp-form" onSubmit={submitForgotPassword}>
+                  <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setShowPassword(false); setForgotError(""); }}>{t.fForgotBack}</button></div>
+                  <p className="lp-form-title">{t.fForgotTitle}</p>
+                  <p className="lp-form-hint">{t.fForgotHint}</p>
+                  <div className="lp-form-field">
+                    <label>{t.fEmail}</label>
+                    <input type="email" value={forgotDraft.email} onChange={(e) => { setForgotDraft({ email: e.target.value }); setForgotError(""); }} required />
+                  </div>
+                  {forgotError ? <p className="lp-form-error">{forgotError}</p> : null}
+                  <button className="lp-submit-btn" type="submit">{t.fForgotBtn}</button>
+                </form>
+              )
 
             ) : booksView === "reset" ? (
               <form className="lp-form" onSubmit={submitResetPassword}>
@@ -16182,6 +16208,7 @@ function renderItemsCatalog() {
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
+                {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
                 <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
               </form>
 
