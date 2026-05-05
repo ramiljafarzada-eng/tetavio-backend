@@ -1656,6 +1656,13 @@ function formatRemainingTime(dateValue, nowValue = Date.now()) {
   return { days, hours, minutes, seconds, totalSeconds };
 }
 
+function addDays(dateValue, dayCount) {
+  const base = new Date(`${dateValue || today()}T00:00:00`);
+  if (Number.isNaN(base.getTime())) return today();
+  base.setDate(base.getDate() + Number(dayCount || 0));
+  return base.toISOString().slice(0, 10);
+}
+
 function normalizeSubscription(user) {
   const isSuperAdmin = user?.role === "super_admin" || user?.email === SUPER_ADMIN.email;
   const rawPlanId = user?.subscription?.planId || (isSuperAdmin ? "ultimate" : "free");
