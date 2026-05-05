@@ -9296,24 +9296,7 @@ function renderItemsCatalog() {
   }
 
   function renderTrialBalance() {
-    const backendData = useMemo(() => {
-      if (reportsLoading) return null;
-      if (reportsError) return null;
-      // Return null to force sync
-      return null;
-    }, [reportsLoading, reportsError]);
-
-    const rows = useMemo(() => {
-      if (backendData) return backendData.accounts || [];
-      return getTrialBalanceRows();
-    }, [backendData]);
-
-    // Sync on mount if needed
-    useMemo(() => {
-      if (backendSession?.accessToken && !backendData) {
-        syncTrialBalanceFromBackend();
-      }
-    }, [backendSession, backendData]);
+    const rows = getTrialBalanceRows();
 
     const filterMap = {
       [at.tb_tabAll]: null,
