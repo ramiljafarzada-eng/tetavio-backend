@@ -4032,14 +4032,12 @@ function MainApp() {
     if (part1 === "landing") {
       setActiveProduct("booksLanding");
       setBooksView(landingRoute.initialBooksView);
-      setBooksNotice("");
       return;
     }
 
     if (part1 === "accounting") {
       setActiveProduct("booksLanding");
       setBooksView(landingRoute.initialBooksView);
-      setBooksNotice("");
       return;
     }
 
