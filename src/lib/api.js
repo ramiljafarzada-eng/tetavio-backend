@@ -148,10 +148,10 @@ export async function authRequest(path, options = {}, onSessionUpdate) {
   }
 }
 
-export function apiLogin(email, password) {
+export function apiLogin(email, password, recaptchaToken) {
   return apiRequest("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, recaptchaToken }),
   });
 }
 

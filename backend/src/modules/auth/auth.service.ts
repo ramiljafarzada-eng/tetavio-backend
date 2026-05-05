@@ -136,6 +136,19 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, meta: RequestMeta) {
+    const secretKey = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+    if (secretKey && dto.recaptchaToken) {
+      const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `secret=${secretKey}&response=${dto.recaptchaToken}`,
+      });
+      const data: { success: boolean } = await res.json() as { success: boolean };
+      if (!data.success) {
+        throw new BadRequestException('reCAPTCHA yoxlaması uğursuz oldu. Yenidən cəhd edin.');
+      }
+    }
+
     const email = this.normalizeEmail(dto.email);
     const user = await this.prisma.user.findUnique({ where: { email } });
 

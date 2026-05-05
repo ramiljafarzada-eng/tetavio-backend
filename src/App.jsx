@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import logoSrc from "./assets/logo-icon.png";
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 import { createResetData, currency, today } from "./lib/data";
 import { normalizeAppState } from "./lib/storage";
 import I18N from './i18n';
@@ -2617,6 +2620,8 @@ function MainApp() {
     };
   });
   const [signInStartedAt, setSignInStartedAt] = useState(null);
+  const [signInRecaptcha, setSignInRecaptcha] = useState("");
+  const recaptchaRef = useRef(null);
   const [signUpLoading, setSignUpLoading] = useState(false);
   const [signUpError, setSignUpError] = useState("");
   const [internalLoginStartedAt, setInternalLoginStartedAt] = useState(null);
@@ -15131,11 +15136,15 @@ function renderItemsCatalog() {
 
   async function submitSignIn(event) {
     event.preventDefault();
+    if (!signInRecaptcha) {
+      setBooksNotice("Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.");
+      return;
+    }
     try {
       setBooksNotice("");
       setSignInStartedAt(Date.now());
       const email = String(authDraft.email || "").trim().toLowerCase();
-      const response = await apiLogin(email, authDraft.password);
+      const response = await apiLogin(email, authDraft.password, signInRecaptcha);
       const session = {
         accessToken: response?.tokens?.accessToken,
         refreshToken: response?.tokens?.refreshToken,
@@ -15157,6 +15166,8 @@ function renderItemsCatalog() {
       });
     } catch (error) {
       setBooksNotice(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+      setSignInRecaptcha("");
+      recaptchaRef.current?.reset();
     } finally {
       setSignInStartedAt(null);
     }
@@ -15775,12 +15786,21 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
+                <div className="lp-recaptcha-wrap">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setSignInRecaptcha(token || "")}
+                    onExpired={() => setSignInRecaptcha("")}
+                    theme="dark"
+                  />
+                </div>
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
                     {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
-                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt)}>
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || !signInRecaptcha}>
                   {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
                 </button>
               </form>
@@ -16124,12 +16144,21 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
+                <div className="lp-recaptcha-wrap">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setSignInRecaptcha(token || "")}
+                    onExpired={() => setSignInRecaptcha("")}
+                    theme="dark"
+                  />
+                </div>
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
                     {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
-                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt)}>
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || !signInRecaptcha}>
                   {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
                 </button>
               </form>
