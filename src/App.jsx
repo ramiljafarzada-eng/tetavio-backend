@@ -2584,6 +2584,7 @@ function MainApp() {
   });
   const [forgotDraft, setForgotDraft] = useState({ email: "" });
   const [forgotSent, setForgotSent] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [forgotError, setForgotError] = useState("");
   const [resetDraft, setResetDraft] = useState({ password: "", confirmPassword: "" });
   const [resetRequests, setResetRequests] = useState([]);
@@ -15284,8 +15285,7 @@ function renderItemsCatalog() {
       await apiConfirmPasswordReset(activeResetToken, resetDraft.password);
       setResetDraft({ password: "", confirmPassword: "" });
       setActiveResetToken("");
-      setBooksNotice("Şifrə uğurla yeniləndi. İndi yeni şifrə ilə daxil ola bilərsiniz.");
-      setBooksView("signin");
+      setResetSuccess(true);
     } catch (error) {
       setBooksNotice(`Xəta: ${error.message}`);
     }
@@ -15862,26 +15862,37 @@ function renderItemsCatalog() {
               )
 
             ) : booksView === "reset" ? (
-              <form className="lp-form" onSubmit={submitResetPassword}>
-                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setActiveResetToken(""); setShowPassword(false); }}>{t.fResetBack}</button></div>
-                <p className="lp-form-title">{t.fResetTitle}</p>
-                <div className="lp-form-field lp-password-field">
-                  <label>{t.fNewPass}</label>
-                  <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
-                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+              resetSuccess ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✅</div>
+                    <p className="lp-form-title">Şifrə dəyişdirildi</p>
+                    <p className="lp-form-hint">Yeni şifrəniz uğurla təyin edildi. İndi hesabınıza daxil ola bilərsiniz.</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
                   </div>
                 </div>
-                <div className="lp-form-field lp-password-field">
-                  <label>{t.fConfirmPass}</label>
-                  <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
-                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+              ) : (
+                <form className="lp-form" onSubmit={submitResetPassword}>
+                  <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setActiveResetToken(""); setShowPassword(false); setResetSuccess(false); }}>{t.fResetBack}</button></div>
+                  <p className="lp-form-title">{t.fResetTitle}</p>
+                  <div className="lp-form-field lp-password-field">
+                    <label>{t.fNewPass}</label>
+                    <div className="lp-pass-input-wrap">
+                      <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
+                      <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                    </div>
                   </div>
-                </div>
-                {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
-                <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
-              </form>
+                  <div className="lp-form-field lp-password-field">
+                    <label>{t.fConfirmPass}</label>
+                    <div className="lp-pass-input-wrap">
+                      <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
+                      <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                    </div>
+                  </div>
+                  {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
+                  <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
+                </form>
+              )
 
             ) : booksView === "demo" ? (
               <form className="lp-form" onSubmit={submitDemoRequest}>
@@ -16200,26 +16211,37 @@ function renderItemsCatalog() {
               )
 
             ) : booksView === "reset" ? (
-              <form className="lp-form" onSubmit={submitResetPassword}>
-                <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setActiveResetToken(""); setShowPassword(false); }}>{t.fResetBack}</button></div>
-                <p className="lp-form-title">{t.fResetTitle}</p>
-                <div className="lp-form-field lp-password-field">
-                  <label>{t.fNewPass}</label>
-                  <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
-                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+              resetSuccess ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✅</div>
+                    <p className="lp-form-title">Şifrə dəyişdirildi</p>
+                    <p className="lp-form-hint">Yeni şifrəniz uğurla təyin edildi. İndi hesabınıza daxil ola bilərsiniz.</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
                   </div>
                 </div>
-                <div className="lp-form-field lp-password-field">
-                  <label>{t.fConfirmPass}</label>
-                  <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
-                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+              ) : (
+                <form className="lp-form" onSubmit={submitResetPassword}>
+                  <div className="lp-auth-back"><button className="lp-text-link" type="button" onClick={() => { setBooksView("signin"); setBooksNotice(""); setActiveResetToken(""); setShowPassword(false); setResetSuccess(false); }}>{t.fResetBack}</button></div>
+                  <p className="lp-form-title">{t.fResetTitle}</p>
+                  <div className="lp-form-field lp-password-field">
+                    <label>{t.fNewPass}</label>
+                    <div className="lp-pass-input-wrap">
+                      <input type={showPassword ? "text" : "password"} value={resetDraft.password} onChange={(e) => setResetDraft((c) => ({ ...c, password: e.target.value }))} required />
+                      <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                    </div>
                   </div>
-                </div>
-                {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
-                <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
-              </form>
+                  <div className="lp-form-field lp-password-field">
+                    <label>{t.fConfirmPass}</label>
+                    <div className="lp-pass-input-wrap">
+                      <input type={showPassword ? "text" : "password"} value={resetDraft.confirmPassword} onChange={(e) => setResetDraft((c) => ({ ...c, confirmPassword: e.target.value }))} required />
+                      <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
+                    </div>
+                  </div>
+                  {booksNotice ? <p className="lp-form-error">{booksNotice}</p> : null}
+                  <button className="lp-submit-btn" type="submit">{t.fResetBtn}</button>
+                </form>
+              )
 
             ) : booksView === "demo" ? (
               <form className="lp-form" onSubmit={submitDemoRequest}>
