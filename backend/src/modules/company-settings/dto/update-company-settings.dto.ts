@@ -63,4 +63,102 @@ export class UpdateCompanySettingsDto {
   @IsString()
   @MaxLength(20)
   fiscalYear?: string;
+
+  @ApiPropertyOptional({ example: 'INV-' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(20)
+  invoicePrefix?: string;
+
+  @ApiPropertyOptional({ example: 'QUO-' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(20)
+  quotePrefix?: string;
+
+  @ApiPropertyOptional({ example: '30' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(20)
+  defaultPaymentTerm?: string;
+
+  @ApiPropertyOptional({ example: 'ƏDV 18%' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  defaultTaxLabel?: string;
+
+  @ApiPropertyOptional({ example: 'Avtomatik' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  numberingMode?: string;
+
+  @ApiPropertyOptional({ example: 'Bəli' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  stockWarning?: string;
+
+  @ApiPropertyOptional({ example: 'Xeyr' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  negativeStock?: string;
+
+  @ApiPropertyOptional({ example: 'Sənəd səviyyəsində' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  discountMode?: string;
+
+  @ApiPropertyOptional({ example: 'Vergidən əvvəl' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  discountTiming?: string;
+
+  @ApiPropertyOptional({ example: 'Bəli' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  additionalAdjustment?: string;
+
+  @ApiPropertyOptional({ example: 'Bəli' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  shippingCharge?: string;
+
+  @ApiPropertyOptional({ example: 'Vergi xaric' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  taxMode?: string;
+
+  @ApiPropertyOptional({ example: 'Yuvarlaqlaşdırma yoxdur' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  salesRoundingMode?: string;
+
+  @ApiPropertyOptional({ example: 'Xeyr' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  salespersonField?: string;
 }

@@ -21,6 +21,7 @@ import { TeamModule } from './modules/team/team.module';
 import { BillsModule } from './modules/bills/bills.module';
 import { BankingModule } from './modules/banking/banking.module';
 import { SupportModule } from './modules/support/support.module';
+import { HrmModule } from './modules/hrm/hrm.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { SupportModule } from './modules/support/support.module';
     BillsModule,
     BankingModule,
     SupportModule,
+    HrmModule,
   ],
   controllers: [AppController],
   providers: [

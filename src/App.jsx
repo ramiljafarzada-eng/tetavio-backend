@@ -1,8 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import logoSrc from "./assets/logo-icon.png";
 
+const HrmModule = lazy(() => import('./modules/hrm/index.jsx'));
+
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+const RECAPTCHA_ENABLED = !import.meta.env.DEV;
 import { createResetData, currency, today } from "./lib/data";
 import { normalizeAppState } from "./lib/storage";
 import I18N from './i18n';
@@ -86,6 +89,7 @@ const NAV = [
   { id: "sales", label: "Satış", children: ["customers", "invoices"] },
   { id: "banking", label: "Bank" },
   { id: "reports", label: "Hesabatlar" },
+  { id: "hrm", label: "İnsan Resursları" },
   { id: "documents", label: "Sənədlər" },
   { id: "settings", label: "Tənzimləmələr" }
 ];
@@ -1485,6 +1489,7 @@ const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
 const HUB_LANG_KEY = "finotam-hub-lang-v1";
 const SESSION_STORAGE_KEY = "finotam-session-v1";
 const SUPPORT_THREADS_STORAGE_KEY = "tetavio-support-threads-v1";
+const PARAMS_SETTINGS_KEY = "tetavio-params-settings-v1";
 const SUPER_ADMIN = {
   id: "super-admin",
   fullName: "Tetavio Super Admin",
@@ -1582,6 +1587,89 @@ const LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE = {
   // Legacy plan backward compatibility
   PRO_MONTHLY: "professional",
   PREMIUM_MONTHLY: "premium",
+};
+
+const INSIGHT_TEXTS = {
+  az: {
+    OVERDUE_INVOICES: { title: "Gecikmiş Fakturalar Aşkar Edildi", desc: (n) => `${n} gecikmiş fakturanız diqqət tələb edir.`, rec: "Ödənişsiz məbləği toplamaq üçün müştərilərlə əlaqə saxlayın, ödəniş şərtlərini nəzərdən keçirin." },
+    CUSTOMER_CONCENTRATION_RISK: { title: "Müştəri Konsentrasiyası Riski", desc: (n) => `Ən böyük müştəriniz ödənilmiş gəlirin ${n}%-ni təşkil edir.`, rec: "Tək gəlir mənbəyinə asılılığı azaltmaq üçün müştəri bazasını genişləndirin." },
+    LOW_PAYMENT_CONVERSION: { title: "Aşağı Ödəniş Konversiyası", desc: (n) => `Fakturalarınızın yalnız ${n}%-i tam ödənilib.`, rec: "Ödəniş şərtlərini nəzərdən keçirin, gecikmiş fakturalar üçün xatırlatma göndərin." },
+    NO_RECENT_REVENUE: { title: "Son 30 Gündə Gəlir Yoxdur", desc: () => "Son 30 gün ərzində heç bir ödəniş qeydə alınmayıb.", rec: "Satış boru kəmərini nəzərdən keçirin, açıq fakturalara baxın, fəal olmayan müştərilərlə əlaqə saxlayın." },
+    HEALTHY_REVENUE_SIGNAL: { title: "Sağlam Gəlir Siqnalı", desc: (n) => `Son 30 gündə ${n} ödəniş qeydə alınıb, gecikmiş məbləğ aşağıdır.`, rec: "Mövcud uçot intizamını saxlayın, düzəldilmiş fakturalara operativ reaksiya verin." },
+    OVERDUE_COLLECTION_RISK: { title: "Gecikmiş Ödəniş Riski", desc: (n) => `${n} fakturanın ödəniş müddəti keçib. Gecikmiş tahsilat pul axını proqnozuna təsir edir.`, rec: "Gecikmiş müştərilərlə dərhal əlaqə saxlayın, ödəniş üçün son tarix müəyyən edin." },
+    UPCOMING_COLLECTION_FOCUS: { title: "Yaxınlaşan Tahsilata Diqqət", desc: (n) => `${n} fakturanın ödəniş tarixi növbəti 7 gün ərzindədir.`, rec: "Vaxtında tahsilatı təmin etmək üçün indi ödəniş xatırlatmaları göndərin." },
+    HEALTHY_CASHFLOW: { title: "Pul Axını Sağlamdır", desc: () => "Gecikmiş faktura aşkar edilmədi, gözlənilən gəlir plana uyğundur.", rec: "Fakturalar vaxtında düzəldin, erkən mərhələdə izləməni davam etdirin." },
+    REVENUE_GROWTH: { title: "Gəlir Artımı", desc: (n) => `Ödənilmiş gəlir əvvəlki 30 günlə müqayisədə ${n}% artıb.`, rec: "Satış və tahsilat intizamını saxlayın." },
+    REVENUE_DROP: { title: "Gəlir Azalması", desc: (n) => `Ödənilmiş gəlir əvvəlki 30 günlə müqayisədə ${n}% azalıb.`, rec: "Satış boru kəmərini, gecikmiş fakturaları və müştəri konsentrasiyasını nəzərdən keçirin." },
+    INVOICE_VOLUME_DROP: { title: "Faktura Həcminin Azalması", desc: (prev, cur) => `Faktura sayı əvvəlki ${prev}-dən bu dövrdə ${cur}-ə enib.`, rec: "Satış fəaliyyətini və təklif-faktura konversiyasını yoxlayın." },
+    CUSTOMER_GROWTH_STALLED: { title: "Müştəri Artımı Dayanıb", desc: () => "Bu dövrdə yeni müştəri əlavə edilməyib, əvvəlki dövrdə fəallıq var idi.", rec: "Müştəri cəlb fəaliyyətini nəzərdən keçirin, potensial müştərilərlə əlaqə saxlayın." },
+    OUTSTANDING_INCREASE: { title: "Ödənilməmiş Qalıq Artır", desc: (n) => `Ödənilməmiş faktura qalığı əvvəlki dövrlə müqayisədə ${n}% artıb.`, rec: "Ödəniş dövrünün əvvəlində gecikmiş fakturalara vaxtında müraciət edin." },
+    STABLE_OR_HEALTHY_TREND: { title: "Stabil Maliyyə Trendi", desc: () => "Bu dövrdə əhəmiyyətli mənfi trend aşkar edilmədi.", rec: "Gəlir, tahsilat və müştəri fəaliyyətini mütəmadi izləyin." },
+  },
+  en: {
+    OVERDUE_INVOICES: { title: "Overdue Invoices Detected", desc: (n) => `You have ${n} overdue invoice${n !== 1 ? 's' : ''} requiring attention.`, rec: "Follow up with customers to collect outstanding payments and consider tightening payment terms." },
+    CUSTOMER_CONCENTRATION_RISK: { title: "Customer Concentration Risk", desc: (n) => `Your top customer accounts for ${n}% of paid revenue.`, rec: "Diversify your customer base to reduce dependency on a single revenue source." },
+    LOW_PAYMENT_CONVERSION: { title: "Low Payment Conversion Rate", desc: (n) => `Only ${n}% of your invoices have been fully paid.`, rec: "Review payment terms, send reminders for outstanding invoices, and consider offering multiple payment options." },
+    NO_RECENT_REVENUE: { title: "No Revenue in Last 30 Days", desc: () => "No payments have been recorded in the last 30 days.", rec: "Review your sales pipeline, follow up on open invoices, and reach out to inactive customers." },
+    HEALTHY_REVENUE_SIGNAL: { title: "Healthy Revenue Signal", desc: (n) => `You have received ${n} payment${n !== 1 ? 's' : ''} in the last 30 days with low overdue exposure.`, rec: "Maintain your current billing discipline and continue following up promptly on issued invoices." },
+    OVERDUE_COLLECTION_RISK: { title: "Overdue Collection Risk", desc: (n) => `${n} invoice${n !== 1 ? 's are' : ' is'} past due. Delayed collection affects your cashflow predictability.`, rec: "Contact overdue customers immediately and establish a clear payment deadline to protect your cashflow." },
+    UPCOMING_COLLECTION_FOCUS: { title: "Upcoming Collection Focus", desc: (n) => `${n} invoice${n !== 1 ? 's' : ''} are due within the next 7 days.`, rec: "Send payment reminders now to ensure timely collection and reduce the risk of new overdue items." },
+    HEALTHY_CASHFLOW: { title: "Cashflow Looks Healthy", desc: () => "No overdue invoices detected and your expected income is on track.", rec: "Continue issuing invoices promptly and following up early to maintain this position." },
+    REVENUE_GROWTH: { title: "Revenue Growth", desc: (n) => `Paid revenue increased by ${n}% compared to the previous 30 days.`, rec: "Maintain your sales and collection discipline to sustain this growth." },
+    REVENUE_DROP: { title: "Revenue Decline", desc: (n) => `Paid revenue dropped by ${n}% compared to the previous 30 days.`, rec: "Review your sales pipeline, overdue invoices, and customer concentration." },
+    INVOICE_VOLUME_DROP: { title: "Invoice Volume Decline", desc: (prev, cur) => `Invoice issuance dropped from ${prev} to ${cur} this period.`, rec: "Check sales activity and your quote-to-invoice conversion flow." },
+    CUSTOMER_GROWTH_STALLED: { title: "Customer Acquisition Stalled", desc: () => "No new customers were added this period while the previous period had new customer activity.", rec: "Review customer acquisition activity and consider reaching out to prospects." },
+    OUTSTANDING_INCREASE: { title: "Outstanding Balance Increasing", desc: (n) => `Unpaid invoice balance grew by ${n}% compared to the previous period.`, rec: "Follow up on unpaid invoices earlier in the payment cycle." },
+    STABLE_OR_HEALTHY_TREND: { title: "Stable Financial Trend", desc: () => "No significant negative trends detected in this period.", rec: "Continue monitoring revenue, collections, and customer activity regularly." },
+  },
+  ru: {
+    OVERDUE_INVOICES: { title: "Обнаружены просроченные счета", desc: (n) => `У вас ${n} просроченных счёт${n === 1 ? '' : n < 5 ? 'а' : 'ов'}, требующих внимания.`, rec: "Свяжитесь с клиентами для получения платежей и пересмотрите условия оплаты." },
+    CUSTOMER_CONCENTRATION_RISK: { title: "Риск концентрации клиентов", desc: (n) => `Крупнейший клиент составляет ${n}% оплаченной выручки.`, rec: "Диверсифицируйте клиентскую базу, чтобы снизить зависимость от одного источника дохода." },
+    LOW_PAYMENT_CONVERSION: { title: "Низкий коэффициент оплаты", desc: (n) => `Только ${n}% счетов полностью оплачены.`, rec: "Пересмотрите условия оплаты, отправляйте напоминания, предложите дополнительные способы оплаты." },
+    NO_RECENT_REVENUE: { title: "Нет дохода за последние 30 дней", desc: () => "За последние 30 дней платежей не поступало.", rec: "Проверьте воронку продаж, следите за открытыми счетами, свяжитесь с неактивными клиентами." },
+    HEALTHY_REVENUE_SIGNAL: { title: "Здоровый сигнал дохода", desc: (n) => `За последние 30 дней получено ${n} платёж${n === 1 ? '' : n < 5 ? 'а' : 'ей'}, просроченных задолженностей мало.`, rec: "Поддерживайте текущую платёжную дисциплину и оперативно реагируйте на выставленные счета." },
+    OVERDUE_COLLECTION_RISK: { title: "Риск просроченной задолженности", desc: (n) => `${n} счёт${n === 1 ? '' : n < 5 ? 'а' : 'ов'} просрочен. Задержка взыскания влияет на прогноз денежного потока.`, rec: "Немедленно свяжитесь с должниками и установите чёткий срок оплаты." },
+    UPCOMING_COLLECTION_FOCUS: { title: "Предстоящий сбор платежей", desc: (n) => `${n} счёт${n === 1 ? '' : n < 5 ? 'а' : 'ов'} со сроком оплаты в течение следующих 7 дней.`, rec: "Отправьте напоминания сейчас для своевременного получения оплаты." },
+    HEALTHY_CASHFLOW: { title: "Денежный поток в норме", desc: () => "Просроченных счетов нет, ожидаемый доход соответствует плану.", rec: "Продолжайте вовремя выставлять счета и следите за ними на ранних стадиях." },
+    REVENUE_GROWTH: { title: "Рост выручки", desc: (n) => `Оплаченная выручка выросла на ${n}% по сравнению с предыдущими 30 днями.`, rec: "Поддерживайте текущую дисциплину продаж и сборов." },
+    REVENUE_DROP: { title: "Снижение выручки", desc: (n) => `Оплаченная выручка упала на ${n}% по сравнению с предыдущими 30 днями.`, rec: "Проверьте воронку продаж, просроченные счета и концентрацию клиентов." },
+    INVOICE_VOLUME_DROP: { title: "Снижение объёма счетов", desc: (prev, cur) => `Количество счетов снизилось с ${prev} до ${cur} за этот период.`, rec: "Проверьте активность продаж и конверсию из предложений в счета." },
+    CUSTOMER_GROWTH_STALLED: { title: "Привлечение клиентов остановилось", desc: () => "В этом периоде новых клиентов не добавлено, хотя в предыдущем периоде активность была.", rec: "Пересмотрите действия по привлечению клиентов, свяжитесь с потенциальными клиентами." },
+    OUTSTANDING_INCREASE: { title: "Рост непогашенного остатка", desc: (n) => `Остаток неоплаченных счетов вырос на ${n}% по сравнению с предыдущим периодом.`, rec: "Работайте с просроченными счетами на более ранних стадиях платёжного цикла." },
+    STABLE_OR_HEALTHY_TREND: { title: "Стабильная финансовая тенденция", desc: () => "В этом периоде значимых негативных тенденций не обнаружено.", rec: "Продолжайте регулярно отслеживать выручку, сборы и активность клиентов." },
+  },
+  tr: {
+    OVERDUE_INVOICES: { title: "Vadesi Geçmiş Faturalar Tespit Edildi", desc: (n) => `${n} vadesi geçmiş faturanız dikkat gerektiriyor.`, rec: "Ödemeleri tahsil etmek için müşterilerle iletişime geçin ve ödeme koşullarını gözden geçirin." },
+    CUSTOMER_CONCENTRATION_RISK: { title: "Müşteri Yoğunlaşma Riski", desc: (n) => `En büyük müşteriniz tahsil edilen gelirin %${n}'ini oluşturuyor.`, rec: "Tek bir gelir kaynağına bağımlılığı azaltmak için müşteri tabanını çeşitlendirin." },
+    LOW_PAYMENT_CONVERSION: { title: "Düşük Ödeme Dönüşüm Oranı", desc: (n) => `Faturalarınızın yalnızca %${n}'i tam olarak ödendi.`, rec: "Ödeme koşullarını gözden geçirin, hatırlatma gönderin ve birden fazla ödeme seçeneği sunun." },
+    NO_RECENT_REVENUE: { title: "Son 30 Günde Gelir Yok", desc: () => "Son 30 gün içinde hiç ödeme kaydedilmedi.", rec: "Satış hattını inceleyin, açık faturalar takip edin, pasif müşterilerle iletişime geçin." },
+    HEALTHY_REVENUE_SIGNAL: { title: "Sağlıklı Gelir Sinyali", desc: (n) => `Son 30 günde ${n} ödeme alındı, vadesi geçmiş tutar düşük.`, rec: "Mevcut fatura düzeninizi koruyun ve düzenlenen faturalara hızlı geri dönün." },
+    OVERDUE_COLLECTION_RISK: { title: "Vadesi Geçmiş Tahsilat Riski", desc: (n) => `${n} faturanın vadesi geçti. Geç tahsilat nakit akışı öngörüsünü etkiler.`, rec: "Vadesi geçmiş müşterilerle hemen iletişime geçin ve net bir ödeme son tarihi belirleyin." },
+    UPCOMING_COLLECTION_FOCUS: { title: "Yaklaşan Tahsilat Odağı", desc: (n) => `${n} faturanın vadesi önümüzdeki 7 gün içinde.`, rec: "Zamanında tahsilatı sağlamak için şimdi ödeme hatırlatmaları gönderin." },
+    HEALTHY_CASHFLOW: { title: "Nakit Akışı Sağlıklı Görünüyor", desc: () => "Vadesi geçmiş fatura tespit edilmedi, beklenen gelir planla uyumlu.", rec: "Faturaları zamanında düzenlemeye ve erken takip etmeye devam edin." },
+    REVENUE_GROWTH: { title: "Gelir Artışı", desc: (n) => `Tahsil edilen gelir önceki 30 güne kıyasla %${n} arttı.`, rec: "Satış ve tahsilat disiplininizi koruyun." },
+    REVENUE_DROP: { title: "Gelir Düşüşü", desc: (n) => `Tahsil edilen gelir önceki 30 güne kıyasla %${n} azaldı.`, rec: "Satış hattını, vadesi geçmiş faturaları ve müşteri yoğunlaşmasını inceleyin." },
+    INVOICE_VOLUME_DROP: { title: "Fatura Hacminde Düşüş", desc: (prev, cur) => `Bu dönemde fatura sayısı ${prev}'den ${cur}'e düştü.`, rec: "Satış faaliyetlerini ve teklif-fatura dönüşümünüzü kontrol edin." },
+    CUSTOMER_GROWTH_STALLED: { title: "Müşteri Edinimi Durdu", desc: () => "Bu dönemde yeni müşteri eklenmedi; önceki dönemde faaliyet vardı.", rec: "Müşteri edinme faaliyetlerini gözden geçirin ve potansiyel müşterilerle iletişime geçin." },
+    OUTSTANDING_INCREASE: { title: "Bekleyen Bakiye Artıyor", desc: (n) => `Ödenmemiş fatura bakiyesi önceki döneme göre %${n} arttı.`, rec: "Ödeme döngüsünün başında vadesi geçmiş faturalara daha erken müdahale edin." },
+    STABLE_OR_HEALTHY_TREND: { title: "Stabil Finansal Trend", desc: () => "Bu dönemde önemli bir olumsuz trend tespit edilmedi.", rec: "Geliri, tahsilatları ve müşteri faaliyetlerini düzenli olarak izlemeye devam edin." },
+  },
+  de: {
+    OVERDUE_INVOICES: { title: "Überfällige Rechnungen festgestellt", desc: (n) => `Sie haben ${n} überfällige Rechnung${n !== 1 ? 'en' : ''}, die Aufmerksamkeit erfordern.`, rec: "Kontaktieren Sie Kunden zur Einziehung offener Zahlungen und überprüfen Sie die Zahlungsbedingungen." },
+    CUSTOMER_CONCENTRATION_RISK: { title: "Kundenkonzentrationsrisiko", desc: (n) => `Ihr größter Kunde macht ${n}% des bezahlten Umsatzes aus.`, rec: "Diversifizieren Sie Ihren Kundenstamm, um die Abhängigkeit von einer einzigen Einnahmequelle zu reduzieren." },
+    LOW_PAYMENT_CONVERSION: { title: "Niedrige Zahlungskonversionsrate", desc: (n) => `Nur ${n}% Ihrer Rechnungen wurden vollständig bezahlt.`, rec: "Überprüfen Sie Zahlungsbedingungen, senden Sie Erinnerungen und bieten Sie mehrere Zahlungsoptionen an." },
+    NO_RECENT_REVENUE: { title: "Kein Umsatz in den letzten 30 Tagen", desc: () => "In den letzten 30 Tagen wurden keine Zahlungen erfasst.", rec: "Überprüfen Sie Ihre Vertriebspipeline, verfolgen Sie offene Rechnungen und kontaktieren Sie inaktive Kunden." },
+    HEALTHY_REVENUE_SIGNAL: { title: "Gesundes Umsatzsignal", desc: (n) => `In den letzten 30 Tagen wurden ${n} Zahlung${n !== 1 ? 'en' : ''} bei geringem Rückstandsrisiko erhalten.`, rec: "Halten Sie Ihre aktuelle Abrechnungsdisziplin aufrecht und reagieren Sie zeitnah auf ausgestellte Rechnungen." },
+    OVERDUE_COLLECTION_RISK: { title: "Überfälliges Einzugsrisiko", desc: (n) => `${n} Rechnung${n !== 1 ? 'en sind' : ' ist'} überfällig. Verzögerte Einziehungen beeinträchtigen Ihre Cashflow-Prognose.`, rec: "Kontaktieren Sie überfällige Kunden sofort und setzen Sie klare Zahlungsfristen." },
+    UPCOMING_COLLECTION_FOCUS: { title: "Bevorstehende Einziehung", desc: (n) => `${n} Rechnung${n !== 1 ? 'en' : ''} ist/sind in den nächsten 7 Tagen fällig.`, rec: "Senden Sie jetzt Zahlungserinnerungen, um eine rechtzeitige Einziehung sicherzustellen." },
+    HEALTHY_CASHFLOW: { title: "Cashflow sieht gesund aus", desc: () => "Keine überfälligen Rechnungen festgestellt, erwartetes Einkommen ist im Plan.", rec: "Stellen Sie Rechnungen weiterhin pünktlich aus und verfolgen Sie diese frühzeitig." },
+    REVENUE_GROWTH: { title: "Umsatzwachstum", desc: (n) => `Der bezahlte Umsatz stieg im Vergleich zu den vorherigen 30 Tagen um ${n}%.`, rec: "Halten Sie Ihre Vertriebs- und Einzugsdisziplin aufrecht." },
+    REVENUE_DROP: { title: "Umsatzrückgang", desc: (n) => `Der bezahlte Umsatz fiel im Vergleich zu den vorherigen 30 Tagen um ${n}%.`, rec: "Überprüfen Sie Ihre Vertriebspipeline, überfällige Rechnungen und Kundenkonzentration." },
+    INVOICE_VOLUME_DROP: { title: "Rückgang des Rechnungsvolumens", desc: (prev, cur) => `Die Rechnungsausstellung sank von ${prev} auf ${cur} in diesem Zeitraum.`, rec: "Überprüfen Sie Verkaufsaktivitäten und Ihren Angebots-zu-Rechnung-Prozess." },
+    CUSTOMER_GROWTH_STALLED: { title: "Kundengewinnung gestoppt", desc: () => "In diesem Zeitraum wurden keine neuen Kunden hinzugefügt, obwohl im Vorperiode Aktivität vorhanden war.", rec: "Überprüfen Sie Kundengewinnungsaktivitäten und erwägen Sie die Kontaktaufnahme mit Interessenten." },
+    OUTSTANDING_INCREASE: { title: "Offener Saldo steigt", desc: (n) => `Der offene Rechnungssaldo stieg im Vergleich zum Vorperiod um ${n}%.`, rec: "Verfolgen Sie unbezahlte Rechnungen früher im Zahlungszyklus." },
+    STABLE_OR_HEALTHY_TREND: { title: "Stabile Finanzentwicklung", desc: () => "In diesem Zeitraum wurden keine wesentlichen negativen Trends festgestellt.", rec: "Überwachen Sie Umsatz, Einzüge und Kundenaktivität regelmäßig." },
+  },
 };
 
 const STAFF_ROLE_CONFIG = {
@@ -2340,7 +2428,16 @@ function MainApp() {
     return getLocationRoute().split("/").filter(Boolean);
   }
 
-  const [state, setState] = useState(() => normalizeAppState(createResetData()));
+  const [state, setState] = useState(() => {
+    const base = normalizeAppState(createResetData());
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(PARAMS_SETTINGS_KEY) || "{}");
+      if (saved && typeof saved === "object") {
+        return { ...base, settings: { ...base.settings, ...saved } };
+      }
+    } catch {}
+    return base;
+  });
   const [isReady, setIsReady] = useState(false);
   const [timeTick, setTimeTick] = useState(() => Date.now());
   const [trialTick, setTrialTick] = useState(() => Date.now());
@@ -2392,6 +2489,8 @@ function MainApp() {
   const [editingDocument, setEditingDocument] = useState(null);
   const [backupStatus, setBackupStatus] = useState({ tone: "", message: "" });
   const [settingsTab, setSettingsTab] = useState(null); // null | "profile" | "language" | "params"
+  const [paramDiscountMode, setParamDiscountMode] = useState(null);
+  const [paramsSaved, setParamsSaved] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [reportPeriod, setReportPeriod] = useState("Bu ay");
   const [profitLossCloseYear, setProfitLossCloseYear] = useState(() => String(new Date().getFullYear()));
@@ -3564,7 +3663,7 @@ function MainApp() {
   }
 
   function normalizeBackendCompanySettings(record) {
-    return {
+    const result = {
       companyName: String(record?.companyName || "").trim(),
       taxId: String(record?.taxId || "").trim(),
       mobilePhone: String(record?.mobilePhone || "").trim(),
@@ -3572,6 +3671,18 @@ function MainApp() {
       currency: String(record?.currency || "").trim().toUpperCase() || "AZN",
       fiscalYear: String(record?.fiscalYear || "").trim(),
     };
+    const paramFields = [
+      "invoicePrefix", "quotePrefix", "defaultPaymentTerm", "defaultTaxLabel",
+      "numberingMode", "stockWarning", "negativeStock", "discountMode",
+      "discountTiming", "additionalAdjustment", "shippingCharge",
+      "taxMode", "salesRoundingMode", "salespersonField",
+    ];
+    paramFields.forEach((key) => {
+      if (record?.[key] != null && String(record[key]).trim() !== "") {
+        result[key] = String(record[key]).trim();
+      }
+    });
+    return result;
   }
 
   async function syncCompanySettingsFromBackend(sessionOverride = null) {
@@ -3597,6 +3708,7 @@ function MainApp() {
         },
       }));
 
+      window.localStorage.removeItem(PARAMS_SETTINGS_KEY);
       return nextSettings;
     } catch (error) {
       setCompanySettingsError(error?.message || "Şirkət məlumatları backend-dən alınmadı.");
@@ -5268,11 +5380,17 @@ function MainApp() {
     }
 
     let taxAmount = 0;
-    if (moduleId !== "expenses" && (draft.taxMode || state.settings.taxMode) === "Vergi xaric" && taxRate > 0) {
-      taxAmount = Math.max(taxableBase, 0) * (taxRate / 100);
+    const effectiveTaxMode = draft.taxMode || state.settings.taxMode;
+    if (moduleId !== "expenses" && taxRate > 0) {
+      if (effectiveTaxMode === "Vergi xaric") {
+        taxAmount = Math.max(taxableBase, 0) * (taxRate / 100);
+      } else if (effectiveTaxMode === "Vergi daxil") {
+        // price entered by user already contains tax — extract it
+        taxAmount = Math.max(taxableBase, 0) * taxRate / (100 + taxRate);
+      }
     }
 
-    let totalAmount = baseAmount + shippingAmount + adjustmentAmount + taxAmount;
+    let totalAmount = baseAmount + shippingAmount + adjustmentAmount + (effectiveTaxMode === "Vergi daxil" ? 0 : taxAmount);
     if (moduleSupportsSalesControls(moduleId) && state.settings.discountMode !== "Endirim verilmir") {
       totalAmount -= discountValue;
     }
@@ -5430,7 +5548,6 @@ function MainApp() {
       nextDraft.salesperson = "";
       nextDraft.discountMode = state.settings.discountMode;
       nextDraft.discountTiming = state.settings.discountTiming;
-      nextDraft.roundOffTaxMode = state.settings.roundOffTaxMode;
       nextDraft.salesRoundingMode = state.settings.salesRoundingMode;
     }
 
@@ -5461,7 +5578,6 @@ function MainApp() {
       payload.salesperson = state.settings.salespersonField === "Bəli" ? draft.salesperson || "" : "";
       payload.discountMode = state.settings.discountMode;
       payload.discountTiming = state.settings.discountTiming;
-      payload.roundOffTaxMode = state.settings.roundOffTaxMode;
       payload.salesRoundingMode = state.settings.salesRoundingMode;
     }
 
@@ -5527,7 +5643,7 @@ function MainApp() {
           ) : null}
           {moduleSupportsSalesControls(moduleId) && state.settings.discountMode !== "Endirim verilmir" ? (
             <label>
-              <span>{state.settings.discountMode === "Sətir səviyyəsində" ? at.inv_form_lineDiscount : at.inv_form_docDiscount}</span>
+              <span>{at.inv_form_docDiscount}</span>
               <input type="number" step="0.01" value={draft.discountValue || "0"} onChange={(event) => updateDraft(moduleId, "discountValue", event.target.value)} />
             </label>
           ) : null}
@@ -7679,47 +7795,40 @@ function MainApp() {
     event.preventDefault();
     const form = event.currentTarget;
     const checkboxValue = (name) => form.querySelector(`[name="${name}"]`)?.checked ? "Bəli" : "Xeyr";
+    const paramsToSave = {
+      invoicePrefix: form.invoicePrefix?.value,
+      quotePrefix: form.quotePrefix?.value,
+      defaultPaymentTerm: form.defaultPaymentTerm?.value,
+      defaultTaxLabel: form.defaultTaxLabel?.value,
+      numberingMode: form.numberingMode?.value,
+      stockWarning: form.stockWarning?.value,
+      negativeStock: form.negativeStock?.value,
+      discountMode: form.discountMode?.value,
+      discountTiming: form.discountTiming?.value,
+      additionalAdjustment: checkboxValue("additionalAdjustment"),
+      shippingCharge: checkboxValue("shippingCharge"),
+      taxMode: form.taxMode?.value,
+      salesRoundingMode: form.salesRoundingMode?.value,
+      salespersonField: checkboxValue("salespersonField"),
+    };
     setState((current) => ({
       ...current,
-      settings: {
-        ...current.settings,
-        companyName: form.companyName?.value,
-        taxId: form.taxId?.value,
-        mobilePhone: form.mobilePhone?.value,
-        entityType: form.entityType?.value,
-        currency: form.currency?.value,
-        fiscalYear: form.fiscalYear?.value,
-        invoicePrefix: form.invoicePrefix?.value,
-        quotePrefix: form.quotePrefix?.value,
-        defaultPaymentTerm: form.defaultPaymentTerm?.value,
-        defaultTaxLabel: form.defaultTaxLabel?.value,
-        numberingMode: form.numberingMode?.value,
-        stockWarning: form.stockWarning?.value,
-        negativeStock: form.negativeStock?.value,
-        autoBackup: form.autoBackup?.value,
-        discountMode: form.discountMode?.value,
-        discountTiming: form.discountTiming?.value,
-        additionalAdjustment: checkboxValue("additionalAdjustment"),
-        shippingCharge: checkboxValue("shippingCharge"),
-        shippingTaxAutomation: checkboxValue("shippingTaxAutomation"),
-        taxMode: form.taxMode?.value,
-        roundOffTaxMode: form.roundOffTaxMode?.value,
-        salesRoundingMode: form.salesRoundingMode?.value,
-        salespersonField: checkboxValue("salespersonField"),
-        uiScale: form.uiScale?.value
-      }
+      settings: { ...current.settings, ...paramsToSave },
     }));
-    if (currentUser) {
-      setAuthUsers((current) => current.map((user) => user.email === currentUser.email ? normalizeAuthUser({
-        ...user,
-        profile: {
-          ...user.profile,
-          companyName: form.companyName?.value,
-          taxId: form.taxId?.value,
-          mobilePhone: form.mobilePhone?.value,
-          entityType: form.entityType?.value
-        }
-      }) : user));
+    if (backendSession?.accessToken) {
+      try {
+        const response = await apiUpdateCompanySettings(paramsToSave, updateBackendSession);
+        const normalized = normalizeBackendCompanySettings(response);
+        setState((current) => ({
+          ...current,
+          settings: { ...current.settings, ...normalized },
+        }));
+        window.localStorage.removeItem(PARAMS_SETTINGS_KEY);
+      } catch {
+        window.localStorage.setItem(PARAMS_SETTINGS_KEY, JSON.stringify(paramsToSave));
+      }
+    } else {
+      window.localStorage.setItem(PARAMS_SETTINGS_KEY, JSON.stringify(paramsToSave));
     }
   }
 
@@ -7748,23 +7857,6 @@ function MainApp() {
         settings: {
           ...current.settings,
           ...nextProfileSettings,
-          invoicePrefix: form.invoicePrefix?.value,
-          quotePrefix: form.quotePrefix?.value,
-          defaultPaymentTerm: form.defaultPaymentTerm?.value,
-          defaultTaxLabel: form.defaultTaxLabel?.value,
-          numberingMode: form.numberingMode?.value,
-          stockWarning: form.stockWarning?.value,
-          negativeStock: form.negativeStock?.value,
-          autoBackup: form.autoBackup?.value,
-          discountMode: form.discountMode?.value,
-          discountTiming: form.discountTiming?.value,
-          additionalAdjustment: checkboxValue("additionalAdjustment"),
-          shippingCharge: checkboxValue("shippingCharge"),
-          shippingTaxAutomation: checkboxValue("shippingTaxAutomation"),
-          taxMode: form.taxMode?.value,
-          roundOffTaxMode: form.roundOffTaxMode?.value,
-          salesRoundingMode: form.salesRoundingMode?.value,
-          salespersonField: checkboxValue("salespersonField"),
           uiScale: form.uiScale?.value,
         }
       }));
@@ -13322,7 +13414,7 @@ function renderItemsCatalog() {
     if (financialInsightsLoading) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Financial Insights</h3><p className="panel-copy">Loading…</p></div></div>
+          <div className="panel-head"><div><h3>{at.dash_financialInsights}</h3><p className="panel-copy">{at.dash_loading}</p></div></div>
         </div>
       );
     }
@@ -13330,7 +13422,7 @@ function renderItemsCatalog() {
     if (financialInsightsError) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Financial Insights</h3></div></div>
+          <div className="panel-head"><div><h3>{at.dash_financialInsights}</h3></div></div>
           <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{financialInsightsError}</p>
         </div>
       );
@@ -13339,20 +13431,25 @@ function renderItemsCatalog() {
     if (!financialInsightsData) return null;
 
     const { summary, insights } = financialInsightsData;
+    const sevLabel = (s) => ({ HIGH: at.dash_sev_high, MEDIUM: at.dash_sev_medium, LOW: at.dash_sev_low }[s] || s);
+    const insT = INSIGHT_TEXTS[hubLang] || INSIGHT_TEXTS.az;
+    const insTitle = (ins) => insT[ins.id]?.title || ins.title;
+    const insDesc = (ins) => { const t = insT[ins.id]; return t ? t.desc(ins.metricValue) : ins.description; };
+    const insRec = (ins) => insT[ins.id]?.rec || ins.recommendation;
 
     const kpis = [
-      { label: "Total Revenue", value: fmtMinor(summary.totalRevenueMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "🧾" },
-      { label: "Paid Revenue", value: fmtMinor(summary.paidRevenueMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
-      { label: "Outstanding", value: fmtMinor(summary.outstandingRevenueMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏳" },
-      { label: "Overdue", value: fmtMinor(summary.overdueRevenueMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
-      { label: "Invoices", value: summary.invoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
-      { label: "Paid Invoices", value: summary.paidInvoiceCount, accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "💳" },
-      { label: "Customers", value: summary.customerCount, accent: "#0ea5e9", iconBg: "rgba(14,165,233,0.1)", icon: "👥" },
+      { label: at.dash_kpi_totalRevenue, value: fmtMinor(summary.totalRevenueMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "🧾" },
+      { label: at.dash_kpi_paidRevenue, value: fmtMinor(summary.paidRevenueMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: at.dash_kpi_outstanding, value: fmtMinor(summary.outstandingRevenueMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏳" },
+      { label: at.dash_kpi_overdue, value: fmtMinor(summary.overdueRevenueMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
+      { label: at.dash_kpi_invoices, value: summary.invoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
+      { label: at.dash_kpi_paidInvoices, value: summary.paidInvoiceCount, accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "💳" },
+      { label: at.dash_kpi_customers, value: summary.customerCount, accent: "#0ea5e9", iconBg: "rgba(14,165,233,0.1)", icon: "👥" },
     ];
 
     return (
       <div style={{ marginTop: "var(--space-lg)" }}>
-        <p className="dash-section-label">Financial Insights</p>
+        <p className="dash-section-label">{at.dash_financialInsights}</p>
 
         <div style={{
           display: "grid",
@@ -13385,7 +13482,7 @@ function renderItemsCatalog() {
 
         {insights.length === 0 ? (
           <div className="panel" style={{ padding: "1.5rem" }}>
-            <p style={{ color: "var(--muted)", fontSize: 14 }}>No active insights at this time. Keep up the strong billing discipline.</p>
+            <p style={{ color: "var(--muted)", fontSize: 14 }}>{at.dash_noInsights}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
@@ -13405,12 +13502,12 @@ function renderItemsCatalog() {
                     background: SEV_BG[insight.severity],
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
-                  }}>{insight.severity}</span>
-                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{insight.title}</strong>
+                  }}>{sevLabel(insight.severity)}</span>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{insTitle(insight)}</strong>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8, lineHeight: 1.5 }}>{insight.description}</p>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8, lineHeight: 1.5 }}>{insDesc(insight)}</p>
                 <p style={{ fontSize: 12, color: SEV_COLOR[insight.severity] ?? "var(--muted)", fontWeight: 500 }}>
-                  Recommendation: {insight.recommendation}
+                  {at.dash_recommendation}: {insRec(insight)}
                 </p>
               </div>
             ))}
@@ -13431,7 +13528,7 @@ function renderItemsCatalog() {
     if (cashflowLoading) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Cashflow Forecast</h3><p className="panel-copy">Loading…</p></div></div>
+          <div className="panel-head"><div><h3>{at.dash_cashflowForecast}</h3><p className="panel-copy">{at.dash_loading}</p></div></div>
         </div>
       );
     }
@@ -13439,7 +13536,7 @@ function renderItemsCatalog() {
     if (cashflowError) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Cashflow Forecast</h3></div></div>
+          <div className="panel-head"><div><h3>{at.dash_cashflowForecast}</h3></div></div>
           <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{cashflowError}</p>
         </div>
       );
@@ -13450,16 +13547,24 @@ function renderItemsCatalog() {
     const { summary, buckets, recommendations, upcomingInvoices } = cashflowData;
 
     const statusColor = STATUS_COLOR[summary.cashflowStatus] ?? "#94a3b8";
+    const cfSevLabel = (s) => ({ HIGH: at.dash_sev_high, MEDIUM: at.dash_sev_medium, LOW: at.dash_sev_low }[s] || s);
+    const cfStatusLabel = (s) => ({ HEALTHY: at.dash_status_healthy, WATCH: at.dash_status_watch, RISK: at.dash_status_risk }[s] || s);
+    const BUCKET_LABEL = { Overdue: at.dash_bucket_overdue, "Due next 7 days": at.dash_bucket_due7, "Due 8–30 days": at.dash_bucket_due8_30, Later: at.dash_bucket_later };
+    const cfT = INSIGHT_TEXTS[hubLang] || INSIGHT_TEXTS.az;
+    const cfRecN = (rec) => rec.id === 'OVERDUE_COLLECTION_RISK' ? summary.overdueInvoiceCount : rec.id === 'UPCOMING_COLLECTION_FOCUS' ? summary.dueSoonInvoiceCount : 0;
+    const cfRecTitle = (rec) => cfT[rec.id]?.title || rec.title;
+    const cfRecDesc = (rec) => { const t = cfT[rec.id]; return t ? t.desc(cfRecN(rec)) : rec.description; };
+    const cfRecRec = (rec) => cfT[rec.id]?.rec || rec.recommendation;
 
     const kpis = [
-      { label: "Expected (30 days)", value: fmtMinor(summary.expectedIncomingNext30DaysMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "📅" },
-      { label: "Overdue", value: fmtMinor(summary.overdueAmountMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
-      { label: "Due Soon (7d)", value: fmtMinor(summary.dueSoonAmountMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏰" },
-      { label: "Paid Revenue (Last 30 Days)", value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
-      { label: "Open Invoices", value: summary.openInvoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
+      { label: at.dash_kpi_expected30, value: fmtMinor(summary.expectedIncomingNext30DaysMinor), accent: "#1c5eb0", iconBg: "rgba(28,94,176,0.1)", icon: "📅" },
+      { label: at.dash_kpi_overdue, value: fmtMinor(summary.overdueAmountMinor), accent: "#ef4444", iconBg: "rgba(239,68,68,0.1)", icon: "⚠️" },
+      { label: at.dash_kpi_dueSoon7, value: fmtMinor(summary.dueSoonAmountMinor), accent: "#f59e0b", iconBg: "rgba(245,158,11,0.1)", icon: "⏰" },
+      { label: at.dash_kpi_paidLast30, value: fmtMinor(summary.paidLast30DaysMinor), accent: "#10b981", iconBg: "rgba(16,185,129,0.1)", icon: "✅" },
+      { label: at.dash_kpi_openInvoices, value: summary.openInvoiceCount, accent: "#6366f1", iconBg: "rgba(99,102,241,0.1)", icon: "📄" },
       {
-        label: "Cashflow Status",
-        value: summary.cashflowStatus,
+        label: at.dash_kpi_cashflowStatus,
+        value: cfStatusLabel(summary.cashflowStatus),
         accent: statusColor,
         iconBg: `${statusColor}18`,
         icon: summary.cashflowStatus === "HEALTHY" ? "📈" : summary.cashflowStatus === "RISK" ? "📉" : "⚡",
@@ -13469,7 +13574,7 @@ function renderItemsCatalog() {
 
     return (
       <div style={{ marginTop: "var(--space-lg)" }}>
-        <p className="dash-section-label">Cashflow Forecast</p>
+        <p className="dash-section-label">{at.dash_cashflowForecast}</p>
 
         {/* KPI cards */}
         <div style={{
@@ -13521,9 +13626,9 @@ function renderItemsCatalog() {
                 borderTopWidth: 3,
                 borderTopColor: bucketAccent,
               }}>
-                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: bucketAccent, marginBottom: 6 }}>{bucket.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: bucketAccent, marginBottom: 6 }}>{BUCKET_LABEL[bucket.label] || bucket.label}</div>
                 <div style={{ fontFamily: "'Bahnschrift','Segoe UI',sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", lineHeight: 1 }}>{fmtMinor(bucket.amountMinor)}</div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{bucket.invoiceCount} invoice{bucket.invoiceCount !== 1 ? "s" : ""}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{bucket.invoiceCount} {at.dash_invoiceUnit}</div>
               </div>
             );
           })}
@@ -13541,11 +13646,11 @@ function renderItemsCatalog() {
                 borderLeftWidth: 4,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[rec.severity], background: SEV_BG[rec.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{rec.severity}</span>
-                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{rec.title}</strong>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[rec.severity], background: SEV_BG[rec.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{cfSevLabel(rec.severity)}</span>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{cfRecTitle(rec)}</strong>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{rec.description}</p>
-                <p style={{ fontSize: 12, color: SEV_COLOR[rec.severity] ?? "var(--muted)", fontWeight: 500 }}>Recommendation: {rec.recommendation}</p>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{cfRecDesc(rec)}</p>
+                <p style={{ fontSize: 12, color: SEV_COLOR[rec.severity] ?? "var(--muted)", fontWeight: 500 }}>{at.dash_recommendation}: {cfRecRec(rec)}</p>
               </div>
             ))}
           </div>
@@ -13556,19 +13661,19 @@ function renderItemsCatalog() {
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             <div className="panel-head" style={{ padding: "1rem 1.5rem" }}>
               <div>
-                <h3 style={{ margin: 0 }}>Upcoming Invoices</h3>
-                <p className="panel-copy" style={{ margin: 0 }}>Open invoices due in the next 30 days</p>
+                <h3 style={{ margin: 0 }}>{at.dash_upcomingInvoices}</h3>
+                <p className="panel-copy" style={{ margin: 0 }}>{at.dash_upcomingDesc}</p>
               </div>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table className="internal-admin-table">
                 <thead>
                   <tr>
-                    <th>Invoice #</th>
-                    <th>Customer</th>
-                    <th>Due Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
+                    <th>{at.dash_col_invoice}</th>
+                    <th>{at.dash_col_customer}</th>
+                    <th>{at.dash_col_dueDate}</th>
+                    <th>{at.dash_col_amount}</th>
+                    <th>{at.dash_col_status}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -13611,7 +13716,7 @@ function renderItemsCatalog() {
     if (trendsLoading) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Trend Comparison</h3><p className="panel-copy">Loading…</p></div></div>
+          <div className="panel-head"><div><h3>{at.dash_trendComparison}</h3><p className="panel-copy">{at.dash_loading}</p></div></div>
         </div>
       );
     }
@@ -13619,7 +13724,7 @@ function renderItemsCatalog() {
     if (trendsError) {
       return (
         <div className="panel" style={{ marginTop: "var(--space-lg)" }}>
-          <div className="panel-head"><div><h3>Trend Comparison</h3></div></div>
+          <div className="panel-head"><div><h3>{at.dash_trendComparison}</h3></div></div>
           <p style={{ color: "var(--danger)", padding: "0 1.5rem 1rem" }}>{trendsError}</p>
         </div>
       );
@@ -13628,6 +13733,16 @@ function renderItemsCatalog() {
     if (!trendsData) return null;
 
     const { summary, trends } = trendsData;
+    const trendSevLabel = (s) => ({ HIGH: at.dash_sev_high, MEDIUM: at.dash_sev_medium, LOW: at.dash_sev_low }[s] || s);
+    const trdT = INSIGHT_TEXTS[hubLang] || INSIGHT_TEXTS.az;
+    const trdTitle = (t) => trdT[t.id]?.title || t.title;
+    const trdDesc = (t) => {
+      const entry = trdT[t.id];
+      if (!entry) return t.description;
+      if (t.id === 'INVOICE_VOLUME_DROP') return entry.desc(t.previousValue, t.currentValue);
+      return entry.desc(Math.abs(t.changePercent));
+    };
+    const trdRec = (t) => trdT[t.id]?.rec || t.recommendation;
 
     const fmtPct = (pct) => {
       const sign = pct > 0 ? "+" : "";
@@ -13636,28 +13751,28 @@ function renderItemsCatalog() {
 
     const comparisonCards = [
       {
-        label: "Revenue",
+        label: at.dash_kpi_revenue,
         current: fmtMinor(summary.currentRevenueMinor),
         previous: fmtMinor(summary.previousRevenueMinor),
         changePct: summary.revenueChangePercent,
         accent: summary.revenueChangePercent >= 0 ? "#10b981" : "#ef4444",
       },
       {
-        label: "Invoice Count",
+        label: at.dash_kpi_invoiceCount,
         current: summary.currentInvoiceCount,
         previous: summary.previousInvoiceCount,
         changePct: summary.invoiceCountChangePercent,
         accent: summary.invoiceCountChangePercent >= 0 ? "#10b981" : "#ef4444",
       },
       {
-        label: "New Customers",
+        label: at.dash_kpi_newCustomers,
         current: summary.currentCustomerCount,
         previous: summary.previousCustomerCount,
         changePct: summary.customerCountChangePercent,
         accent: summary.customerCountChangePercent >= 0 ? "#10b981" : "#ef4444",
       },
       {
-        label: "Outstanding",
+        label: at.dash_kpi_outstanding,
         current: fmtMinor(summary.currentOutstandingMinor),
         previous: fmtMinor(summary.previousOutstandingMinor),
         changePct: summary.outstandingChangePercent,
@@ -13667,7 +13782,7 @@ function renderItemsCatalog() {
 
     return (
       <div style={{ marginTop: "var(--space-lg)" }}>
-        <p className="dash-section-label">Trend Comparison · Last 30 days vs. Previous 30 days</p>
+        <p className="dash-section-label">{at.dash_trendComparison} · {at.dash_trendSubtitle}</p>
 
         {/* KPI comparison cards */}
         <div style={{
@@ -13692,7 +13807,7 @@ function renderItemsCatalog() {
                   {DIR_ICON[card.changePct > 0 ? "UP" : card.changePct < 0 ? "DOWN" : "FLAT"]} {fmtPct(card.changePct)}
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Prev: {card.previous}</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{at.dash_prev} {card.previous}</div>
             </div>
           ))}
         </div>
@@ -13709,12 +13824,12 @@ function renderItemsCatalog() {
                 borderLeftWidth: 4,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[trend.severity], background: SEV_BG[trend.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{trend.severity}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: SEV_COLOR[trend.severity], background: SEV_BG[trend.severity], textTransform: "uppercase", letterSpacing: "0.06em" }}>{trendSevLabel(trend.severity)}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: SEV_COLOR[trend.severity] ?? "var(--muted)", marginRight: 4 }}>{DIR_ICON[trend.direction]}</span>
-                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{trend.title}</strong>
+                  <strong style={{ fontSize: 14, color: "var(--text)" }}>{trdTitle(trend)}</strong>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{trend.description}</p>
-                <p style={{ fontSize: 12, color: SEV_COLOR[trend.severity] ?? "var(--muted)", fontWeight: 500 }}>Recommendation: {trend.recommendation}</p>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, lineHeight: 1.5 }}>{trdDesc(trend)}</p>
+                <p style={{ fontSize: 12, color: SEV_COLOR[trend.severity] ?? "var(--muted)", fontWeight: 500 }}>{at.dash_recommendation}: {trdRec(trend)}</p>
               </div>
             ))}
           </div>
@@ -15134,7 +15249,7 @@ function renderItemsCatalog() {
 
   async function submitSignIn(event) {
     event.preventDefault();
-    if (!signInRecaptcha) {
+    if (RECAPTCHA_ENABLED && !signInRecaptcha) {
       setBooksNotice("Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.");
       return;
     }
@@ -15142,7 +15257,7 @@ function renderItemsCatalog() {
       setBooksNotice("");
       setSignInStartedAt(Date.now());
       const email = String(authDraft.email || "").trim().toLowerCase();
-      const response = await apiLogin(email, authDraft.password, signInRecaptcha);
+      const response = await apiLogin(email, authDraft.password, RECAPTCHA_ENABLED ? signInRecaptcha : undefined);
       const session = {
         accessToken: response?.tokens?.accessToken,
         refreshToken: response?.tokens?.refreshToken,
@@ -15784,21 +15899,23 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
-                <div className="lp-recaptcha-wrap">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={RECAPTCHA_SITE_KEY}
-                    onChange={(token) => setSignInRecaptcha(token || "")}
-                    onExpired={() => setSignInRecaptcha("")}
-                    theme="dark"
-                  />
-                </div>
+                {RECAPTCHA_ENABLED ? (
+                  <div className="lp-recaptcha-wrap">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setSignInRecaptcha(token || "")}
+                      onExpired={() => setSignInRecaptcha("")}
+                      theme="dark"
+                    />
+                  </div>
+                ) : null}
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
                     {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
-                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || !signInRecaptcha}>
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || (RECAPTCHA_ENABLED && !signInRecaptcha)}>
                   {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
                 </button>
               </form>
@@ -16142,21 +16259,23 @@ function renderItemsCatalog() {
                   <label className="lp-remember"><input type="checkbox" checked={authDraft.rememberMe} onChange={(e) => setAuthDraft((c) => ({ ...c, rememberMe: e.target.checked }))} /> {t.fRemember}</label>
                   <button className="lp-text-link" type="button" onClick={() => { setBooksView("forgot"); setBooksNotice(""); setForgotDraft({ email: authDraft.email || "" }); }}>{t.fForgot}</button>
                 </div>
-                <div className="lp-recaptcha-wrap">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={RECAPTCHA_SITE_KEY}
-                    onChange={(token) => setSignInRecaptcha(token || "")}
-                    onExpired={() => setSignInRecaptcha("")}
-                    theme="dark"
-                  />
-                </div>
+                {RECAPTCHA_ENABLED ? (
+                  <div className="lp-recaptcha-wrap">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setSignInRecaptcha(token || "")}
+                      onExpired={() => setSignInRecaptcha("")}
+                      theme="dark"
+                    />
+                  </div>
+                ) : null}
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
                     {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
-                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || !signInRecaptcha}>
+                <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || (RECAPTCHA_ENABLED && !signInRecaptcha)}>
                   {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
                 </button>
               </form>
@@ -18707,198 +18826,38 @@ function renderSettings() {
     ];
 
     if (!settingsTab) {
+      const hubCards = [
+        { icon: "🏢", color: "blue",   title: at.settings_companyInfo,  desc: at.settings_profileDesc,   badge: state.settings.companyName || at.settings_profileBadge, onClick: () => setSettingsTab("profile") },
+        { icon: activeLangObj.flag, color: "violet", title: at.settings_language, desc: at.settings_languageDesc, badge: activeLangObj.label, onClick: () => setSettingsTab("language") },
+        { icon: "⚙️", color: "slate",  title: at.settings_params,       desc: at.settings_paramsDesc,    badge: at.settings_paramsBtn, onClick: () => { setParamDiscountMode(null); setSettingsTab("params"); } },
+        { icon: "🔒", color: "red",    title: "Parol və təhlükəsizlik", desc: "Giriş parolunu dəyişin və hesab təhlükəsizliyini yeniləyin.", badge: "Dəyiş", onClick: () => setAccountPanel("changePassword") },
+        { icon: "👥", color: "green",  title: "Komanda",                desc: "Hesab üzvlərini əlavə edin, rollarını idarə edin.", badge: `${teamMembers.length || "—"} üzv`, onClick: () => { setSettingsTab("team"); loadTeamMembers(); } },
+        { icon: "🛡️", color: "amber",  title: at.settings_systemTitle,  desc: "Tətbiq məlumatlarını sıfırlayın, bərpa edin və ya yedəkləyin.", badge: "3 əməliyyat", onClick: () => setSettingsTab("system") },
+      ];
       return (
         <section className="view active">
-          <div className="settings-dashboard">
-            <div className="settings-hero panel">
-              <div className="panel-head">
-                <div>
-                  <h3>{at.nav.settings}</h3>
-                  <p className="panel-copy">Şirkət profili, iş qaydaları, komanda, dil və sistem əməliyyatlarını bir yerdə idarə edin.</p>
-                </div>
-                <span>{activeLangObj.label}</span>
+          <div className="settings-page">
+            <header className="settings-page-header">
+              <div>
+                <h2 className="settings-page-title">{at.nav.settings}</h2>
+                <p className="settings-page-sub">Şirkət profili, iş qaydaları, komanda, dil və sistem parametrlərini bir yerdə idarə edin.</p>
               </div>
-              <div className="settings-overview-grid">
-                <article className="settings-overview-card">
-                  <span>Şirkət</span>
-                  <strong>{state.settings.companyName || "Qeyd olunmayıb"}</strong>
-                  <small>{state.settings.entityType || "Hüquqi status yoxdur"}</small>
-                </article>
-                <article className="settings-overview-card">
-                  <span>Komanda</span>
-                  <strong>{internalUsersCount}</strong>
-                  <small>Aktiv daxili istifadəçi</small>
-                </article>
-                <article className="settings-overview-card">
-                  <span>Dil</span>
-                  <strong>{activeLangObj.label}</strong>
-                  <small>İnterfeys dili</small>
-                </article>
-                <article className="settings-overview-card">
-                  <span>Backup</span>
-                  <strong>{state.settings.autoBackup || "—"}</strong>
-                  <small>{backupStatus.message ? "Son sistem xəbərdarlığı var" : "Status gözləmədədir"}</small>
-                </article>
-              </div>
-            </div>
-
-            <div className="settings-section-grid">
-              <div className="settings-snapshot panel">
-                <div className="panel-head">
-                  <div><h3>Şirkət xülasəsi</h3><p className="panel-copy">Əsas identifikasiya və maliyyə məlumatları.</p></div>
-                  <span>🏢</span>
-                </div>
-                <div className="settings-mini-grid">
-                  {companySnapshot.map((item) => (
-                    <article key={item.label} className="settings-mini-card">
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="settings-snapshot panel">
-                <div className="panel-head">
-                  <div><h3>Qaydalar</h3><p className="panel-copy">Sənədləşmə və əməliyyat parametrləri.</p></div>
-                  <span>⚙️</span>
-                </div>
-                <div className="settings-mini-grid">
-                  {operationSnapshot.map((item) => (
-                    <article key={item.label} className="settings-mini-card">
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="settings-snapshot panel">
-                <div className="panel-head">
-                  <div><h3>Təhlükəsizlik və ehtiyat</h3><p className="panel-copy">Məlumat qorunması və interfeys davranışı.</p></div>
-                  <span>🛡️</span>
-                </div>
-                <div className="settings-mini-grid">
-                  {safetySnapshot.map((item) => (
-                    <article key={item.label} className="settings-mini-card">
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bill-hub settings-quick-links" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", maxWidth: "100%" }}>
-              <div className="bill-hub-card" onClick={() => setSettingsTab("profile")}>
-                <div className="bill-hub-icon">🏢</div>
-                <div className="bill-hub-info">
-                  <h3>{at.settings_companyInfo}</h3>
-                  <p>{at.settings_profileDesc}</p>
-                  <span className="bill-hub-count">{at.settings_profileBadge}</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-              <div className="bill-hub-card" onClick={() => setSettingsTab("language")}>
-                <div className="bill-hub-icon">{activeLangObj.flag}</div>
-                <div className="bill-hub-info">
-                  <h3>{at.settings_language}</h3>
-                  <p>{at.settings_languageDesc}</p>
-                  <span className="bill-hub-count">{activeLangObj.label}</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-              <div className="bill-hub-card" onClick={() => setSettingsTab("params")}>
-                <div className="bill-hub-icon">⚙️</div>
-                <div className="bill-hub-info">
-                  <h3>{at.settings_params}</h3>
-                  <p>{at.settings_paramsDesc}</p>
-                  <span className="bill-hub-count">{at.settings_paramsBtn}</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-              <div className="bill-hub-card" onClick={() => setAccountPanel("changePassword")}>
-                <div className="bill-hub-icon">🔒</div>
-                <div className="bill-hub-info">
-                  <h3>Parol və təhlükəsizlik</h3>
-                  <p>Giriş parolunu dəyişin və hesab təhlükəsizliyini yeniləyin.</p>
-                  <span className="bill-hub-count">Aç</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-              <div className="bill-hub-card" onClick={() => { setSettingsTab("team"); loadTeamMembers(); }}>
-                <div className="bill-hub-icon">👥</div>
-                <div className="bill-hub-info">
-                  <h3>Komanda</h3>
-                  <p>Hesab üzvlərini idarə edin.</p>
-                  <span className="bill-hub-count">{teamMembers.length || "—"} üzv</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-              <div className="bill-hub-card" onClick={() => setSettingsTab("system")}>
-                <div className="bill-hub-icon">🛡️</div>
-                <div className="bill-hub-info">
-                  <h3>{at.settings_systemTitle}</h3>
-                  <p>Reset, restore or back up application data.</p>
-                  <span className="bill-hub-count">3 actions</span>
-                </div>
-                <span className="bill-hub-arrow">→</span>
-              </div>
-            </div>
-          </div>
-        </section>
-      );
-    }
-
-    // ── Hub view ──────────────────────────────────────────
-    if (!settingsTab) {
-      return (
-        <section className="view active">
-          <div className="bill-hub" style={{ gridTemplateColumns: "1fr 1fr 1fr", maxWidth: "100%" }}>
-            <div className="bill-hub-card" onClick={() => setSettingsTab("profile")}>
-              <div className="bill-hub-icon">🏢</div>
-              <div className="bill-hub-info">
-                <h3>{at.settings_companyInfo}</h3>
-                <p>{at.settings_profileDesc}</p>
-                <span className="bill-hub-count">{at.settings_profileBadge}</span>
-              </div>
-              <span className="bill-hub-arrow">→</span>
-            </div>
-            <div className="bill-hub-card" onClick={() => setSettingsTab("language")}>
-              <div className="bill-hub-icon">{activeLangObj.flag}</div>
-              <div className="bill-hub-info">
-                <h3>{at.settings_language}</h3>
-                <p>{at.settings_languageDesc}</p>
-                <span className="bill-hub-count">{activeLangObj.label}</span>
-              </div>
-              <span className="bill-hub-arrow">→</span>
-            </div>
-            <div className="bill-hub-card" onClick={() => setSettingsTab("params")}>
-              <div className="bill-hub-icon">⚙️</div>
-              <div className="bill-hub-info">
-                <h3>{at.settings_params}</h3>
-                <p>{at.settings_paramsDesc}</p>
-                <span className="bill-hub-count">{at.settings_paramsBtn}</span>
-              </div>
-              <span className="bill-hub-arrow">→</span>
-            </div>
-            <div className="bill-hub-card" onClick={() => setSettingsTab("system")}>
-              <div className="bill-hub-icon">🛡️</div>
-              <div className="bill-hub-info">
-                <h3>{at.settings_systemTitle}</h3>
-                <p>Reset, restore or back up application data.</p>
-                <span className="bill-hub-count">3 actions</span>
-              </div>
-              <span className="bill-hub-arrow">→</span>
-            </div>
-            <div className="bill-hub-card" onClick={() => { setSettingsTab("team"); loadTeamMembers(); }}>
-              <div className="bill-hub-icon">👥</div>
-              <div className="bill-hub-info">
-                <h3>Komanda</h3>
-                <p>Hesab üzvlərini idarə edin.</p>
-                <span className="bill-hub-count">{teamMembers.length || "—"} üzv</span>
-              </div>
-              <span className="bill-hub-arrow">→</span>
+              <span className="settings-page-lang">{activeLangObj.flag} {activeLangObj.label}</span>
+            </header>
+            <div className="settings-hub-grid">
+              {hubCards.map((card) => (
+                <button key={card.title} className="shc" onClick={card.onClick}>
+                  <div className={`shc-icon shc-icon--${card.color}`}>{card.icon}</div>
+                  <div className="shc-body">
+                    <h3>{card.title}</h3>
+                    <p>{card.desc}</p>
+                  </div>
+                  <div className="shc-foot">
+                    <span className={`shc-badge shc-badge--${card.color}`}>{card.badge}</span>
+                    <span className="shc-arrow">→</span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </section>
@@ -19060,20 +19019,21 @@ function renderSettings() {
         {backBtn}
         <div className="panel">
           <div className="panel-head"><div><h3>{at.settings_params}</h3><p className="panel-copy">{at.settings_paramsDesc}</p></div><span>{at.settings_paramsBtn}</span></div>
-          <form className="ops-preferences-form" onSubmit={saveSettings}>
+          <form className="ops-preferences-form" onSubmit={(e) => { saveSettings(e); setParamsSaved(true); }} onChange={() => setParamsSaved(false)}>
             <section className="ops-section">
               <h4>{at.ops_discountTitle}</h4>
               <div className="ops-choice-list">
-                <label className="ops-radio-row"><input type="radio" name="discountMode" value="Endirim verilmir" defaultChecked={state.settings.discountMode === "Endirim verilmir"} /><span>{at.ops_discountNone}</span></label>
-                <label className="ops-radio-row"><input type="radio" name="discountMode" value="Sətir səviyyəsində" defaultChecked={state.settings.discountMode === "Sətir səviyyəsində"} /><span>{at.ops_discountLine}</span></label>
-                <label className="ops-radio-row"><input type="radio" name="discountMode" value="Sənəd səviyyəsində" defaultChecked={state.settings.discountMode === "Sənəd səviyyəsində"} /><span>{at.ops_discountDoc}</span></label>
+                <label className="ops-radio-row"><input type="radio" name="discountMode" value="Endirim verilmir" defaultChecked={state.settings.discountMode === "Endirim verilmir"} onChange={(e) => setParamDiscountMode(e.target.value)} /><span>{at.ops_discountNone}</span></label>
+                <label className="ops-radio-row"><input type="radio" name="discountMode" value="Sənəd səviyyəsində" defaultChecked={state.settings.discountMode !== "Endirim verilmir"} onChange={(e) => setParamDiscountMode(e.target.value)} /><span>{at.ops_discountDoc}</span></label>
               </div>
-              <div className="ops-inline-field">
-                <select name="discountTiming" defaultValue={state.settings.discountTiming}>
-                  <option value="Vergidən əvvəl endirim">{at.ops_discountBefore}</option>
-                  <option value="Vergidən sonra endirim">{at.ops_discountAfter}</option>
-                </select>
-              </div>
+              {(paramDiscountMode ?? state.settings.discountMode) !== "Endirim verilmir" && (
+                <div className="ops-inline-field">
+                  <select name="discountTiming" defaultValue={state.settings.discountTiming}>
+                    <option value="Vergidən əvvəl endirim">{at.ops_discountBefore}</option>
+                    <option value="Vergidən sonra endirim">{at.ops_discountAfter}</option>
+                  </select>
+                </div>
+              )}
             </section>
             <section className="ops-section">
               <h4>{at.ops_chargesTitle}</h4>
@@ -19081,19 +19041,12 @@ function renderSettings() {
                 <label className="ops-check-row"><input type="checkbox" name="additionalAdjustment" defaultChecked={state.settings.additionalAdjustment === "Bəli"} /><span>{at.ops_adjustments}</span></label>
                 <label className="ops-check-row"><input type="checkbox" name="shippingCharge" defaultChecked={state.settings.shippingCharge === "Bəli"} /><span>{at.ops_shipping}</span></label>
               </div>
-              <div className="ops-note-block">
-                <label className="ops-check-row"><input type="checkbox" name="shippingTaxAutomation" defaultChecked={state.settings.shippingTaxAutomation === "Bəli"} /><span>{at.ops_shippingTax}</span></label>
-                <p>{at.ops_shippingTaxNote}</p>
-              </div>
             </section>
             <section className="ops-section">
               <h4>{at.ops_taxTitle}</h4>
               <div className="ops-choice-list">
                 <label className="ops-radio-row"><input type="radio" name="taxMode" value="Vergi daxil" defaultChecked={state.settings.taxMode === "Vergi daxil"} /><span>{at.ops_taxInclusive}</span></label>
                 <label className="ops-radio-row"><input type="radio" name="taxMode" value="Vergi xaric" defaultChecked={state.settings.taxMode === "Vergi xaric"} /><span>{at.ops_taxExclusive}</span></label>
-              </div>
-              <div className="ops-inline-stack">
-                <label><span>{at.ops_taxRounding}</span><select name="roundOffTaxMode" defaultValue={state.settings.roundOffTaxMode}><option value="Sənəd səviyyəsində">{at.ops_roundDoc}</option><option value="Sətir səviyyəsində">{at.ops_roundLine}</option></select></label>
               </div>
             </section>
             <section className="ops-section">
@@ -19113,13 +19066,21 @@ function renderSettings() {
               <label><span>{at.ops_numbering}</span><select name="numberingMode" defaultValue={state.settings.numberingMode}><option value="Avtomatik">{at.ops_numAuto}</option><option value="Əl ilə">{at.ops_numManual}</option></select></label>
               <label><span>{at.ops_paymentTerm}</span><select name="defaultPaymentTerm" defaultValue={state.settings.defaultPaymentTerm}><option value="7 gün">{at.ops_7days}</option><option value="15 gün">{at.ops_15days}</option><option value="30 gün">{at.ops_30days}</option><option value="45 gün">{at.ops_45days}</option></select></label>
               <label><span>{at.ops_defaultTax}</span><input name="defaultTaxLabel" defaultValue={state.settings.defaultTaxLabel} /></label>
-              <label><span>{at.ops_autoBackup}</span><select name="autoBackup" defaultValue={state.settings.autoBackup}><option value="Bəli">{at.yes}</option><option value="Xeyr">{at.no}</option></select></label>
-              <label><span>{at.ops_stockWarning}</span><select name="stockWarning" defaultValue={state.settings.stockWarning}><option value="Bəli">{at.yes}</option><option value="Xeyr">{at.no}</option></select></label>
+<label><span>{at.ops_stockWarning}</span><select name="stockWarning" defaultValue={state.settings.stockWarning}><option value="Bəli">{at.yes}</option><option value="Xeyr">{at.no}</option></select></label>
               <label><span>{at.ops_negativeStock}</span><select name="negativeStock" defaultValue={state.settings.negativeStock}><option value="Xeyr">{at.no}</option><option value="Bəli">{at.yes}</option></select></label>
             </section>
             <div className="ops-footer">
-              <button className="primary-btn" type="submit" onClick={saveSettings}>{at.settings_save}</button>
-              <span>{at.ops_saveHint}</span>
+              {paramsSaved ? (
+                <>
+                  <span className="ops-saved-msg">✓ Parametrlər saxlandı</span>
+                  <button className="ghost-btn" type="button" onClick={() => setParamsSaved(false)}>Dəyişiklik et</button>
+                </>
+              ) : (
+                <>
+                  <button className="primary-btn" type="submit">{at.settings_save}</button>
+                  <span>{at.ops_saveHint}</span>
+                </>
+              )}
             </div>
           </form>
         </div>
@@ -19386,10 +19347,7 @@ function renderSettings() {
               ) : null}
               <section className="panel subscription-current-card">
                 <div className="panel-head">
-                  <div>
-                    <h3>{at.sub_currentPlan}</h3>
-                    <p className="panel-copy">{at.sub_currentPlanDesc}</p>
-                  </div>
+                  <h3>{at.sub_currentPlan}</h3>
                   <span>{backendSubscription?.plan?.name || currentPlan.name}</span>
                 </div>
                 <div className="summary-grid compact">
@@ -19433,7 +19391,6 @@ function renderSettings() {
                       <span>{plan.name || plan.code}</span>
                       <strong>{priceDisplay}</strong>
                       {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
-                      <p>{plan.code}</p>
                       <small>{durationDisplay}</small>
                       <small>{at.sub_opLimit}: {operationLimitDisplay}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={async () => {
@@ -19692,7 +19649,7 @@ function renderSettings() {
   const visibleNav = getAccessibleNavItems(currentUser);
   const pageTitle = activeModule ? MODULES[activeModule].title : (at.nav[activeSection] || visibleNav.find((item) => item.id === activeSection)?.label || at.nav.home);
   const activeCompanyName = state.settings.companyName || (currentUser ? getProfileDisplayName(currentUser) : "");
-  const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
+  const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "hrm" ? <Suspense fallback={<div style={{padding:32}}>HRM yüklənir...</div>}><HrmModule backendSession={backendSession} updateBackendSession={updateBackendSession} /></Suspense> : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
   const standaloneLegalRoute = getStandaloneLegalRouteInfo();
   const standaloneLegalSlugMatched = COMPLIANCE_LEGAL_PAGES.some((page) => page.id === standaloneLegalRoute.slug);
   function getSupportContextLabel() {
