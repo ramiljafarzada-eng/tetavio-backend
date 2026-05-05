@@ -1,43 +1,28 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createTransport } from 'nodemailer';
-import type { Transporter } from 'nodemailer';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: Transporter | null = null;
+  private apiKey: string | null = null;
   private from = 'noreply@tetavio.com';
   private frontendUrl = 'https://www.tetavio.com';
 
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit(): void {
-    const host = this.config.get<string>('EMAIL_HOST');
-    const user = this.config.get<string>('EMAIL_USER');
-    const pass = this.config.get<string>('EMAIL_PASS');
-    const port = Number(this.config.get<string>('EMAIL_PORT', '587')) || 587;
-
+    this.apiKey = this.config.get<string>('RESEND_API_KEY') || null;
     this.from = this.config.get<string>('EMAIL_FROM', 'noreply@tetavio.com');
     this.frontendUrl = (
       this.config.get<string>('FRONTEND_PRODUCTION_URL', 'https://www.tetavio.com')
     ).replace(/\/$/, '');
 
-    if (!host || !user || !pass) {
-      this.logger.warn(
-        'Email service disabled: EMAIL_HOST, EMAIL_USER, and EMAIL_PASS must be set. Emails will not be sent.',
-      );
+    if (!this.apiKey) {
+      this.logger.warn('Email service disabled: RESEND_API_KEY is not set. Emails will not be sent.');
       return;
     }
 
-    this.transporter = createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-
-    this.logger.log(`Email service ready (${host}:${port})`);
+    this.logger.log('Email service ready (Resend HTTP API)');
   }
 
   async sendVerificationEmail(to: string, rawToken: string): Promise<void> {
@@ -91,6 +76,34 @@ export class EmailService implements OnModuleInit {
     );
   }
 
+  private async dispatch(to: string, subject: string, html: string): Promise<void> {
+    if (!this.apiKey) {
+      this.logger.warn(`Email skipped (${this.maskEmail(to)}): service not configured`);
+      return;
+    }
+
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from: this.from, to, subject, html }),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        this.logger.error(`Email failed → ${this.maskEmail(to)} | "${subject}" | ${res.status}: ${err}`);
+        return;
+      }
+
+      this.logger.log(`Email sent → ${this.maskEmail(to)} | "${subject}"`);
+    } catch (err) {
+      this.logger.error(`Email failed → ${this.maskEmail(to)} | "${subject}" | ${err instanceof Error ? err.message : 'unknown error'}`);
+    }
+  }
+
   private async dispatchWithAttachment(
     to: string,
     subject: string,
@@ -98,43 +111,36 @@ export class EmailService implements OnModuleInit {
     attachmentBuffer: Buffer,
     attachmentFilename: string,
   ): Promise<void> {
-    if (!this.transporter) {
+    if (!this.apiKey) {
       this.logger.warn(`Email skipped (${this.maskEmail(to)}): service not configured`);
       return;
     }
 
     try {
-      await this.transporter.sendMail({
-        from: this.from,
-        to,
-        subject,
-        html,
-        attachments: [{ filename: attachmentFilename, content: attachmentBuffer, contentType: 'application/pdf' }],
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: this.from,
+          to,
+          subject,
+          html,
+          attachments: [{ filename: attachmentFilename, content: attachmentBuffer.toString('base64') }],
+        }),
       });
+
+      if (!res.ok) {
+        const err = await res.text();
+        this.logger.error(`Email failed → ${this.maskEmail(to)} | "${subject}" | ${res.status}: ${err}`);
+        return;
+      }
+
       this.logger.log(`Email sent → ${this.maskEmail(to)} | "${subject}"`);
     } catch (err) {
-      this.logger.error(
-        `Email failed → ${this.maskEmail(to)} | "${subject}" | ${err instanceof Error ? err.message : 'unknown error'}`,
-      );
-      // Do not rethrow — email failure must not break the caller flow
-    }
-  }
-
-  private async dispatch(to: string, subject: string, html: string): Promise<void> {
-    if (!this.transporter) {
-      this.logger.warn(`Email skipped (${this.maskEmail(to)}): service not configured`);
-      return;
-    }
-
-    try {
-      await this.transporter.sendMail({ from: this.from, to, subject, html });
-      this.logger.log(`Email sent → ${this.maskEmail(to)} | "${subject}"`);
-    } catch (err) {
-      // Log safely — never expose tokens or credentials in error output
-      this.logger.error(
-        `Email failed → ${this.maskEmail(to)} | "${subject}" | ${err instanceof Error ? err.message : 'unknown error'}`,
-      );
-      // Do not rethrow — email failure must not break the auth flow
+      this.logger.error(`Email failed → ${this.maskEmail(to)} | "${subject}" | ${err instanceof Error ? err.message : 'unknown error'}`);
     }
   }
 
