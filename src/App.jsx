@@ -15166,7 +15166,7 @@ function renderItemsCatalog() {
     event.preventDefault();
     const email = String(authDraft.email || "").trim().toLowerCase();
     const taxId = String(authDraft.taxId || "").trim();
-    if (!authDraft.fullName || !email || !authDraft.password || !taxId) {
+    if (!authDraft.fullName || !email || !authDraft.password || !taxId || !authDraft.companyName || !authDraft.mobilePhone) {
       setSignUpError("Qeydiyyat üçün bütün sahələri doldurun.");
       return;
     }
@@ -15788,33 +15788,33 @@ function renderItemsCatalog() {
             ) : booksView === "signup" ? (
               <form className="lp-form" onSubmit={submitSignUp}>
                 <div className="lp-form-field">
-                  <label>{t.fFullName}</label>
+                  <label>{t.fFullName}<span className="lp-req">*</span></label>
                   <input value={authDraft.fullName} onChange={(e) => setAuthDraft((c) => ({ ...c, fullName: e.target.value }))} placeholder={t.fFullName} required />
                 </div>
                 <div className="lp-form-2col">
                   <div className="lp-form-field">
-                    <label>{t.fEntityType}</label>
+                    <label>{t.fEntityType}<span className="lp-req">*</span></label>
                     <select value={authDraft.entityType} onChange={(e) => setAuthDraft((c) => ({ ...c, entityType: e.target.value }))}>
                       <option value="Fiziki şəxs">{t.fEntityIndiv}</option>
                       <option value="Hüquqi şəxs">{t.fEntityLegal}</option>
                     </select>
                   </div>
                   <div className="lp-form-field">
-                    <label>{t.fTaxId}</label>
+                    <label>{t.fTaxId}<span className="lp-req">*</span></label>
                     <input value={authDraft.taxId} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAuthDraft((c) => ({ ...c, taxId: v })); }} inputMode="numeric" maxLength={10} placeholder="0000000000" required />
                   </div>
                 </div>
                 <div className="lp-form-field">
-                  <label>{authDraft.entityType === "Fiziki şəxs" ? t.fOwnerName : t.fCompanyName}</label>
+                  <label>{authDraft.entityType === "Fiziki şəxs" ? t.fOwnerName : t.fCompanyName}<span className="lp-req">*</span></label>
                   <input value={authDraft.companyName} onChange={(e) => setAuthDraft((c) => ({ ...c, companyName: e.target.value }))} required />
                 </div>
                 <div className="lp-form-2col">
                   <div className="lp-form-field">
-                    <label>{t.fPhone}</label>
+                    <label>{t.fPhone}<span className="lp-req">*</span></label>
                     <input value={authDraft.mobilePhone} onChange={(e) => setAuthDraft((c) => ({ ...c, mobilePhone: e.target.value }))} placeholder="+994..." required />
                   </div>
                   <div className="lp-form-field">
-                    <label>{t.fPlan}</label>
+                    <label>{t.fPlan}<span className="lp-req">*</span></label>
                     <div className="lp-plan-choice" role="radiogroup" aria-label={t.fPlan}>
                       <button
                         type="button"
@@ -15836,11 +15836,11 @@ function renderItemsCatalog() {
                   </div>
                 </div>
                 <div className="lp-form-field">
-                  <label>{t.fEmail}</label>
+                  <label>{t.fEmail}<span className="lp-req">*</span></label>
                   <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
                 </div>
                 <div className="lp-form-field lp-password-field">
-                  <label>{t.fPassword}</label>
+                  <label>{t.fPassword}<span className="lp-req">*</span></label>
                   <div className="lp-pass-input-wrap">
                     <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
@@ -16137,33 +16137,33 @@ function renderItemsCatalog() {
             ) : booksView === "signup" ? (
               <form className="lp-form" onSubmit={submitSignUp}>
                 <div className="lp-form-field">
-                  <label>{t.fFullName}</label>
+                  <label>{t.fFullName}<span className="lp-req">*</span></label>
                   <input value={authDraft.fullName} onChange={(e) => setAuthDraft((c) => ({ ...c, fullName: e.target.value }))} placeholder={t.fFullName} required />
                 </div>
                 <div className="lp-form-2col">
                   <div className="lp-form-field">
-                    <label>{t.fEntityType}</label>
+                    <label>{t.fEntityType}<span className="lp-req">*</span></label>
                     <select value={authDraft.entityType} onChange={(e) => setAuthDraft((c) => ({ ...c, entityType: e.target.value }))}>
                       <option value="Fiziki şəxs">{t.fEntityIndiv}</option>
                       <option value="Hüquqi şəxs">{t.fEntityLegal}</option>
                     </select>
                   </div>
                   <div className="lp-form-field">
-                    <label>{t.fTaxId}</label>
+                    <label>{t.fTaxId}<span className="lp-req">*</span></label>
                     <input value={authDraft.taxId} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAuthDraft((c) => ({ ...c, taxId: v })); }} inputMode="numeric" maxLength={10} placeholder="0000000000" required />
                   </div>
                 </div>
                 <div className="lp-form-field">
-                  <label>{authDraft.entityType === "Fiziki şəxs" ? t.fOwnerName : t.fCompanyName}</label>
+                  <label>{authDraft.entityType === "Fiziki şəxs" ? t.fOwnerName : t.fCompanyName}<span className="lp-req">*</span></label>
                   <input value={authDraft.companyName} onChange={(e) => setAuthDraft((c) => ({ ...c, companyName: e.target.value }))} required />
                 </div>
                 <div className="lp-form-2col">
                   <div className="lp-form-field">
-                    <label>{t.fPhone}</label>
+                    <label>{t.fPhone}<span className="lp-req">*</span></label>
                     <input value={authDraft.mobilePhone} onChange={(e) => setAuthDraft((c) => ({ ...c, mobilePhone: e.target.value }))} placeholder="+994..." required />
                   </div>
                   <div className="lp-form-field">
-                    <label>{t.fPlan}</label>
+                    <label>{t.fPlan}<span className="lp-req">*</span></label>
                     <div className="lp-plan-choice" role="radiogroup" aria-label={t.fPlan}>
                       <button
                         type="button"
@@ -16185,11 +16185,11 @@ function renderItemsCatalog() {
                   </div>
                 </div>
                 <div className="lp-form-field">
-                  <label>{t.fEmail}</label>
+                  <label>{t.fEmail}<span className="lp-req">*</span></label>
                   <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
                 </div>
                 <div className="lp-form-field lp-password-field">
-                  <label>{t.fPassword}</label>
+                  <label>{t.fPassword}<span className="lp-req">*</span></label>
                   <div className="lp-pass-input-wrap">
                     <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
