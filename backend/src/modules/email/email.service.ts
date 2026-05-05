@@ -77,7 +77,7 @@ export class EmailService implements OnModuleInit {
   }
 
   async sendPasswordResetEmail(to: string, rawToken: string): Promise<void> {
-    const link = `${this.frontendUrl}?resetToken=${encodeURIComponent(rawToken)}`;
+    const link = `${this.frontendUrl}/accounting/reset?token=${encodeURIComponent(rawToken)}`;
     await this.dispatch(
       to,
       'Reset your Tetavio password',

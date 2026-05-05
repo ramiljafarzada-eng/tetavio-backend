@@ -2581,7 +2581,10 @@ function MainApp() {
   const [forgotDraft, setForgotDraft] = useState({ email: "" });
   const [resetDraft, setResetDraft] = useState({ password: "", confirmPassword: "" });
   const [resetRequests, setResetRequests] = useState([]);
-  const [activeResetToken, setActiveResetToken] = useState("");
+  const [activeResetToken, setActiveResetToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token") || "";
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
   const [booksNotice, setBooksNotice] = useState("");
@@ -4267,6 +4270,12 @@ function MainApp() {
         setPendingPaymentReturn(null);
       });
   }, [pendingPaymentReturn, backendSession?.accessToken]);
+
+  useEffect(() => {
+    if (!activeResetToken) return;
+    const cleanUrl = `${window.location.pathname}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }, []);
 
   useEffect(() => {
     syncCustomersFromBackend(backendSession).catch(() => {
@@ -15255,8 +15264,16 @@ function renderItemsCatalog() {
 
   async function submitResetPassword(event) {
     event.preventDefault();
+    if (resetDraft.password !== resetDraft.confirmPassword) {
+      setBooksNotice("Şifrələr uyğun gəlmir. Zəhmət olmasa yenidən yoxlayın.");
+      return;
+    }
+    if (!activeResetToken) {
+      setBooksNotice("Bərpa linki etibarsızdır. Zəhmət olmasa yenidən şifrə bərpası tələb edin.");
+      return;
+    }
     try {
-      await apiConfirmPasswordReset(resetToken, resetDraft.password);
+      await apiConfirmPasswordReset(activeResetToken, resetDraft.password);
       setResetDraft({ password: "", confirmPassword: "" });
       setActiveResetToken("");
       setBooksNotice("Şifrə uğurla yeniləndi. İndi yeni şifrə ilə daxil ola bilərsiniz.");

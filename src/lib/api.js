@@ -172,7 +172,7 @@ export function apiRequestPasswordReset(email) {
 export function apiConfirmPasswordReset(token, password) {
   return apiRequest("/auth/password-reset/confirm", {
     method: "POST",
-    body: JSON.stringify({ token, password }),
+    body: JSON.stringify({ token, newPassword: password }),
   });
 }
 
