@@ -2652,7 +2652,6 @@ function MainApp() {
     try {
       if (session) {
         window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-        // Sync bills after login
         syncBillsFromBackend(session);
       } else {
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -4782,7 +4781,9 @@ function MainApp() {
 
   function getCurrentPlan(user = currentUser) {
     if (backendSubscription?.plan?.code) {
-      const mappedLegacyPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[String(backendSubscription.plan.code).toUpperCase()];
+      const rawCode = String(backendSubscription.plan.code).toUpperCase();
+      const normalizedCode = rawCode === "FREE_BASIC" ? "FREE" : rawCode;
+      const mappedLegacyPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[normalizedCode];
       if (mappedLegacyPlanId) {
         return getPlanById(mappedLegacyPlanId);
       }
@@ -4793,7 +4794,7 @@ function MainApp() {
         monthlyPrice: Number(backendSubscription.plan.priceMinor || 0) / 100,
         annualMonthlyPrice: Number(backendSubscription.plan.priceMinor || 0) / 100,
         currency: backendSubscription.plan.currency || "AZN",
-        operationLimit: Number.MAX_SAFE_INTEGER,
+        operationLimit: null,
         durationDays: 30,
         summaryKey: "sub_freeSummary",
         signupOnly: false,
@@ -4848,7 +4849,7 @@ function MainApp() {
     const ownerEmail = getAccountOwnerEmail(user);
     const ownerUser = ownerEmail === user.email ? user : authUsers.find((entry) => entry.email === ownerEmail);
     const plan = getCurrentPlan(user);
-    if (plan.operationLimit === null) return true; // unlimited (free trial active or paid plan)
+    if (plan.operationLimit === null) return true;
     return Number(ownerUser?.operationsUsed || 0) < Number(plan.operationLimit || 0);
   }
 
@@ -19281,7 +19282,7 @@ function renderSettings() {
                     <h3>{at.sub_currentPlan}</h3>
                     <p className="panel-copy">{at.sub_currentPlanDesc}</p>
                   </div>
-                  <span>{currentPlan.name}</span>
+                  <span>{backendSubscription?.plan?.name || currentPlan.name}</span>
                 </div>
                 <div className="summary-grid compact">
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
@@ -19311,11 +19312,6 @@ function renderSettings() {
                   const planIsFree = ["FREE", "FREE_BASIC"].includes(String(plan.code || "").toUpperCase()) || Number(plan.priceMinor || 0) <= 0;
                   const isCurrentBackendPlan = currentBackendPlanCode && String(currentBackendPlanCode) === String(plan.code);
                   const fePlan = SUBSCRIPTION_PLANS.find((p) => BACKEND_PLAN_CODE_BY_LEGACY_PLAN_ID[p.id] === plan.code);
-                  const priceLabel = planIsFree
-                    ? at.sub_free
-                    : subscriptionBillingCycle === "annual"
-                      ? `${((fePlan?.annualMonthlyPrice || 0) * 12).toFixed(2)} ${fePlan?.currency || "USD"} / il`
-                      : `${(fePlan?.monthlyPrice || 0).toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
                   const annualPrice = planIsFree ? 0 : (fePlan?.annualMonthlyPrice || 0) * 12;
                   const annualMonthlyPrice = planIsFree ? 0 : fePlan?.annualMonthlyPrice || 0;
                   const monthlyPrice = planIsFree ? 0 : fePlan?.monthlyPrice || 0;

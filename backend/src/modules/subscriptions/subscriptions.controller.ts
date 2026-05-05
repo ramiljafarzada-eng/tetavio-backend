@@ -39,6 +39,12 @@ export class SubscriptionsController {
     return this.subscriptionsService.downgrade(user, dto);
   }
 
+  @Post('switch-to-demo')
+  @ApiOperation({ summary: 'Switch from free plan to 14-day demo plan' })
+  switchToDemo(@CurrentUser() user: JwtPayload) {
+    return this.subscriptionsService.switchToDemo(user);
+  }
+
   @Post('cancel-scheduled-change')
   @ApiOperation({ summary: 'Cancel scheduled downgrade/change' })
   cancelScheduledChange(@CurrentUser() user: JwtPayload) {

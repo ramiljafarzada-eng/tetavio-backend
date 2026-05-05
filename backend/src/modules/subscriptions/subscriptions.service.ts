@@ -10,7 +10,7 @@ import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { DowngradeSubscriptionDto } from './dto/downgrade-subscription.dto';
 import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
-import { DEFAULT_OPERATION_LIMIT, FREE_TRIAL_DAYS, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
+import { DEFAULT_OPERATION_LIMIT, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
 
 @Injectable()
 export class SubscriptionsService {
@@ -48,7 +48,6 @@ export class SubscriptionsService {
     const planCode = subscription.plan.code;
     const isFreePlan = planCode === 'FREE';
 
-    // For FREE plan: unlimited operations, access gated by trial expiry
     const operationLimit = isFreePlan ? null : (PLAN_OPERATION_LIMITS[planCode] ?? DEFAULT_OPERATION_LIMIT);
 
     const [invoices, bills, journals] = await Promise.all([
@@ -59,7 +58,6 @@ export class SubscriptionsService {
 
     const operationsUsed = invoices + bills + journals;
 
-    // Trial metadata (only relevant for FREE plan)
     const trialExpiresAt = isFreePlan ? subscription.currentPeriodEnd : null;
     const now = new Date();
     const isTrialExpired = isFreePlan && trialExpiresAt ? now > trialExpiresAt : false;
@@ -76,7 +74,6 @@ export class SubscriptionsService {
           where: { id: subscription.id },
           data: {
             planId: freePermanentPlan.id,
-            // Keep currentPeriodEnd so remaining trial days are preserved if user switches back
             scheduledPlanId: null,
             scheduledChangeAt: null,
             cancelAtPeriodEnd: false,
@@ -294,18 +291,22 @@ export class SubscriptionsService {
       throw new NotFoundException('Demo plan not found');
     }
 
-    // Use preserved currentPeriodEnd — never grant a fresh trial on switch-back
     const now = new Date();
     const savedTrialEnd = subscription.currentPeriodEnd;
-    if (!savedTrialEnd || savedTrialEnd <= now) {
+
+    // savedTrialEnd is null = first-time activation → grant 14 days
+    // savedTrialEnd is set and in the past = trial exhausted → block
+    if (savedTrialEnd !== null && savedTrialEnd <= now) {
       throw new BadRequestException('Demo müddəti tamamilə bitib. Davam etmək üçün ödənişli plana keçin.');
     }
+
+    const trialEnd = savedTrialEnd ?? new Date(now.getTime() + 1000 * 60 * 60 * 24 * 14);
 
     const updated = await this.prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         planId: demoPlan.id,
-        // currentPeriodEnd stays unchanged — resume from where it was paused
+        currentPeriodEnd: trialEnd,
         scheduledPlanId: null,
         scheduledChangeAt: null,
         cancelAtPeriodEnd: false,
@@ -342,7 +343,6 @@ export class SubscriptionsService {
       where: { id: subscription.id },
       data: {
         planId: freePlan.id,
-        // Keep currentPeriodEnd so remaining Demo days are preserved for switch-back
         scheduledPlanId: null,
         scheduledChangeAt: null,
         cancelAtPeriodEnd: false,

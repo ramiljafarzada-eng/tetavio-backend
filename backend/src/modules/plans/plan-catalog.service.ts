@@ -33,6 +33,28 @@ export class PlanCatalogService implements OnModuleInit {
       data: { isActive: false },
     });
 
+    // Migrate any subscriptions still on legacy inactive plans to FREE
+    const freePlan = await this.prisma.plan.findUnique({ where: { code: 'FREE' } });
+    if (freePlan) {
+      const legacyPlans = await this.prisma.plan.findMany({
+        where: { code: { in: [...LEGACY_INACTIVE_PLAN_CODES] } },
+        select: { id: true },
+      });
+      const legacyPlanIds = legacyPlans.map((p) => p.id);
+      if (legacyPlanIds.length > 0) {
+        await this.prisma.subscription.updateMany({
+          where: { planId: { in: legacyPlanIds } },
+          data: {
+            planId: freePlan.id,
+            currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
+            scheduledPlanId: null,
+            scheduledChangeAt: null,
+          },
+        });
+      }
+    }
+
     this.logger.log(`Canonical plan catalog synchronized (${CANONICAL_PLANS.length} plans).`);
   }
 }

@@ -1473,7 +1473,8 @@ button:disabled {
   gap: var(--space-lg);
   padding: var(--space-xl);
   border-radius: var(--radius-xl);
-  position: relative;
+  position: sticky;
+  top: var(--space-xl);
   overflow: visible;
   z-index: 40;
 }

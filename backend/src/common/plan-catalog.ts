@@ -26,7 +26,7 @@ export const CANONICAL_PLANS = [
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
-    sortOrder: 2,
+    sortOrder: 3,
   },
   {
     code: 'PROFESSIONAL',
@@ -35,7 +35,7 @@ export const CANONICAL_PLANS = [
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
-    sortOrder: 3,
+    sortOrder: 4,
   },
   {
     code: 'PREMIUM',
@@ -44,7 +44,7 @@ export const CANONICAL_PLANS = [
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
-    sortOrder: 4,
+    sortOrder: 5,
   },
   {
     code: 'ELITE',
@@ -53,7 +53,7 @@ export const CANONICAL_PLANS = [
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
-    sortOrder: 5,
+    sortOrder: 6,
   },
   {
     code: 'ULTIMATE',
@@ -62,7 +62,7 @@ export const CANONICAL_PLANS = [
     currency: 'USD',
     interval: PlanInterval.MONTH,
     isActive: true,
-    sortOrder: 6,
+    sortOrder: 7,
   },
 ] as const;
 
