@@ -3,9 +3,9 @@ import {
   hrmCancelLeave,
   hrmCreateLeaveRequest,
   hrmHrApproveLeave,
-  hrmLeaveBalances,
   hrmListLeaveRequests,
   hrmManagerApproveLeave,
+  hrmMyLeaveBalances,
   hrmRejectLeave,
 } from './hrm.api.js';
 
@@ -103,7 +103,7 @@ export default function LeaveDashboard() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([hrmListLeaveRequests(), hrmLeaveBalances()])
+    Promise.all([hrmListLeaveRequests(), hrmMyLeaveBalances()])
       .then(([reqs, bals]) => { setRequests(reqs); setBalances(bals); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));

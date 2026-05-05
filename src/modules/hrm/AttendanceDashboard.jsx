@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { hrmCheckIn, hrmCheckOut, hrmManualAttendance, hrmMonthlyReport } from './hrm.api.js';
+import { hrmCheckIn, hrmCheckOut, hrmListAttendance, hrmManualAttendance } from './hrm.api.js';
 
 const STATUS_LABEL = {
   PRESENT: 'İşdə',
@@ -29,7 +29,6 @@ function ManualModal({ onClose, onSaved }) {
   const [form, setForm] = useState({ employeeId: '', date: '', checkIn: '', checkOut: '', note: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const submit = async (e) => {
@@ -95,11 +94,41 @@ function ManualModal({ onClose, onSaved }) {
   );
 }
 
+function buildSummary(logs) {
+  const byEmp = {};
+  logs.forEach((log) => {
+    const id = log.employeeId;
+    if (!byEmp[id]) {
+      byEmp[id] = {
+        employee: log.employee,
+        logs: [],
+        presentDays: 0,
+        lateDays: 0,
+        leaveDays: 0,
+        absentDays: 0,
+        totalWorkedMinutes: 0,
+      };
+    }
+    const e = byEmp[id];
+    e.logs.push(log);
+    if (log.status === 'PRESENT') e.presentDays++;
+    else if (log.status === 'LATE') { e.presentDays++; e.lateDays++; }
+    else if (log.status === 'ON_LEAVE') e.leaveDays++;
+    else if (log.status === 'ABSENT') e.absentDays++;
+    e.totalWorkedMinutes += log.workedMinutes || 0;
+  });
+  return Object.values(byEmp).map((e) => ({
+    ...e,
+    avgWorkedMinutes: e.logs.length > 0 ? Math.round(e.totalWorkedMinutes / e.logs.length) : 0,
+    lastStatus: e.logs[e.logs.length - 1]?.status,
+  }));
+}
+
 export default function AttendanceDashboard() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [report, setReport] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showManual, setShowManual] = useState(false);
@@ -109,8 +138,11 @@ export default function AttendanceDashboard() {
   const load = () => {
     setLoading(true);
     setError('');
-    hrmMonthlyReport(year, month)
-      .then(setReport)
+    const dateFrom = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    hrmListAttendance({ dateFrom, dateTo })
+      .then((logs) => setRows(buildSummary(logs)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
@@ -121,7 +153,7 @@ export default function AttendanceDashboard() {
     setActionBusy('in');
     setActionMsg('');
     try {
-      await hrmCheckIn();
+      await hrmCheckIn({});
       setActionMsg('Giriş qeyd edildi.');
       load();
     } catch (e) {
@@ -135,7 +167,7 @@ export default function AttendanceDashboard() {
     setActionBusy('out');
     setActionMsg('');
     try {
-      await hrmCheckOut();
+      await hrmCheckOut({});
       setActionMsg('Çıxış qeyd edildi.');
       load();
     } catch (e) {
@@ -194,41 +226,38 @@ export default function AttendanceDashboard() {
             <thead>
               <tr>
                 <th>İşçi</th>
-                <th>İş günləri</th>
                 <th>İşdə oldu</th>
                 <th>Gecikdi</th>
                 <th>Məzuniyyət</th>
+                <th>Yox idi</th>
                 <th>Orta iş saatı</th>
-                <th>Status (son)</th>
+                <th>Son status</th>
               </tr>
             </thead>
             <tbody>
-              {report.length === 0 && (
-                <tr><td colSpan={7} className="hrm-empty">Məlumat tapılmadı</td></tr>
+              {rows.length === 0 && (
+                <tr><td colSpan={7} className="hrm-empty">Bu ay üçün davamiyyət məlumatı yoxdur</td></tr>
               )}
-              {report.map((row) => {
-                const lastLog = row.logs?.[row.logs.length - 1];
-                return (
-                  <tr key={row.employee.id}>
-                    <td>
-                      {row.employee.firstName} {row.employee.lastName}
-                      <div className="hrm-sub">{row.employee.employeeCode}</div>
-                    </td>
-                    <td>{row.workdays}</td>
-                    <td>{row.presentDays}</td>
-                    <td>{row.lateDays}</td>
-                    <td>{row.leaveDays}</td>
-                    <td>{fmtMin(row.avgWorkedMinutes)}</td>
-                    <td>
-                      {lastLog ? (
-                        <span className="hrm-badge" style={{ background: STATUS_COLOR[lastLog.status] }}>
-                          {STATUS_LABEL[lastLog.status]}
-                        </span>
-                      ) : '—'}
-                    </td>
-                  </tr>
-                );
-              })}
+              {rows.map((row) => (
+                <tr key={row.employee?.id}>
+                  <td>
+                    {row.employee?.firstName} {row.employee?.lastName}
+                    <div className="hrm-sub">{row.employee?.employeeCode}</div>
+                  </td>
+                  <td>{row.presentDays}</td>
+                  <td>{row.lateDays}</td>
+                  <td>{row.leaveDays}</td>
+                  <td>{row.absentDays}</td>
+                  <td>{fmtMin(row.avgWorkedMinutes)}</td>
+                  <td>
+                    {row.lastStatus ? (
+                      <span className="hrm-badge" style={{ background: STATUS_COLOR[row.lastStatus] }}>
+                        {STATUS_LABEL[row.lastStatus]}
+                      </span>
+                    ) : '—'}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

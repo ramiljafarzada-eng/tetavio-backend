@@ -107,6 +107,9 @@ export const hrmRejectLeave = (id, rejectionReason) =>
 export const hrmCancelLeave = (id) =>
   hrmRequest(`/hrm/leave-requests/${id}/cancel`, { method: 'PATCH' });
 
+export const hrmMyLeaveBalances = () =>
+  hrmRequest('/hrm/leave-requests/my-balances');
+
 export const hrmLeaveBalances = (employeeId) =>
   hrmRequest(`/hrm/leave-requests/balances/${employeeId}`);
 

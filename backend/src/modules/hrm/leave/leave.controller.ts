@@ -44,6 +44,12 @@ export class LeaveController {
     return this.service.findAll(user, req);
   }
 
+  @Get('my-balances')
+  @HrmScopes('SELF_ONLY', 'DEPT_ONLY', 'ACCOUNT_ALL')
+  myBalances(@CurrentUser() user: JwtPayload) {
+    return this.service.getMyBalances(user);
+  }
+
   @Get('balances/:employeeId')
   @HrmScopes('SELF_ONLY', 'DEPT_ONLY', 'ACCOUNT_ALL')
   balances(

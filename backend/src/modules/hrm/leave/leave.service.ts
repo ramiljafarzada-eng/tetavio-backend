@@ -324,6 +324,17 @@ export class LeaveService {
     });
   }
 
+  async getMyBalances(user: JwtPayload) {
+    const emp = await this.prisma.employee.findFirst({
+      where: { accountId: user.accountId, userId: user.sub, deletedAt: null },
+    });
+    if (!emp) return [];
+    const year = new Date().getFullYear();
+    return this.prisma.leaveBalance.findMany({
+      where: { accountId: user.accountId, employeeId: emp.id, year },
+    });
+  }
+
   private async findRequestOwned(id: string, accountId: string) {
     const req = await this.prisma.leaveRequest.findFirst({
       where: { id, accountId },
