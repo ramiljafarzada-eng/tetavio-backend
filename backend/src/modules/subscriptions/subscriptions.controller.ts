@@ -57,9 +57,4 @@ export class SubscriptionsController {
     return this.subscriptionsService.switchToFree(user);
   }
 
-  @Post('switch-to-demo')
-  @ApiOperation({ summary: 'Switch subscription to Demo plan with fresh 14-day trial' })
-  switchToDemo(@CurrentUser() user: JwtPayload) {
-    return this.subscriptionsService.switchToDemo(user);
-  }
 }
