@@ -15786,7 +15786,7 @@ function renderItemsCatalog() {
               </form>
 
             ) : booksView === "signup" ? (
-              <form className="lp-form" onSubmit={submitSignUp}>
+              <form className="lp-form" onSubmit={submitSignUp} autoComplete="off">
                 <div className="lp-form-field">
                   <label>{t.fFullName}<span className="lp-req">*</span></label>
                   <input value={authDraft.fullName} onChange={(e) => setAuthDraft((c) => ({ ...c, fullName: e.target.value }))} placeholder={t.fFullName} required />
@@ -15837,12 +15837,12 @@ function renderItemsCatalog() {
                 </div>
                 <div className="lp-form-field">
                   <label>{t.fEmail}<span className="lp-req">*</span></label>
-                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
+                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" autoComplete="new-email" required />
                 </div>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}<span className="lp-req">*</span></label>
                   <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} autoComplete="new-password" required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
@@ -16135,7 +16135,7 @@ function renderItemsCatalog() {
               </form>
 
             ) : booksView === "signup" ? (
-              <form className="lp-form" onSubmit={submitSignUp}>
+              <form className="lp-form" onSubmit={submitSignUp} autoComplete="off">
                 <div className="lp-form-field">
                   <label>{t.fFullName}<span className="lp-req">*</span></label>
                   <input value={authDraft.fullName} onChange={(e) => setAuthDraft((c) => ({ ...c, fullName: e.target.value }))} placeholder={t.fFullName} required />
@@ -16186,12 +16186,12 @@ function renderItemsCatalog() {
                 </div>
                 <div className="lp-form-field">
                   <label>{t.fEmail}<span className="lp-req">*</span></label>
-                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" required />
+                  <input type="email" value={authDraft.email} onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))} placeholder="email@example.com" autoComplete="new-email" required />
                 </div>
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}<span className="lp-req">*</span></label>
                   <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} autoComplete="new-password" required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
