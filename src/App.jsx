@@ -2416,6 +2416,8 @@ function MainApp() {
   const restoreInputRef = useRef(null);
   const landingAuthRef = useRef(null);
   const [activeProduct, setActiveProduct] = useState(() => {
+    const qp = new URLSearchParams(window.location.search);
+    if (qp.get("resetToken")) return "booksLanding";
     const route = getLocationRoute();
     if (!route || route === "hub" || route === "homepage") return "hub";
     if (route === "landing" || route.startsWith("landing/") || route === "accounting" || route.startsWith("accounting/")) return "booksLanding";
@@ -2481,6 +2483,8 @@ function MainApp() {
   const [paymentStatusDraft, setPaymentStatusDraft] = useState("SUCCESS");
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [booksView, setBooksView] = useState(() => {
+    const qp = new URLSearchParams(window.location.search);
+    if (qp.get("resetToken")) return "reset";
     return getBooksLandingRouteDetails().initialBooksView;
   });
   const [internalGateError, setInternalGateError] = useState("");
@@ -2585,7 +2589,7 @@ function MainApp() {
   const [resetRequests, setResetRequests] = useState([]);
   const [activeResetToken, setActiveResetToken] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("token") || "";
+    return params.get("resetToken") || params.get("token") || "";
   });
   const [showPassword, setShowPassword] = useState(false);
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
