@@ -1,11 +1,17 @@
 import { useEffect, useReducer } from 'react';
 import EmployeeForm from './EmployeeForm.jsx';
 import EmployeeList from './EmployeeList.jsx';
+import DepartmentList from './DepartmentList.jsx';
+import AttendanceDashboard from './AttendanceDashboard.jsx';
+import LeaveDashboard from './LeaveDashboard.jsx';
 import PayrollDashboard from './PayrollDashboard.jsx';
 import { initHrmApi } from './hrm.api.js';
 
 const VIEWS = [
   { id: 'employees', label: 'İşçilər' },
+  { id: 'departments', label: 'Şöbələr' },
+  { id: 'attendance', label: 'Davamiyyət' },
+  { id: 'leave', label: 'Məzuniyyət' },
   { id: 'payroll', label: 'Əməkhaqqı' },
 ];
 
@@ -14,7 +20,6 @@ function reducer(state, action) {
     case 'SET_VIEW': return { ...state, view: action.payload, editEmployee: null };
     case 'EDIT_EMPLOYEE': return { ...state, view: 'employee-form', editEmployee: action.payload };
     case 'NEW_EMPLOYEE': return { ...state, view: 'employee-form', editEmployee: null };
-    case 'BACK': return { ...state, view: state.prevView || 'employees', editEmployee: null };
     default: return state;
   }
 }
@@ -23,7 +28,6 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
   const [state, dispatch] = useReducer(reducer, {
     view: 'employees',
     editEmployee: null,
-    prevView: 'employees',
   });
 
   useEffect(() => {
@@ -34,7 +38,7 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
   }, [backendSession?.accessToken]);
 
   const handleSaved = () => dispatch({ type: 'SET_VIEW', payload: 'employees' });
-  const handleBack = () => dispatch({ type: 'SET_VIEW', payload: state.prevView || 'employees' });
+  const handleBack = () => dispatch({ type: 'SET_VIEW', payload: 'employees' });
 
   return (
     <div className="hrm-module">
@@ -52,7 +56,7 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
       </div>
 
       <div className="hrm-content">
-        {(state.view === 'employees') && (
+        {state.view === 'employees' && (
           <EmployeeList
             onEdit={(emp) => dispatch({ type: 'EDIT_EMPLOYEE', payload: emp })}
             onNew={() => dispatch({ type: 'NEW_EMPLOYEE' })}
@@ -67,6 +71,9 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
           />
         )}
 
+        {state.view === 'departments' && <DepartmentList />}
+        {state.view === 'attendance' && <AttendanceDashboard />}
+        {state.view === 'leave' && <LeaveDashboard />}
         {state.view === 'payroll' && <PayrollDashboard />}
       </div>
     </div>
