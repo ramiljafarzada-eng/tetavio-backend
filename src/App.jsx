@@ -14870,6 +14870,9 @@ function renderItemsCatalog() {
                         <strong>{activeCompanyName || currentUser.fullName}</strong>
                         <small>{currentUser.email}</small>
                       </div>
+                      <button className="profile-open-app-btn" type="button" onClick={() => { setProfileMenuOpen(false); setActiveProduct("books"); }}>
+                        Mühasibat proqramını aç
+                      </button>
                       {(currentUser.role === "super_admin" || !isInternalUser(currentUser)) ? (
                         <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}>
                           {at.menuPlan}
