@@ -1475,7 +1475,7 @@ function getModules(at) {
   };
 }
 
-const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "goods", "incomingGoodsServices"], accountant: ["operationsJournal", "manualJournals", "chartOfAccounts"], reports: ["trialBalance", "accountCard", "financialPositionReport", "profitLossReport", "cashFlowReport", "equityChangesReport", "receivables", "payables", "arAging"] };
+const OVERVIEWS = { sales: ["customers", "invoices"], purchases: ["vendors", "goods", "incomingGoodsServices"], accountant: ["operationsJournal", "manualJournals", "chartOfAccounts"], reports: ["trialBalance", "accountCard", "financialPositionReport", "profitLossReport", "cashFlowReport", "equityChangesReport", "receivables", "payables"] };
 const STATUS = { "Ödənilib": "status-paid", "Göndərilib": "status-sent", Qaralama: "status-draft", "Qəbul edilib": "status-paid", Gecikib: "status-overdue", "Açıq": "status-draft", "Bağlanıb": "status-paid", "Tətbiq edilib": "status-sent", Aktiv: "status-paid", Passiv: "status-draft", "Qismən ödənilib": "status-sent" };
 const ITEM_MOVEMENT_TYPES = ["Alış", "Satış"];
 const PURCHASE_TAX_OPTIONS = ["ƏDV 18%", "ƏDV 0%", "ƏDV-dən azad"];
@@ -15165,8 +15165,13 @@ function renderItemsCatalog() {
   async function submitSignUp(event) {
     event.preventDefault();
     const email = String(authDraft.email || "").trim().toLowerCase();
-    if (!authDraft.fullName || !email || !authDraft.password) {
+    const taxId = String(authDraft.taxId || "").trim();
+    if (!authDraft.fullName || !email || !authDraft.password || !taxId) {
       setSignUpError("Qeydiyyat üçün bütün sahələri doldurun.");
+      return;
+    }
+    if (!/^\d{10}$/.test(taxId)) {
+      setSignUpError("VÖEN düz 10 rəqəmdən ibarət olmalıdır.");
       return;
     }
 
@@ -15178,6 +15183,7 @@ function renderItemsCatalog() {
         fullName: authDraft.fullName,
         email,
         password: authDraft.password,
+        taxId,
         signupPlan: signupPlanCode,
       });
 
@@ -15198,7 +15204,14 @@ function renderItemsCatalog() {
 
       syncBackendSubscription(session).catch(() => {});
     } catch (error) {
-      setSignUpError(error?.message || "Qeydiyyat alınmadı. Yenidən yoxlayın.");
+      const msg = error?.message || "";
+      if (msg.includes("email is already in use") || msg.includes("email")) {
+        setSignUpError("Bu e-poçt artıq qeydiyyatdan keçib.");
+      } else if (msg.includes("VÖEN")) {
+        setSignUpError(msg);
+      } else {
+        setSignUpError("Qeydiyyat alınmadı. Yenidən yoxlayın.");
+      }
     } finally {
       setSignUpLoading(false);
     }
@@ -15788,7 +15801,7 @@ function renderItemsCatalog() {
                   </div>
                   <div className="lp-form-field">
                     <label>{t.fTaxId}</label>
-                    <input value={authDraft.taxId} onChange={(e) => setAuthDraft((c) => ({ ...c, taxId: e.target.value }))} placeholder="0000000000" required />
+                    <input value={authDraft.taxId} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAuthDraft((c) => ({ ...c, taxId: v })); }} inputMode="numeric" maxLength={10} placeholder="0000000000" required />
                   </div>
                 </div>
                 <div className="lp-form-field">
@@ -16137,7 +16150,7 @@ function renderItemsCatalog() {
                   </div>
                   <div className="lp-form-field">
                     <label>{t.fTaxId}</label>
-                    <input value={authDraft.taxId} onChange={(e) => setAuthDraft((c) => ({ ...c, taxId: e.target.value }))} placeholder="0000000000" required />
+                    <input value={authDraft.taxId} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAuthDraft((c) => ({ ...c, taxId: v })); }} inputMode="numeric" maxLength={10} placeholder="0000000000" required />
                   </div>
                 </div>
                 <div className="lp-form-field">

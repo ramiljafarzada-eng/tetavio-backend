@@ -54,6 +54,13 @@ export class AuthService {
       throw new ConflictException('This email is already in use');
     }
 
+    const existingTaxId = await this.prisma.companyProfile.findFirst({
+      where: { taxId: dto.taxId },
+    });
+    if (existingTaxId) {
+      throw new ConflictException('Bu VÖEN artıq qeydiyyatdan keçib');
+    }
+
     const requestedPlanCode = String(dto.signupPlan || 'FREE_BASIC').toUpperCase();
     const signupPlanCode = requestedPlanCode === 'FREE' ? 'FREE' : 'FREE_BASIC';
     const selectedPlan = await this.prisma.plan.findUnique({ where: { code: signupPlanCode } });
@@ -80,6 +87,14 @@ export class AuthService {
           fullName: dto.fullName?.trim(),
           isEmailVerified: false,
           status: 'ACTIVE',
+        },
+      });
+
+      await tx.companyProfile.create({
+        data: {
+          accountId: account.id,
+          companyName: dto.fullName?.trim() || email,
+          taxId: dto.taxId,
         },
       });
 
