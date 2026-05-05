@@ -2612,6 +2612,8 @@ function MainApp() {
     };
   });
   const [signInStartedAt, setSignInStartedAt] = useState(null);
+  const [signUpLoading, setSignUpLoading] = useState(false);
+  const [signUpError, setSignUpError] = useState("");
   const [internalLoginStartedAt, setInternalLoginStartedAt] = useState(null);
   const [authProgressTick, setAuthProgressTick] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -15159,10 +15161,12 @@ function renderItemsCatalog() {
     event.preventDefault();
     const email = String(authDraft.email || "").trim().toLowerCase();
     if (!authDraft.fullName || !email || !authDraft.password) {
-      setBooksNotice("Qeydiyyat üçün bütün sahələri doldurun.");
+      setSignUpError("Qeydiyyat üçün bütün sahələri doldurun.");
       return;
     }
 
+    setSignUpError("");
+    setSignUpLoading(true);
     try {
       const signupPlanCode = toBackendPlanCode(authDraft.signupPlan || "free_basic");
       const response = await apiRegister({
@@ -15184,15 +15188,14 @@ function renderItemsCatalog() {
         setCurrentUser(optimisticUser);
       }
 
-      setBooksNotice(signupPlanCode === "FREE" ? "Qeydiyyat tamamlandı və Demo plan aktiv edildi." : "Qeydiyyat tamamlandı və Free plan aktiv edildi.");
       setActiveProduct("books");
       setBooksView("home");
 
-      syncBackendSubscription(session).catch((error) => {
-        setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
-      });
+      syncBackendSubscription(session).catch(() => {});
     } catch (error) {
-      setBooksNotice(error?.message || "Qeydiyyat alınmadı. Yenidən yoxlayın.");
+      setSignUpError(error?.message || "Qeydiyyat alınmadı. Yenidən yoxlayın.");
+    } finally {
+      setSignUpLoading(false);
     }
   }
 
@@ -15822,11 +15825,12 @@ function renderItemsCatalog() {
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}</label>
                   <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fSignupBtn}</button>
+                {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
               </form>
 
             ) : booksView === "forgot" ? (
@@ -16159,11 +16163,12 @@ function renderItemsCatalog() {
                 <div className="lp-form-field lp-password-field">
                   <label>{t.fPassword}</label>
                   <div className="lp-pass-input-wrap">
-                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))} placeholder={showPassword ? "password" : "••••••••"} required />
+                    <input type={showPassword ? "text" : "password"} value={authDraft.password} onChange={(e) => { setAuthDraft((c) => ({ ...c, password: e.target.value })); setSignUpError(""); }} placeholder={showPassword ? "password" : "••••••••"} required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
-                <button className="lp-submit-btn" type="submit">{t.fSignupBtn}</button>
+                {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
               </form>
 
             ) : booksView === "forgot" ? (
