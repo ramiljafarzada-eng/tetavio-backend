@@ -162,6 +162,20 @@ export function apiRegister(payload) {
   });
 }
 
+export function apiRequestEmailVerification(email) {
+  return apiRequest("/auth/verify-email/request", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function apiConfirmEmailVerification(token) {
+  return apiRequest("/auth/verify-email/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
 export function apiRequestPasswordReset(email) {
   return apiRequest("/auth/password-reset/request", {
     method: "POST",

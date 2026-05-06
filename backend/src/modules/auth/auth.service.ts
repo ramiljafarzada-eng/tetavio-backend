@@ -123,6 +123,16 @@ export class AuthService {
       meta,
     );
 
+    const rawVerifyToken = this.generateOpaqueToken();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: this.hashToken(rawVerifyToken),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+    });
+    this.emailService.sendVerificationEmail(user.email, rawVerifyToken).catch(() => {});
+
     return {
       user: {
         id: user.id,

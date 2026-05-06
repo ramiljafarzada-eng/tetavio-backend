@@ -66,6 +66,8 @@ import {
   apiMe,
   apiMockWebhook,
   apiRegister,
+  apiRequestEmailVerification,
+  apiConfirmEmailVerification,
   apiRequestPasswordReset,
   apiConfirmPasswordReset,
   apiCreateSupportThread,
@@ -2522,6 +2524,7 @@ function MainApp() {
   const [activeProduct, setActiveProduct] = useState(() => {
     const qp = new URLSearchParams(window.location.search);
     if (qp.get("resetToken")) return "booksLanding";
+    if (qp.get("verifyToken")) return "booksLanding";
     const route = getLocationRoute();
     if (!route || route === "hub" || route === "homepage") return "hub";
     if (route === "landing" || route.startsWith("landing/") || route === "accounting" || route.startsWith("accounting/")) return "booksLanding";
@@ -2589,6 +2592,7 @@ function MainApp() {
   const [booksView, setBooksView] = useState(() => {
     const qp = new URLSearchParams(window.location.search);
     if (qp.get("resetToken")) return "reset";
+    if (qp.get("verifyToken")) return "verify-email";
     return getBooksLandingRouteDetails().initialBooksView;
   });
   const [internalGateError, setInternalGateError] = useState("");
@@ -2696,6 +2700,16 @@ function MainApp() {
     const params = new URLSearchParams(window.location.search);
     return params.get("resetToken") || params.get("token") || "";
   });
+  const [activeVerifyToken, setActiveVerifyToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("verifyToken") || "";
+  });
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState("");
+  const [verifyEmailSuccess, setVerifyEmailSuccess] = useState(false);
+  const [verifyEmailError, setVerifyEmailError] = useState("");
+  const [verifyEmailResendCooldown, setVerifyEmailResendCooldown] = useState(0);
+  const [signUpRecaptcha, setSignUpRecaptcha] = useState("");
+  const signUpRecaptchaRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
   const [demoDraft, setDemoDraft] = useState({ companyName: "", fullName: "", email: "" });
   const [booksNotice, setBooksNotice] = useState("");
@@ -4398,10 +4412,23 @@ function MainApp() {
   }, [pendingPaymentReturn, backendSession?.accessToken]);
 
   useEffect(() => {
-    if (!activeResetToken) return;
+    if (!activeResetToken && !activeVerifyToken) return;
     const cleanUrl = `${window.location.pathname}`;
     window.history.replaceState({}, document.title, cleanUrl);
   }, []);
+
+  useEffect(() => {
+    if (!activeVerifyToken) return;
+    apiConfirmEmailVerification(activeVerifyToken)
+      .then(() => {
+        setVerifyEmailSuccess(true);
+        setActiveVerifyToken("");
+      })
+      .catch((err) => {
+        setVerifyEmailError(err?.message || "Doğrulama linki etibarsız və ya müddəti bitib.");
+        setActiveVerifyToken("");
+      });
+  }, [activeVerifyToken]);
 
   useEffect(() => {
     syncCustomersFromBackend(backendSession).catch(() => {
@@ -15300,6 +15327,10 @@ function renderItemsCatalog() {
       setSignUpError("VÖEN düz 10 rəqəmdən ibarət olmalıdır.");
       return;
     }
+    if (RECAPTCHA_ENABLED && !signUpRecaptcha) {
+      setSignUpError("Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.");
+      return;
+    }
 
     setSignUpError("");
     setSignUpLoading(true);
@@ -15319,14 +15350,15 @@ function renderItemsCatalog() {
       };
 
       const optimisticUser = buildOptimisticAuthUser(response, signupPlanCode);
-
       updateBackendSession(session);
       if (optimisticUser) {
         setCurrentUser(optimisticUser);
       }
 
-      setActiveProduct("books");
-      setBooksView("home");
+      setPendingVerificationEmail(email);
+      setVerifyEmailSuccess(false);
+      setVerifyEmailError("");
+      setBooksView("verify-email");
 
       syncBackendSubscription(session).catch(() => {});
     } catch (error) {
@@ -15338,9 +15370,28 @@ function renderItemsCatalog() {
       } else {
         setSignUpError("Qeydiyyat alınmadı. Yenidən yoxlayın.");
       }
+      setSignUpRecaptcha("");
+      signUpRecaptchaRef.current?.reset();
     } finally {
       setSignUpLoading(false);
     }
+  }
+
+  async function resendVerificationEmail() {
+    const email = pendingVerificationEmail || currentUser?.email || "";
+    if (!email) return;
+    setVerifyEmailResendCooldown(60);
+    try {
+      await apiRequestEmailVerification(email);
+    } catch {
+      // silently ignore — user sees the cooldown
+    }
+    let remaining = 59;
+    const interval = setInterval(() => {
+      setVerifyEmailResendCooldown(remaining);
+      remaining -= 1;
+      if (remaining < 0) clearInterval(interval);
+    }, 1000);
   }
 
   function submitDemoRequest(event) {
@@ -15983,9 +16034,70 @@ function renderItemsCatalog() {
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
+                {RECAPTCHA_ENABLED ? (
+                  <div className="lp-recaptcha-wrap">
+                    <ReCAPTCHA
+                      ref={signUpRecaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setSignUpRecaptcha(token || "")}
+                      onExpired={() => setSignUpRecaptcha("")}
+                      theme="dark"
+                    />
+                  </div>
+                ) : null}
                 {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
-                <button className="lp-submit-btn" type="submit" disabled={signUpLoading}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
               </form>
+
+            ) : booksView === "verify-email" ? (
+              verifyEmailSuccess ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✅</div>
+                    <p className="lp-form-title">Email doğrulandı!</p>
+                    <p className="lp-form-hint">E-poçt ünvanınız uğurla təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                  </div>
+                </div>
+              ) : verifyEmailError ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">❌</div>
+                    <p className="lp-form-title">Doğrulama uğursuz oldu</p>
+                    <p className="lp-form-hint">{verifyEmailError}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                  </div>
+                </div>
+              ) : activeVerifyToken ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon" style={{ fontSize: "2rem" }}>⏳</div>
+                    <p className="lp-form-title">Email doğrulanır...</p>
+                    <p className="lp-form-hint">Bir saniyə gözləyin.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✉️</div>
+                    <p className="lp-form-title">Email-inizi doğrulayın</p>
+                    <p className="lp-form-hint">
+                      Doğrulama linki <strong>{pendingVerificationEmail || currentUser?.email || "email-iniz"}</strong> ünvanına göndərildi.
+                      Emailinizi yoxlayın (spam qovluğuna da baxın).
+                    </p>
+                    <button
+                      className="lp-submit-btn"
+                      type="button"
+                      disabled={verifyEmailResendCooldown > 0}
+                      style={{ marginTop: "1.25rem" }}
+                      onClick={resendVerificationEmail}
+                    >
+                      {verifyEmailResendCooldown > 0 ? `Yenidən göndər (${verifyEmailResendCooldown}s)` : "Yenidən göndər"}
+                    </button>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                  </div>
+                </div>
+              )
 
             ) : booksView === "forgot" ? (
               forgotSent ? (
@@ -16343,9 +16455,70 @@ function renderItemsCatalog() {
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</button>
                   </div>
                 </div>
+                {RECAPTCHA_ENABLED ? (
+                  <div className="lp-recaptcha-wrap">
+                    <ReCAPTCHA
+                      ref={signUpRecaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setSignUpRecaptcha(token || "")}
+                      onExpired={() => setSignUpRecaptcha("")}
+                      theme="dark"
+                    />
+                  </div>
+                ) : null}
                 {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
-                <button className="lp-submit-btn" type="submit" disabled={signUpLoading}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
               </form>
+
+            ) : booksView === "verify-email" ? (
+              verifyEmailSuccess ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✅</div>
+                    <p className="lp-form-title">Email doğrulandı!</p>
+                    <p className="lp-form-hint">E-poçt ünvanınız uğurla təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                  </div>
+                </div>
+              ) : verifyEmailError ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">❌</div>
+                    <p className="lp-form-title">Doğrulama uğursuz oldu</p>
+                    <p className="lp-form-hint">{verifyEmailError}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                  </div>
+                </div>
+              ) : activeVerifyToken ? (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon" style={{ fontSize: "2rem" }}>⏳</div>
+                    <p className="lp-form-title">Email doğrulanır...</p>
+                    <p className="lp-form-hint">Bir saniyə gözləyin.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="lp-form">
+                  <div className="lp-forgot-sent">
+                    <div className="lp-forgot-sent-icon">✉️</div>
+                    <p className="lp-form-title">Email-inizi doğrulayın</p>
+                    <p className="lp-form-hint">
+                      Doğrulama linki <strong>{pendingVerificationEmail || currentUser?.email || "email-iniz"}</strong> ünvanına göndərildi.
+                      Emailinizi yoxlayın (spam qovluğuna da baxın).
+                    </p>
+                    <button
+                      className="lp-submit-btn"
+                      type="button"
+                      disabled={verifyEmailResendCooldown > 0}
+                      style={{ marginTop: "1.25rem" }}
+                      onClick={resendVerificationEmail}
+                    >
+                      {verifyEmailResendCooldown > 0 ? `Yenidən göndər (${verifyEmailResendCooldown}s)` : "Yenidən göndər"}
+                    </button>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                  </div>
+                </div>
+              )
 
             ) : booksView === "forgot" ? (
               forgotSent ? (
