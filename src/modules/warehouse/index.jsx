@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState } from 'react';
 import StockDashboard from './StockDashboard.jsx';
 import ProductList from './ProductList.jsx';
 import WarehouseList from './WarehouseList.jsx';
@@ -15,8 +15,34 @@ const NAV = [
   { key: 'purchase-orders', label: 'Satınalma' },
 ];
 
+class SectionErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="hrm-panel">
+          <div className="hrm-error">Xəta: {this.state.error.message}</div>
+          <button className="ghost-btn" style={{ marginTop: '1rem' }} onClick={() => this.setState({ error: null })}>
+            Yenidən cəhd et
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function WarehouseModule({ backendSession, updateBackendSession }) {
   const [section, setSection] = useState('stock');
+
+  // Set synchronously so child components can access the session immediately
+  window.__hrmSession = backendSession;
 
   useEffect(() => {
     window.__hrmSession = backendSession;
@@ -39,12 +65,14 @@ export default function WarehouseModule({ backendSession, updateBackendSession }
         </nav>
       </aside>
       <main className="hrm-main">
-        {section === 'stock' && <StockDashboard />}
-        {section === 'products' && <ProductList />}
-        {section === 'warehouses' && <WarehouseList />}
-        {section === 'categories' && <CategoryList />}
-        {section === 'movements' && <MovementList />}
-        {section === 'purchase-orders' && <PurchaseOrderList backendSession={backendSession} />}
+        <SectionErrorBoundary key={section}>
+          {section === 'stock' && <StockDashboard />}
+          {section === 'products' && <ProductList />}
+          {section === 'warehouses' && <WarehouseList />}
+          {section === 'categories' && <CategoryList />}
+          {section === 'movements' && <MovementList />}
+          {section === 'purchase-orders' && <PurchaseOrderList />}
+        </SectionErrorBoundary>
       </main>
     </div>
   );
