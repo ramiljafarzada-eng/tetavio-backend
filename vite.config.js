@@ -11,7 +11,8 @@ export default defineConfig({
   },
   preview: {
     port: 5175,
-    strictPort: true
+    strictPort: true,
+    historyApiFallback: true,
   },
   build: {
     rollupOptions: {

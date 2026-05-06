@@ -98,7 +98,7 @@ const NAV = [
   { id: "settings", label: "Tənzimləmələr" }
 ];
 
-const BOOKS_LANDING_AUTH_VIEWS = ["signin", "signup", "forgot", "reset", "demo"];
+const BOOKS_LANDING_AUTH_VIEWS = ["signin", "signup", "forgot", "reset", "demo", "verify-email"];
 const FUNNEL_PAGES = ["start", "demo", "pricing", "erp", "case-studies"];
 const COMPLIANCE_LEGAL_PAGES = [
   {
@@ -4767,7 +4767,7 @@ function MainApp() {
 
   useEffect(() => {
     if (activeProduct !== "booksLanding") return;
-    if (!["signin", "signup", "forgot", "reset", "demo"].includes(booksView)) return;
+    if (!BOOKS_LANDING_AUTH_VIEWS.includes(booksView)) return;
 
     const frameId = window.requestAnimationFrame(() => {
       landingAuthRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -4951,8 +4951,7 @@ function MainApp() {
   function getCurrentPlan(user = currentUser) {
     if (backendSubscription?.plan?.code) {
       const rawCode = String(backendSubscription.plan.code).toUpperCase();
-      const normalizedCode = rawCode === "FREE_BASIC" ? "FREE" : rawCode;
-      const mappedLegacyPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[normalizedCode];
+      const mappedLegacyPlanId = LEGACY_PLAN_ID_BY_BACKEND_PLAN_CODE[rawCode];
       if (mappedLegacyPlanId) {
         return getPlanById(mappedLegacyPlanId);
       }
