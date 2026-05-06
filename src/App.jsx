@@ -19408,13 +19408,21 @@ function renderSettings() {
                           return;
                         }
                         if (planIsFree && !isFreeBasic) {
+                          if (!backendSession?.accessToken) {
+                            setBooksNotice("Hesaba giriş tələb olunur. Zəhmət olmasa çıxıb yenidən daxil olun.");
+                            return;
+                          }
                           try {
                             await apiSwitchToDemo(updateBackendSession);
-                            await syncBackendSubscription();
+                            await syncBackendSubscription(backendSession);
                             setBooksNotice("Demo plana keçdiniz. Qalıq sınaq müddətiniz bərpa edildi.");
                           } catch (err) {
                             const msg = err?.message || "";
-                            setBooksNotice(msg.includes("bitib") ? "Demo müddətiniz tamamilə bitib. Ödənişli plana keçin." : "Keçid zamanı xəta baş verdi.");
+                            if (msg === "DEMO_EXPIRED") {
+                              setBooksNotice("Demo müddəti bitib. Davam etmək üçün ödənişli plan seçin.");
+                            } else {
+                              setBooksNotice(msg.includes("bitib") ? "Demo müddətiniz tamamilə bitib. Ödənişli plana keçin." : (msg || "Keçid zamanı xəta baş verdi."));
+                            }
                           }
                           return;
                         }
