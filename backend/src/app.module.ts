@@ -22,6 +22,7 @@ import { BillsModule } from './modules/bills/bills.module';
 import { BankingModule } from './modules/banking/banking.module';
 import { SupportModule } from './modules/support/support.module';
 import { HrmModule } from './modules/hrm/hrm.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { HrmModule } from './modules/hrm/hrm.module';
     BankingModule,
     SupportModule,
     HrmModule,
+    WarehouseModule,
   ],
   controllers: [AppController],
   providers: [

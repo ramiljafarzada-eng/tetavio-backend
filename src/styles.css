@@ -11429,3 +11429,55 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   0%       { left: -90%; }
   45%, 100% { left: 160%; }
 }
+
+/* ─── Warehouse Module ───────────────────────────────────────────────── */
+.w-sku { font-family: monospace; font-size: 0.82rem; background: #f0f4ff; color: #3b4fb8; padding: 2px 6px; border-radius: 4px; }
+.w-sku-small { font-family: monospace; font-size: 0.78rem; color: #7b8ab8; }
+.w-badge-inactive { font-size: 0.72rem; background: #fef2f2; color: #b91c1c; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+.w-badge-default { font-size: 0.72rem; background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+.w-qty-low { color: #b91c1c; font-weight: 700; }
+.w-qty-ok { color: #15803d; font-weight: 600; }
+.w-row-low { background: #fff5f5 !important; }
+.w-alert-bar { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 10px 16px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+
+/* Movement type badges */
+.w-type-badge { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+.w-type-in { background: #dcfce7; color: #15803d; }
+.w-type-out { background: #fee2e2; color: #b91c1c; }
+.w-type-transfer { background: #dbeafe; color: #1d4ed8; }
+.w-type-adj { background: #f3e8ff; color: #7c3aed; }
+
+/* PO status */
+.w-s-draft { background: #f3f4f6; color: #6b7280; }
+.w-s-sent { background: #dbeafe; color: #1d4ed8; }
+.w-s-partial { background: #fef3c7; color: #92400e; }
+.w-s-received { background: #dcfce7; color: #15803d; }
+.w-s-cancelled { background: #fee2e2; color: #b91c1c; }
+
+/* Warehouse cards */
+.w-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; padding: 0.5rem 0; }
+.w-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; }
+.w-card-default { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.w-card-head { display: flex; align-items: center; margin-bottom: 0.5rem; }
+.w-card-name { font-weight: 600; font-size: 1rem; }
+.w-card-detail { font-size: 0.85rem; color: #64748b; margin: 2px 0; }
+.w-card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* PO detail */
+.w-po-meta { display: flex; flex-wrap: wrap; gap: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.w-po-note { color: #64748b; font-style: italic; margin: -0.5rem 0 1rem; }
+.w-po-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+.w-receive-section { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 1rem 1.25rem; margin-top: 1rem; }
+.w-receive-section h4 { margin: 0 0 0.75rem; font-size: 0.95rem; color: #0369a1; }
+.w-po-item-row { align-items: flex-start; }
+
+/* Filters wrap */
+.w-filters-wrap { flex-wrap: wrap; }
+
+/* Inline form for categories */
+.hrm-inline-form { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+.hrm-inline-input { flex: 1; min-width: 180px; padding: 8px 12px; border: 1.5px solid #b8c9db; border-radius: 8px; font-size: 0.9rem; background: #fff; }
+.hrm-inline-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.hrm-inline-edit { display: flex; gap: 4px; align-items: center; }
+.hrm-inline-edit input { padding: 4px 8px; border: 1.5px solid #3b82f6; border-radius: 6px; font-size: 0.9rem; }
+

@@ -3,6 +3,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import logoSrc from "./assets/logo-icon.png";
 
 const HrmModule = lazy(() => import('./modules/hrm/index.jsx'));
+const WarehouseModule = lazy(() => import('./modules/warehouse/index.jsx'));
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 const RECAPTCHA_ENABLED = !import.meta.env.DEV;
@@ -90,6 +91,7 @@ const NAV = [
   { id: "banking", label: "Bank" },
   { id: "reports", label: "Hesabatlar" },
   { id: "hrm", label: "İnsan Resursları" },
+  { id: "warehouse", label: "Anbar" },
   { id: "documents", label: "Sənədlər" },
   { id: "settings", label: "Tənzimləmələr" }
 ];
@@ -19649,7 +19651,7 @@ function renderSettings() {
   const visibleNav = getAccessibleNavItems(currentUser);
   const pageTitle = activeModule ? MODULES[activeModule].title : (at.nav[activeSection] || visibleNav.find((item) => item.id === activeSection)?.label || at.nav.home);
   const activeCompanyName = state.settings.companyName || (currentUser ? getProfileDisplayName(currentUser) : "");
-  const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "hrm" ? <Suspense fallback={<div style={{padding:32}}>HRM yüklənir...</div>}><HrmModule backendSession={backendSession} updateBackendSession={updateBackendSession} /></Suspense> : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
+  const content = activeModule ? renderModule(activeModule) : activeSection === "home" ? renderHome() : OVERVIEWS[activeSection] ? renderOverview(activeSection) : activeSection === "banking" ? renderBanking() : activeSection === "reports" ? renderReports() : activeSection === "hrm" ? <Suspense fallback={<div style={{padding:32}}>HRM yüklənir...</div>}><HrmModule backendSession={backendSession} updateBackendSession={updateBackendSession} /></Suspense> : activeSection === "warehouse" ? <Suspense fallback={<div style={{padding:32}}>Anbar yüklənir...</div>}><WarehouseModule backendSession={backendSession} updateBackendSession={updateBackendSession} /></Suspense> : activeSection === "documents" ? renderDocuments() : activeSection === "settings" ? renderSettings() : null;
   const standaloneLegalRoute = getStandaloneLegalRouteInfo();
   const standaloneLegalSlugMatched = COMPLIANCE_LEGAL_PAGES.some((page) => page.id === standaloneLegalRoute.slug);
   function getSupportContextLabel() {
