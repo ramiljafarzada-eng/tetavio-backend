@@ -2181,7 +2181,7 @@ function PublicMarketingTopbar({
             <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>
           <div>
-            <strong>Tetavio</strong>
+            <strong>Tetavio<span className="erp-badge">ERP</span></strong>
             <span>{PUBLIC_MARKETING_TOPBAR_T[lang]?.platform || PUBLIC_MARKETING_TOPBAR_T.az.platform}</span>
           </div>
         </button>
@@ -13050,7 +13050,7 @@ function renderItemsCatalog() {
               <img src={logoSrc} alt="Tetavio" className="app-logo" />
             </div>
             <div>
-              <div className="iac-brand-name">Tetavio</div>
+              <div className="iac-brand-name">Tetavio<span className="erp-badge">ERP</span></div>
               <div className="iac-brand-env">Admin Console</div>
             </div>
           </a>
@@ -14019,7 +14019,7 @@ function renderItemsCatalog() {
           <div className="fn-topbar-inner">
             <button className="fn-brand" type="button" onClick={() => setActiveProduct("hub")}>
               <div className="fn-brand-icon"><img src={logoSrc} alt="Tetavio" className="app-logo" /></div>
-              <div className="fn-brand-copy"><strong>Tetavio</strong><span>{t.brandSub}</span></div>
+              <div className="fn-brand-copy"><strong>Tetavio<span className="erp-badge">ERP</span></strong><span>{t.brandSub}</span></div>
             </button>
             <nav className="fn-topbar-nav">
               {t.nav.map((item) => (
@@ -14953,7 +14953,7 @@ function renderItemsCatalog() {
                 <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div>
-                <strong>Tetavio</strong>
+                <strong>Tetavio<span className="erp-badge">ERP</span></strong>
                 <span>{t.platform}</span>
               </div>
             </button>
@@ -15819,7 +15819,7 @@ function renderItemsCatalog() {
                   <img src={logoSrc} alt="Tetavio" className="app-logo" />
                 </div>
                 <div className="lp-brand-copy">
-                  <strong>Tetavio</strong>
+                  <strong>Tetavio<span className="erp-badge">ERP</span></strong>
                   <span>{t.brandSub}</span>
                 </div>
               </button>
@@ -16071,7 +16071,7 @@ function renderItemsCatalog() {
                 <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div className="lp-brand-copy">
-                <strong>Tetavio</strong>
+                <strong>Tetavio<span className="erp-badge">ERP</span></strong>
                 <span>{t.brandSub}</span>
               </div>
             </button>
@@ -20069,7 +20069,7 @@ function renderSettings() {
                   <img src={logoSrc} alt="Tetavio" className="app-logo" />
                 </div>
                 <div className="lp-brand-copy">
-                  <strong>Tetavio</strong>
+                  <strong>Tetavio<span className="erp-badge">ERP</span></strong>
                   <span>Accounting Software</span>
                 </div>
               </div>
@@ -20099,7 +20099,7 @@ function renderSettings() {
                 <img src={logoSrc} alt="Tetavio" className="app-logo" />
               </div>
               <div className="lp-brand-copy">
-                <strong>Tetavio</strong>
+                <strong>Tetavio<span className="erp-badge">ERP</span></strong>
                 <span>Accounting Software</span>
               </div>
             </div>
@@ -20249,7 +20249,7 @@ function renderSettings() {
             <img src={logoSrc} alt="Tetavio" className="app-logo" />
           </div>
           <div className="lp-brand-copy">
-            <strong>Tetavio</strong>
+            <strong>Tetavio<span className="erp-badge">ERP</span></strong>
             <span>{at.brandSub}</span>
           </div>
         </button>

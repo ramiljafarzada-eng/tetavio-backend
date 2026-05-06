@@ -11377,3 +11377,46 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
   .hrm-form-row { grid-template-columns: 1fr; }
   .hrm-payroll-summary { grid-template-columns: 1fr; }
 }
+
+/* ── ERP Badge ───────────────────────────────────────────────────────────── */
+.erp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  padding: 2px 6px 2px 7px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a855f7 100%);
+  color: #fff;
+  margin-left: 7px;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+  top: -1px;
+  flex-shrink: 0;
+  box-shadow:
+    0 1px 8px rgba(124, 58, 237, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  line-height: 1;
+  user-select: none;
+}
+
+.erp-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -90%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: erp-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes erp-shimmer {
+  0%       { left: -90%; }
+  45%, 100% { left: 160%; }
+}
