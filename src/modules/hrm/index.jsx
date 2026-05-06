@@ -1,15 +1,19 @@
 import { useEffect, useReducer } from 'react';
+import AttendanceDashboard from './AttendanceDashboard.jsx';
+import DepartmentList from './DepartmentList.jsx';
 import EmployeeForm from './EmployeeForm.jsx';
 import EmployeeList from './EmployeeList.jsx';
-import DepartmentList from './DepartmentList.jsx';
-import AttendanceDashboard from './AttendanceDashboard.jsx';
 import LeaveDashboard from './LeaveDashboard.jsx';
 import PayrollDashboard from './PayrollDashboard.jsx';
+import PositionList from './PositionList.jsx';
+import WorkScheduleList from './WorkScheduleList.jsx';
 import { initHrmApi } from './hrm.api.js';
 
 const VIEWS = [
   { id: 'employees', label: 'İşçilər' },
   { id: 'departments', label: 'Şöbələr' },
+  { id: 'positions', label: 'Vəzifələr' },
+  { id: 'schedules', label: 'İş Cədvəlləri' },
   { id: 'attendance', label: 'Davamiyyət' },
   { id: 'leave', label: 'Məzuniyyət' },
   { id: 'payroll', label: 'Əməkhaqqı' },
@@ -62,7 +66,6 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
             onNew={() => dispatch({ type: 'NEW_EMPLOYEE' })}
           />
         )}
-
         {state.view === 'employee-form' && (
           <EmployeeForm
             employee={state.editEmployee}
@@ -70,8 +73,9 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
             onCancel={handleBack}
           />
         )}
-
         {state.view === 'departments' && <DepartmentList />}
+        {state.view === 'positions' && <PositionList />}
+        {state.view === 'schedules' && <WorkScheduleList />}
         {state.view === 'attendance' && <AttendanceDashboard />}
         {state.view === 'leave' && <LeaveDashboard />}
         {state.view === 'payroll' && <PayrollDashboard />}

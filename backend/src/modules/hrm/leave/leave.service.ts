@@ -335,6 +335,21 @@ export class LeaveService {
     });
   }
 
+  async upsertBalance(user: JwtPayload, dto: { employeeId: string; leaveType: string; allocated: number; year?: number }) {
+    const year = dto.year ?? new Date().getFullYear();
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: dto.employeeId, accountId: user.accountId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!emp) throw new NotFoundException('İşçi tapılmadı');
+
+    return this.prisma.leaveBalance.upsert({
+      where: { employeeId_leaveType_year: { employeeId: dto.employeeId, leaveType: dto.leaveType as any, year } },
+      create: { accountId: user.accountId, employeeId: dto.employeeId, leaveType: dto.leaveType as any, year, allocated: dto.allocated },
+      update: { allocated: dto.allocated },
+    });
+  }
+
   private async findRequestOwned(id: string, accountId: string) {
     const req = await this.prisma.leaveRequest.findFirst({
       where: { id, accountId },

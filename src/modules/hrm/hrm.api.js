@@ -66,6 +66,30 @@ export const hrmUpdateDepartment = (id, data) =>
 export const hrmDeleteDepartment = (id) =>
   hrmRequest(`/hrm/departments/${id}`, { method: 'DELETE' });
 
+// ─── Positions ───────────────────────────────────────────────────────────────
+export const hrmListPositions = () => hrmRequest('/hrm/positions');
+
+export const hrmCreatePosition = (data) =>
+  hrmRequest('/hrm/positions', { method: 'POST', body: JSON.stringify(data) });
+
+export const hrmUpdatePosition = (id, data) =>
+  hrmRequest(`/hrm/positions/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const hrmDeletePosition = (id) =>
+  hrmRequest(`/hrm/positions/${id}`, { method: 'DELETE' });
+
+// ─── Work Schedules ───────────────────────────────────────────────────────────
+export const hrmListSchedules = () => hrmRequest('/hrm/schedules');
+
+export const hrmCreateSchedule = (data) =>
+  hrmRequest('/hrm/schedules', { method: 'POST', body: JSON.stringify(data) });
+
+export const hrmUpdateSchedule = (id, data) =>
+  hrmRequest(`/hrm/schedules/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const hrmDeleteSchedule = (id) =>
+  hrmRequest(`/hrm/schedules/${id}`, { method: 'DELETE' });
+
 // ─── Attendance ───────────────────────────────────────────────────────────────
 export const hrmListAttendance = (query = {}) => {
   const params = new URLSearchParams();
@@ -112,6 +136,9 @@ export const hrmMyLeaveBalances = () =>
 
 export const hrmLeaveBalances = (employeeId) =>
   hrmRequest(`/hrm/leave-requests/balances/${employeeId}`);
+
+export const hrmUpsertLeaveBalance = (data) =>
+  hrmRequest('/hrm/leave-requests/balances', { method: 'POST', body: JSON.stringify(data) });
 
 // ─── Payroll ──────────────────────────────────────────────────────────────────
 export const hrmListPayrolls = () => hrmRequest('/hrm/payroll');

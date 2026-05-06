@@ -3,6 +3,7 @@ import {
   hrmApprovePayroll,
   hrmGetPayroll,
   hrmListPayrolls,
+  hrmListEmployees,
   hrmPayPayroll,
   hrmRunPayroll,
   hrmSeedAccounts,
@@ -69,6 +70,7 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [action, setAction] = useState('');
+  const [showPay, setShowPay] = useState(false);
 
   useEffect(() => {
     hrmGetPayroll(payroll.id)
@@ -85,6 +87,16 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
       onBack();
     } catch (e) { setError(e.message); }
     finally { setAction(''); }
+  };
+
+  const pay = async (bankAccountId) => {
+    setAction('pay');
+    try {
+      await hrmPayPayroll(payroll.id, bankAccountId);
+      onRefresh();
+      onBack();
+    } catch (e) { setError(e.message); }
+    finally { setAction(''); setShowPay(false); }
   };
 
   if (loading) return <div className="hrm-loading">Yüklənir...</div>;
@@ -167,15 +179,66 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
 
       {detail.status === 'DRAFT' && (
         <div className="hrm-form-footer">
-          <button
-            className="primary-btn"
-            onClick={approve}
-            disabled={action === 'approve'}
-          >
+          <button className="primary-btn" onClick={approve} disabled={!!action}>
             {action === 'approve' ? 'Təsdiq edilir...' : 'Təsdiqlə (Journal Entry yarat)'}
           </button>
         </div>
       )}
+
+      {detail.status === 'APPROVED' && (
+        <div className="hrm-form-footer">
+          <button className="primary-btn" onClick={() => setShowPay(true)} disabled={!!action}>
+            {action === 'pay' ? 'Ödənilir...' : 'Ödə (Bank çıxarışı yarat)'}
+          </button>
+        </div>
+      )}
+
+      {showPay && (
+        <PayModal
+          totalNetMinor={detail.totalNetMinor}
+          onPay={pay}
+          onClose={() => setShowPay(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PayModal({ totalNetMinor, onPay, onClose }) {
+  const [bankAccountId, setBankAccountId] = useState('');
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    hrmListEmployees({ status: 'ACTIVE' }).catch(() => []);
+    import('../../lib/api.js').then(({ apiFetch }) => {
+      apiFetch('/accounting/bank-accounts').then((r) => setAccounts(r || [])).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Əməkhaqqı Ödənişi</h3>
+        <p>Ümumi xalis ödəniş: <strong>{(totalNetMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼</strong></p>
+        {loading ? (
+          <div className="hrm-loading">Yüklənir...</div>
+        ) : (
+          <div className="hrm-field">
+            <label>Bank hesabı (isteğe bağlı)</label>
+            <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}>
+              <option value="">Seçin...</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.name} — {a.currency}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="hrm-modal-footer">
+          <button className="ghost-btn" onClick={onClose}>Ləğv</button>
+          <button className="primary-btn" onClick={() => onPay(bankAccountId || undefined)}>Ödə</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -50,6 +50,15 @@ export class LeaveController {
     return this.service.getMyBalances(user);
   }
 
+  @Post('balances')
+  @HrmScopes('ACCOUNT_ALL')
+  upsertBalance(
+    @Body() dto: { employeeId: string; leaveType: string; allocated: number; year?: number },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.upsertBalance(user, dto);
+  }
+
   @Get('balances/:employeeId')
   @HrmScopes('SELF_ONLY', 'DEPT_ONLY', 'ACCOUNT_ALL')
   balances(

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { hrmCreateDepartment, hrmDeleteDepartment, hrmListDepartments, hrmUpdateDepartment } from './hrm.api.js';
+import { hrmCreatePosition, hrmDeletePosition, hrmListPositions, hrmUpdatePosition } from './hrm.api.js';
 
-const EMPTY = { name: '', description: '' };
+const EMPTY = { title: '', level: 1 };
 
-export default function DepartmentList() {
-  const [departments, setDepartments] = useState([]);
+export default function PositionList() {
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(null); // null | 'new' | position object
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
@@ -15,8 +15,8 @@ export default function DepartmentList() {
 
   const load = () => {
     setLoading(true);
-    hrmListDepartments()
-      .then(setDepartments)
+    hrmListPositions()
+      .then(setPositions)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
@@ -24,7 +24,7 @@ export default function DepartmentList() {
   useEffect(() => { load(); }, []);
 
   const openNew = () => { setForm(EMPTY); setFormError(''); setModal('new'); };
-  const openEdit = (d) => { setForm({ name: d.name, description: d.description || '' }); setFormError(''); setModal(d); };
+  const openEdit = (p) => { setForm({ title: p.title, level: p.level }); setFormError(''); setModal(p); };
   const closeModal = () => setModal(null);
 
   const submit = async (e) => {
@@ -33,9 +33,9 @@ export default function DepartmentList() {
     setFormError('');
     try {
       if (modal === 'new') {
-        await hrmCreateDepartment(form);
+        await hrmCreatePosition(form);
       } else {
-        await hrmUpdateDepartment(modal.id, form);
+        await hrmUpdatePosition(modal.id, form);
       }
       closeModal();
       load();
@@ -49,7 +49,7 @@ export default function DepartmentList() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await hrmDeleteDepartment(deleteId);
+      await hrmDeletePosition(deleteId);
       setDeleteId(null);
       load();
     } catch (err) {
@@ -61,8 +61,8 @@ export default function DepartmentList() {
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">Şöbələr</h2>
-        <button className="primary-btn" onClick={openNew}>+ Yeni şöbə</button>
+        <h2 className="hrm-panel-title">Vəzifələr</h2>
+        <button className="primary-btn" onClick={openNew}>+ Yeni vəzifə</button>
       </div>
 
       {error && <div className="hrm-error">{error}</div>}
@@ -74,28 +74,25 @@ export default function DepartmentList() {
           <table className="hrm-table">
             <thead>
               <tr>
-                <th>Ad</th>
-                <th>Menecer</th>
+                <th>Vəzifə adı</th>
+                <th>Səviyyə</th>
                 <th>İşçi sayı</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {departments.length === 0 && (
-                <tr><td colSpan={4} className="hrm-empty">Şöbə tapılmadı</td></tr>
+              {positions.length === 0 && (
+                <tr><td colSpan={4} className="hrm-empty">Vəzifə tapılmadı</td></tr>
               )}
-              {departments.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <strong>{d.name}</strong>
-                    {d.parent && <div className="hrm-sub">{d.parent.name}</div>}
-                  </td>
-                  <td>{d.manager ? `${d.manager.firstName} ${d.manager.lastName}` : '—'}</td>
-                  <td>{d._count?.employees ?? 0}</td>
+              {positions.map((p) => (
+                <tr key={p.id}>
+                  <td><strong>{p.title}</strong></td>
+                  <td>{p.level}</td>
+                  <td>{p._count?.employees ?? 0}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost-btn" onClick={() => openEdit(d)}>Düzəlt</button>
-                      <button className="ghost-btn" onClick={() => setDeleteId(d.id)}>Sil</button>
+                      <button className="ghost-btn" onClick={() => openEdit(p)}>Düzəlt</button>
+                      <button className="ghost-btn" onClick={() => setDeleteId(p.id)}>Sil</button>
                     </div>
                   </td>
                 </tr>
@@ -108,23 +105,23 @@ export default function DepartmentList() {
       {modal !== null && (
         <div className="hrm-modal-backdrop" onClick={closeModal}>
           <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'new' ? 'Yeni şöbə' : 'Şöbəni düzəlt'}</h3>
+            <h3>{modal === 'new' ? 'Yeni vəzifə' : 'Vəzifəni düzəlt'}</h3>
             {formError && <div className="hrm-error">{formError}</div>}
             <form onSubmit={submit}>
               <div className="hrm-field">
                 <label>Ad *</label>
                 <input
-                  value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  value={form.title}
+                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   required maxLength={100}
                 />
               </div>
               <div className="hrm-field">
-                <label>Təsvir</label>
+                <label>Səviyyə</label>
                 <input
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  maxLength={255}
+                  type="number" min={1} max={20}
+                  value={form.level}
+                  onChange={(e) => setForm((p) => ({ ...p, level: Number(e.target.value) }))}
                 />
               </div>
               <div className="hrm-modal-footer">
@@ -141,8 +138,8 @@ export default function DepartmentList() {
       {deleteId && (
         <div className="hrm-modal-backdrop" onClick={() => setDeleteId(null)}>
           <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Şöbəni sil</h3>
-            <p>Bu şöbəni silmək istədiyinizə əminsiniz? Şöbədə işçilər varsa silinmir.</p>
+            <h3>Vəzifəni sil</h3>
+            <p>Bu vəzifəni silmək istədiyinizə əminsiniz?</p>
             <div className="hrm-modal-footer">
               <button className="ghost-btn" onClick={() => setDeleteId(null)}>Ləğv</button>
               <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>Sil</button>

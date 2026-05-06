@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
-import { hrmCreateEmployee, hrmListDepartments, hrmUpdateEmployee } from './hrm.api.js';
+import {
+  hrmCreateEmployee,
+  hrmListDepartments,
+  hrmListEmployees,
+  hrmListPositions,
+  hrmListSchedules,
+  hrmUpdateEmployee,
+} from './hrm.api.js';
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
   dateOfBirth: '', taxId: '', bankAccount: '',
-  departmentId: '', positionId: '', managerId: '',
+  departmentId: '', positionId: '', workScheduleId: '', managerId: '',
   employmentType: 'FULL_TIME', startDate: '',
   baseSalaryMinor: '', hrmRole: 'EMPLOYEE',
 };
@@ -17,20 +24,34 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
     dateOfBirth: employee.dateOfBirth ? employee.dateOfBirth.slice(0, 10) : '',
     startDate: employee.startDate ? employee.startDate.slice(0, 10) : '',
     departmentId: employee.departmentId || '',
+    positionId: employee.positionId || '',
+    workScheduleId: employee.workScheduleId || '',
+    managerId: employee.managerId || '',
   } : EMPTY);
+
   const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    hrmListDepartments().then(setDepartments).catch(() => {});
+    Promise.all([
+      hrmListDepartments().catch(() => []),
+      hrmListPositions().catch(() => []),
+      hrmListSchedules().catch(() => []),
+      hrmListEmployees({ status: 'ACTIVE' }).catch(() => []),
+    ]).then(([depts, pos, scheds, emps]) => {
+      setDepartments(depts);
+      setPositions(pos);
+      setSchedules(scheds);
+      setEmployees(emps.filter((e) => !employee || e.id !== employee.id));
+    });
   }, []);
 
   const set = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
-  const f = (name) => ({
-    value: form[name],
-    onChange: (e) => set(name, e.target.value),
-  });
+  const f = (name) => ({ value: form[name], onChange: (e) => set(name, e.target.value) });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,6 +64,7 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
         dateOfBirth: form.dateOfBirth || undefined,
         departmentId: form.departmentId || undefined,
         positionId: form.positionId || undefined,
+        workScheduleId: form.workScheduleId || undefined,
         managerId: form.managerId || undefined,
         email: form.email || undefined,
         phone: form.phone || undefined,
@@ -124,6 +146,37 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
               </select>
             </div>
             <div className="hrm-field">
+              <label>Vəzifə</label>
+              <select {...f('positionId')}>
+                <option value="">Seçin...</option>
+                {positions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>İş cədvəli</label>
+              <select {...f('workScheduleId')}>
+                <option value="">Seçin...</option>
+                {schedules.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}{s.isDefault ? ' (default)' : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div className="hrm-field">
+              <label>Rəhbər</label>
+              <select {...f('managerId')}>
+                <option value="">Seçin...</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeCode})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
               <label>HRM Rolu</label>
               <select {...f('hrmRole')}>
                 <option value="EMPLOYEE">İşçi</option>
@@ -131,8 +184,6 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
                 <option value="HR">HR</option>
               </select>
             </div>
-          </div>
-          <div className="hrm-form-row">
             <div className="hrm-field">
               <label>İstihdam növü *</label>
               <select {...f('employmentType')} required>
@@ -142,28 +193,21 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
                 <option value="INTERN">Təcrübəçi</option>
               </select>
             </div>
+          </div>
+          <div className="hrm-form-row">
             <div className="hrm-field">
               <label>Başlama tarixi *</label>
               <input type="date" {...f('startDate')} required />
             </div>
-          </div>
-          <div className="hrm-field">
-            <label>Əsas maaş (AZN) *</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              {...f('baseSalaryMinor')}
-              required
-              placeholder="0.00"
-            />
+            <div className="hrm-field">
+              <label>Əsas maaş (AZN) *</label>
+              <input type="number" step="0.01" min="0" {...f('baseSalaryMinor')} required placeholder="0.00" />
+            </div>
           </div>
         </div>
 
         <div className="hrm-form-footer">
-          <button type="button" className="ghost-btn" onClick={onCancel} disabled={saving}>
-            Ləğv et
-          </button>
+          <button type="button" className="ghost-btn" onClick={onCancel} disabled={saving}>Ləğv et</button>
           <button type="submit" className="primary-btn" disabled={saving}>
             {saving ? 'Saxlanılır...' : 'Saxla'}
           </button>
