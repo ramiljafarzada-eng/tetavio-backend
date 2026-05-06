@@ -25,6 +25,11 @@ async function wRequest(path, options = {}) {
     const msg = payload?.message || `HTTP ${response.status}`;
     throw new Error(Array.isArray(msg) ? msg.join('; ') : msg);
   }
+
+  // Unwrap global ResponseInterceptor envelope: { success: true, data: ... }
+  if (payload && typeof payload === 'object' && payload.success === true && 'data' in payload) {
+    return payload.data;
+  }
   return payload;
 }
 
