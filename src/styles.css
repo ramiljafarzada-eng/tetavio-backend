@@ -11233,10 +11233,10 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
 
 .hrm-select {
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1.5px solid #b8c9db;
   border-radius: 8px;
   font-size: 0.88rem;
-  background: var(--surface);
+  background: #fff;
   color: var(--text);
 }
 
@@ -11321,14 +11321,23 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
 .hrm-field label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
 .hrm-field input, .hrm-field select, .hrm-field textarea {
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1.5px solid #b8c9db;
   border-radius: 8px;
   font-size: 0.88rem;
-  background: var(--surface);
+  background: #fff;
   color: var(--text);
-  transition: border 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+  box-sizing: border-box;
 }
-.hrm-field input:focus, .hrm-field select:focus { border-color: #3b82f6; outline: none; }
+.hrm-field input:hover, .hrm-field select:hover, .hrm-field textarea:hover {
+  border-color: #8eaac4;
+}
+.hrm-field input:focus, .hrm-field select:focus, .hrm-field textarea:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
 .hrm-form-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
 
 /* Modal */
