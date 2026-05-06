@@ -245,6 +245,10 @@ export class InsightsService {
       const d = dueDateOf(inv);
       return d !== null && d > in7Days && d <= in30Days;
     });
+    const laterInvoices = openInvoices.filter((inv) => {
+      const d = dueDateOf(inv);
+      return d !== null && d > in30Days;
+    });
     const expectedNext30Invoices = openInvoices.filter((inv) => {
       const d = dueDateOf(inv);
       return d !== null && d >= now && d <= in30Days;
@@ -285,7 +289,7 @@ export class InsightsService {
       { label: 'Overdue', amountMinor: overdueAmountMinor, invoiceCount: overdueInvoices.length },
       { label: 'Due next 7 days', amountMinor: dueSoonAmountMinor, invoiceCount: dueSoonInvoices.length },
       { label: 'Due 8–30 days', amountMinor: sumMinor(due8to30Invoices), invoiceCount: due8to30Invoices.length },
-      { label: 'Paid last 30 days', amountMinor: paidLast30DaysMinor, invoiceCount: 0 },
+      { label: 'Later', amountMinor: sumMinor(laterInvoices), invoiceCount: laterInvoices.length },
     ];
 
     const recommendations: {
