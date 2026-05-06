@@ -816,6 +816,8 @@ model Employee {
   dateOfBirth      DateTime?      @map("date_of_birth") @db.Date
   taxId            String?        @map("tax_id")
   ssn              String?        @map("ssn")
+  idCardNumber     String?        @map("id_card_number")
+  education        String?        @map("education")
   bankAccount      String?        @map("bank_account")
   departmentId     String?        @map("department_id") @db.Uuid
   department       Department?    @relation("DeptEmployees", fields: [departmentId], references: [id], onDelete: SetNull)

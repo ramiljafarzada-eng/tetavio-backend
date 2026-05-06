@@ -10,7 +10,7 @@ import {
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
-  dateOfBirth: '', taxId: '', ssn: '', bankAccount: '',
+  dateOfBirth: '', taxId: '', ssn: '', idCardNumber: '', education: '', bankAccount: '',
   departmentId: '', positionId: '', workScheduleId: '', managerId: '',
   employmentType: 'FULL_TIME', startDate: '',
   baseSalaryMinor: '', hrmRole: 'EMPLOYEE',
@@ -28,6 +28,8 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
     workScheduleId: employee.workScheduleId || '',
     managerId: employee.managerId || '',
     ssn: employee.ssn || '',
+    idCardNumber: employee.idCardNumber || '',
+    education: employee.education || '',
   } : EMPTY);
 
   const [departments, setDepartments] = useState([]);
@@ -71,6 +73,8 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
         phone: form.phone || undefined,
         taxId: form.taxId || undefined,
         ssn: form.ssn || undefined,
+        idCardNumber: form.idCardNumber || undefined,
+        education: form.education || undefined,
         bankAccount: form.bankAccount || undefined,
       };
 
@@ -133,6 +137,24 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
             <div className="hrm-field">
               <label>SSN</label>
               <input {...f('ssn')} maxLength={50} placeholder="XXX-XX-XXXX" />
+            </div>
+            <div className="hrm-field">
+              <label>Şəxsiyyət vəsiqəsinin seriya və nömrəsi</label>
+              <input {...f('idCardNumber')} maxLength={50} placeholder="AA 1234567" />
+            </div>
+          </div>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>Təhsil</label>
+              <select {...f('education')}>
+                <option value="">Seçin...</option>
+                <option value="Orta">Orta</option>
+                <option value="Orta ixtisas">Orta ixtisas</option>
+                <option value="Ali (bakalavr)">Ali (bakalavr)</option>
+                <option value="Ali (magistr)">Ali (magistr)</option>
+                <option value="Doktorantura">Doktorantura</option>
+                <option value="Digər">Digər</option>
+              </select>
             </div>
             <div className="hrm-field">
               <label>Bank hesabı (IBAN)</label>

@@ -66,6 +66,20 @@ export class CreateEmployeeDto {
   @MaxLength(50)
   ssn?: string;
 
+  @ApiPropertyOptional({ example: 'AA 1234567' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(50)
+  idCardNumber?: string;
+
+  @ApiPropertyOptional({ example: 'Ali təhsil' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(200)
+  education?: string;
+
   @ApiPropertyOptional({ example: 'AZ12 NABZ 0000 0000 0000 0000 01' })
   @IsOptional()
   @Transform(({ value }) => trimString(value))
