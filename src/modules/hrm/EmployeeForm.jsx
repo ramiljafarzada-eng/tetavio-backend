@@ -10,7 +10,7 @@ import {
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
-  dateOfBirth: '', taxId: '', bankAccount: '',
+  dateOfBirth: '', taxId: '', ssn: '', bankAccount: '',
   departmentId: '', positionId: '', workScheduleId: '', managerId: '',
   employmentType: 'FULL_TIME', startDate: '',
   baseSalaryMinor: '', hrmRole: 'EMPLOYEE',
@@ -27,6 +27,7 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
     positionId: employee.positionId || '',
     workScheduleId: employee.workScheduleId || '',
     managerId: employee.managerId || '',
+    ssn: employee.ssn || '',
   } : EMPTY);
 
   const [departments, setDepartments] = useState([]);
@@ -69,6 +70,7 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
         email: form.email || undefined,
         phone: form.phone || undefined,
         taxId: form.taxId || undefined,
+        ssn: form.ssn || undefined,
         bankAccount: form.bankAccount || undefined,
       };
 
@@ -123,13 +125,19 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
               <input type="date" {...f('dateOfBirth')} />
             </div>
             <div className="hrm-field">
-              <label>VÖEN</label>
-              <input {...f('taxId')} maxLength={50} />
+              <label>FİN</label>
+              <input {...f('taxId')} maxLength={50} placeholder="AA1234567" />
             </div>
           </div>
-          <div className="hrm-field">
-            <label>Bank hesabı (IBAN)</label>
-            <input {...f('bankAccount')} maxLength={100} />
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>SSN</label>
+              <input {...f('ssn')} maxLength={50} placeholder="XXX-XX-XXXX" />
+            </div>
+            <div className="hrm-field">
+              <label>Bank hesabı (IBAN)</label>
+              <input {...f('bankAccount')} maxLength={100} />
+            </div>
           </div>
         </div>
 

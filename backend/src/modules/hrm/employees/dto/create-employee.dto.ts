@@ -52,12 +52,19 @@ export class CreateEmployeeDto {
   @IsDateString()
   dateOfBirth?: string;
 
-  @ApiPropertyOptional({ example: '1234567890' })
+  @ApiPropertyOptional({ example: 'AA1234567' })
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(50)
   taxId?: string;
+
+  @ApiPropertyOptional({ example: '123-45-6789' })
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(50)
+  ssn?: string;
 
   @ApiPropertyOptional({ example: 'AZ12 NABZ 0000 0000 0000 0000 01' })
   @IsOptional()

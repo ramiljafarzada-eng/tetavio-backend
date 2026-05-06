@@ -55,6 +55,7 @@ export class EmployeesService {
         phone: dto.phone,
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
         taxId: dto.taxId,
+        ssn: dto.ssn,
         bankAccount: dto.bankAccount,
         departmentId: dto.departmentId,
         positionId: dto.positionId,
@@ -167,6 +168,7 @@ export class EmployeesService {
           dateOfBirth: new Date(dto.dateOfBirth),
         }),
         ...(dto.taxId !== undefined && { taxId: dto.taxId }),
+        ...(dto.ssn !== undefined && { ssn: dto.ssn }),
         ...(dto.bankAccount !== undefined && { bankAccount: dto.bankAccount }),
         ...(dto.departmentId !== undefined && {
           departmentId: dto.departmentId,
