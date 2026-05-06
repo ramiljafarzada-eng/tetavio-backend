@@ -14504,7 +14504,7 @@ function renderItemsCatalog() {
         heroTitle: "Mühasibat uçotunu bir paneldən idarə edin",
         heroSubtitle: "Tetavio ilə satış, alış, bank əməliyyatları və maliyyə hesabatlarını real vaxtda idarə edin. Komandanız üçün sürətli, təhlükəsiz və etibarlı mühit qurun.",
         heroTrust: ["Bulud əsaslı giriş", "Lokal bazara uyğun iş axını", "Yüksək sürətli əməliyyat paneli"],
-        heroPrimary: "Mühasibat proqramını aç →",
+        heroPrimary: "ERP-yə keçid →",
         heroSecondary: "Tariflərə bax",
         heroPanelTitle: "Canlı iş paneli",
         heroPanelHint: "Nümayiş məqsədli göstəricilər",
@@ -14563,7 +14563,7 @@ function renderItemsCatalog() {
         ],
         ctaTitle: "Mühasibat prosesini bu gün optimallaşdırın",
         ctaText: "Platformaya keçin, uyğun planı seçin və bütün maliyyə axınını vahid sistemdən idarə edin.",
-        ctaButton: "Mühasibat proqramını aç →",
+        ctaButton: "ERP-yə keçid →",
         contact: "Əlaqə: info@tetavio.com",
         footerNote: "Tetavio ERP · Cloud Accounting Platform",
         planDescriptions: {
