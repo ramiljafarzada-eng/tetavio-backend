@@ -73,6 +73,105 @@ function EmployeeCheckList({ employees, selected, onToggle, onToggleAll, tc }) {
   );
 }
 
+const STATUS_ABBR = {
+  PRESENT: 'İ',
+  ABSENT: 'Y',
+  LATE: 'G',
+  HALF_DAY: 'YG',
+  ON_LEAVE: 'M',
+  SICK_LEAVE: 'X',
+  BUSINESS_TRIP: 'E',
+  HOLIDAY: 'B',
+};
+
+function SheetView({ logs, employees, year, month }) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const logMap = {};
+  logs.forEach((log) => {
+    const day = parseInt(log.date?.slice(8, 10), 10);
+    const empId = log.employeeId;
+    if (!logMap[empId]) logMap[empId] = {};
+    logMap[empId][day] = log;
+  });
+
+  const isWeekend = (day) => {
+    const d = new Date(year, month - 1, day).getDay();
+    return d === 0 || d === 6;
+  };
+
+  return (
+    <div style={{ overflowX: 'auto', fontSize: '0.82rem' }}>
+      <table style={{ borderCollapse: 'collapse', minWidth: '100%', whiteSpace: 'nowrap' }}>
+        <thead>
+          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--line)' }}>
+            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 2 }}>S/S</th>
+            <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 2, minWidth: 180 }}>Soyadı, adı</th>
+            <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', minWidth: 120 }}>Vəzifəsi</th>
+            <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid var(--line)', minWidth: 90 }}>Əmək haqqı</th>
+            {days.map((d) => (
+              <th key={d} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 28, fontSize: '0.75rem', background: isWeekend(d) ? 'rgba(148,163,184,0.13)' : 'var(--surface)' }}>
+                {d}
+              </th>
+            ))}
+            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi saat</th>
+            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi gün</th>
+            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 90 }}>Məzuniyyət günü</th>
+          </tr>
+        </thead>
+        <tbody>
+          {employees.map((emp, idx) => {
+            const empLogs = logMap[emp.id] || {};
+            const allLogs = Object.values(empLogs);
+            const totalMinutes = allLogs.reduce((s, l) => s + (l.workedMinutes || 0), 0);
+            const presentDays = allLogs.filter((l) => ['PRESENT', 'LATE'].includes(l.status)).length;
+            const leaveDays = allLogs.filter((l) => ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP'].includes(l.status)).length;
+            const salary = emp.baseSalaryMinor ? (emp.baseSalaryMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+
+            return (
+              <tr key={emp.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 1 }}>{idx + 1}</td>
+                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 1 }}>
+                  {emp.lastName} {emp.firstName}
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>{emp.employeeCode}</div>
+                </td>
+                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', color: 'var(--muted)' }}>{emp.position?.title || '—'}</td>
+                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', textAlign: 'right' }}>{salary} ₼</td>
+                {days.map((d) => {
+                  const log = empLogs[d];
+                  const abbr = log ? (STATUS_ABBR[log.status] || '?') : '';
+                  const color = log ? STATUS_COLOR[log.status] : undefined;
+                  const bgWeekend = isWeekend(d) ? 'rgba(148,163,184,0.08)' : undefined;
+                  return (
+                    <td key={d} title={log?.status || ''} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 700, fontSize: '0.76rem', color, background: bgWeekend }}>
+                      {abbr}
+                    </td>
+                  );
+                })}
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
+                  {totalMinutes ? (totalMinutes / 60).toFixed(1) : '—'}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
+                  {presentDays || '—'}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600, color: leaveDays ? '#3b82f6' : undefined }}>
+                  {leaveDays || '—'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {Object.entries(STATUS_ABBR).map(([k, v]) => (
+          <span key={k}><b style={{ color: STATUS_COLOR[k] }}>{v}</b> = {k === 'PRESENT' ? 'İşdə' : k === 'ABSENT' ? 'Yoxdur' : k === 'LATE' ? 'Gecikmiş' : k === 'HALF_DAY' ? 'Yarım gün' : k === 'ON_LEAVE' ? 'Məzuniyyət' : k === 'SICK_LEAVE' ? 'Xəstəlik' : k === 'BUSINESS_TRIP' ? 'Ezamiyyət' : 'Bayram'}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BulkModal({ employees, onClose, onSaved, ta, tc }) {
   const now = new Date();
   const firstOfMonth = localDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -558,6 +657,7 @@ export default function AttendanceDashboard({ lang }) {
   const [showBulk, setShowBulk] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const [showHoliday, setShowHoliday] = useState(false);
+  const [viewMode, setViewMode] = useState('list');
   const [editLog, setEditLog] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [selectedLogs, setSelectedLogs] = useState(new Set());
@@ -629,6 +729,12 @@ export default function AttendanceDashboard({ lang }) {
           <button className="primary-btn" onClick={() => setShowBulk(true)}>{ta.bulkEntry || 'Toplu qeyd'}</button>
           <button className="ghost-btn" onClick={() => setShowLeave(true)}>Məzuniyyət / Xəstəlik / Ezamiyyət</button>
           <button className="ghost-btn" onClick={() => setShowHoliday(true)}>Bayram qeyd et</button>
+          <button
+            className={viewMode === 'sheet' ? 'primary-btn' : 'ghost-btn'}
+            onClick={() => setViewMode((m) => m === 'sheet' ? 'list' : 'sheet')}
+          >
+            {viewMode === 'sheet' ? 'Jurnal baxışı' : 'Cədvəl baxışı'}
+          </button>
         </div>
       </div>
 
@@ -665,6 +771,8 @@ export default function AttendanceDashboard({ lang }) {
 
       {loading ? (
         <div className="hrm-loading">{tc.loading}</div>
+      ) : viewMode === 'sheet' ? (
+        <SheetView logs={logs} employees={employees} year={year} month={month} />
       ) : (
         <div className="hrm-table-wrapper">
           <table className="hrm-table">
