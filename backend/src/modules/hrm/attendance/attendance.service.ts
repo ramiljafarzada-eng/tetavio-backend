@@ -118,8 +118,14 @@ export class AttendanceService {
     if (!emp) throw new NotFoundException('İşçi tapılmadı');
 
     const dateOnly = new Date(dto.date);
-    const checkIn = dto.checkIn ? new Date(dto.checkIn) : null;
-    const checkOut = dto.checkOut ? new Date(dto.checkOut) : null;
+
+    // Preserve existing checkIn/checkOut when not explicitly provided
+    const existing = await this.prisma.attendanceLog.findUnique({
+      where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
+    });
+
+    const checkIn = dto.checkIn ? new Date(dto.checkIn) : (existing?.checkIn ?? null);
+    const checkOut = dto.checkOut ? new Date(dto.checkOut) : (existing?.checkOut ?? null);
 
     const schedule = this.buildScheduleConfig(emp.workSchedule);
     const calc = this.engine.calculate(checkIn, checkOut, dateOnly, schedule);
@@ -142,8 +148,8 @@ export class AttendanceService {
         source: 'MANUAL',
       },
       update: {
-        checkIn,
-        checkOut,
+        ...(dto.checkIn !== undefined && { checkIn }),
+        ...(dto.checkOut !== undefined && { checkOut }),
         workedMinutes: calc.workedMinutes || null,
         lateMinutes: calc.lateMinutes,
         overtimeMinutes: calc.overtimeMinutes,
