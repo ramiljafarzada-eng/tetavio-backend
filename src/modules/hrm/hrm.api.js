@@ -29,7 +29,9 @@ async function hrmRequest(path, options = {}) {
 
   if (!response.ok) {
     const msg = payload?.message || `HTTP ${response.status}`;
-    throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+    const errors = payload?.errors;
+    const detail = Array.isArray(errors) && errors.length > 0 ? errors.join(', ') : null;
+    throw new Error(detail || (Array.isArray(msg) ? msg.join(', ') : msg));
   }
 
   return payload?.data !== undefined ? payload.data : payload;
