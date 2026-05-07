@@ -2522,9 +2522,10 @@ button:disabled {
 
 .hero-meta {
   padding: var(--space-md);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(19, 104, 214, 0.08);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
 }
 
 .hero-meta span {
