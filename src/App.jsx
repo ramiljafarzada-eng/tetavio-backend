@@ -8649,7 +8649,7 @@ function renderItemsCatalog() {
               <div className="incoming-ledger-panel">
                 <div className="incoming-ledger-panel-head">
                   <strong>Müxabirləşmə: {activeInvoiceLedgerRecord.invoiceNumber || "Satış qaiməsi"}</strong>
-                  <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId(null)}{at.close}</button>
+                  <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId(null)}>{at.close}</button>
                 </div>
                 <Table
                   headers={["Hesab", "Debet", "Kredit"]}
@@ -9676,7 +9676,7 @@ function renderItemsCatalog() {
                     Təchizatçı kartını aç
                   </button>
                 ) : null}
-                <button className="ghost-btn" type="button" onClick={() => setDebtCard(null)}{at.close}</button>
+                <button className="ghost-btn" type="button" onClick={() => setDebtCard(null)}>{at.close}</button>
               </div>
             </section>
           </div>
@@ -10268,7 +10268,7 @@ function renderItemsCatalog() {
                 <div className="incoming-ledger-panel">
                   <div className="incoming-ledger-panel-head">
                     <strong>Müxabirləşmə: {activeIncomingLedgerRecord.billNumber || "Mal qaiməsi"}</strong>
-                    <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId(null)}{at.close}</button>
+                    <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId(null)}>{at.close}</button>
                   </div>
                   <Table
                     headers={["Hesab", "Debet", "Kredit"]}

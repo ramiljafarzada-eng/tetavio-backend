@@ -11,3 +11,10 @@ Thumbs.db
 *.docx
 ~$*
 .claude/settings.local.json
+pasha-certs/
+pasa_certs_tmp/
+pasa.zip
+*.key
+*.pfx
+*.p12
+ecomm_solution-1.0.76-eng.pdf
