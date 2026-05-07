@@ -22,10 +22,10 @@ export class ManualAttendanceDto {
 
   @ApiPropertyOptional({
     example: 'PRESENT',
-    enum: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'HOLIDAY'],
+    enum: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP', 'HOLIDAY'],
   })
   @IsOptional()
-  @IsIn(['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'HOLIDAY'])
+  @IsIn(['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP', 'HOLIDAY'])
   status?: string;
 
   @ApiPropertyOptional()
@@ -64,6 +64,14 @@ export class BulkAttendanceDto {
   @IsOptional()
   @IsInt()
   tzOffsetMinutes?: number;
+
+  @ApiPropertyOptional({
+    example: 'ON_LEAVE',
+    enum: ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP', 'HOLIDAY'],
+  })
+  @IsOptional()
+  @IsIn(['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP', 'HOLIDAY'])
+  status?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

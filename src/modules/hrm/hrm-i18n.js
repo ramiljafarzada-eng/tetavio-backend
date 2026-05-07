@@ -159,6 +159,8 @@ export const HRM_I18N = {
       statusLate: 'Gecikmiş',
       statusHalfDay: 'Yarım gün',
       statusOnLeave: 'Məzuniyyətdə',
+      statusSickLeave: 'Xəstəlikdə',
+      statusBusinessTrip: 'Ezamiyyətdə',
       statusHoliday: 'İstirahət',
       months: ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'],
     },

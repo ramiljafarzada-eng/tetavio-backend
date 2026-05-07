@@ -16,6 +16,8 @@ const STATUS_COLOR = {
   LATE: '#d97706',
   HALF_DAY: '#7c3aed',
   ON_LEAVE: '#3b82f6',
+  SICK_LEAVE: '#ec4899',
+  BUSINESS_TRIP: '#f59e0b',
   HOLIDAY: '#94a3b8',
 };
 
@@ -156,6 +158,110 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
             <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
             <button type="submit" className="primary-btn" disabled={saving || selected.size === 0}>
               {saving ? tc.saving : `Qeyd et (${selected.size} işçi)`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function LeaveMarkModal({ employees, onClose, onSaved, ta, tc }) {
+  const now = new Date();
+  const firstOfMonth = localDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  const lastOfMonth = localDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+  const [status, setStatus] = useState('ON_LEAVE');
+  const [dateFrom, setDateFrom] = useState(firstOfMonth);
+  const [dateTo, setDateTo] = useState(lastOfMonth);
+  const [selected, setSelected] = useState(new Set());
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState('');
+
+  const toggleAll = () => setSelected(selected.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)));
+  const toggleOne = (id) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const setToday = () => { const t = localDateStr(now); setDateFrom(t); setDateTo(t); };
+  const setThisWeek = () => {
+    const day = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    setDateFrom(localDateStr(mon)); setDateTo(localDateStr(fri));
+  };
+  const setThisMonth = () => { setDateFrom(firstOfMonth); setDateTo(lastOfMonth); };
+
+  const STATUS_OPTIONS = [
+    { value: 'ON_LEAVE', label: 'Məzuniyyət' },
+    { value: 'SICK_LEAVE', label: 'Xəstəlik' },
+    { value: 'BUSINESS_TRIP', label: 'Ezamiyyət' },
+  ];
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (selected.size === 0) { setError('Ən az 1 işçi seçin'); return; }
+    setSaving(true); setError(''); setResult('');
+    try {
+      const res = await hrmBulkAttendance({
+        employeeIds: [...selected],
+        dateFrom,
+        dateTo,
+        status,
+        note: note || undefined,
+      });
+      setResult(`${res?.count ?? '?'} qeyd yazıldı (şənbə/bazar atlandı).`);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const statusLabel = STATUS_OPTIONS.find((o) => o.value === status)?.label || status;
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" style={{ maxWidth: 540, width: '100%' }} onClick={(e) => e.stopPropagation()}>
+        <h3>Məzuniyyət / Xəstəlik / Ezamiyyət qeydi</h3>
+        {error && <div className="hrm-error">{error}</div>}
+        {result && <div className="hrm-notice">{result}</div>}
+        <form onSubmit={submit}>
+          <div className="hrm-field">
+            <label>Növ</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {STATUS_OPTIONS.map((opt) => (
+                <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 14px', borderRadius: 8, border: `2px solid ${status === opt.value ? STATUS_COLOR[opt.value] : 'var(--line)'}`, background: status === opt.value ? `${STATUS_COLOR[opt.value]}18` : 'transparent', flex: 1, justifyContent: 'center' }}>
+                  <input type="radio" name="leaveStatus" value={opt.value} checked={status === opt.value} onChange={() => setStatus(opt.value)} style={{ display: 'none' }} />
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600, color: status === opt.value ? STATUS_COLOR[opt.value] : 'inherit' }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="hrm-field">
+            <label>Tarix aralığı</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} required style={{ flex: 1 }} />
+              <span style={{ color: 'var(--muted)' }}>—</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} required style={{ flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setToday}>Bu gün</button>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setThisWeek}>Bu həftə</button>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setThisMonth}>Bu ay</button>
+            </div>
+          </div>
+          <div className="hrm-field">
+            <label>Qeyd (isteğe bağlı)</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="məs. xəstəxana qəbzi var" maxLength={300} />
+          </div>
+          <EmployeeCheckList employees={employees} selected={selected} onToggle={toggleOne} onToggleAll={toggleAll} tc={tc} />
+          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: '4px 0 0' }}>Şənbə, bazar və bayram günləri atlanır.</p>
+          <div className="hrm-modal-footer">
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+            <button type="submit" className="primary-btn" disabled={saving || selected.size === 0}>
+              {saving ? tc.saving : `${statusLabel} qeyd et (${selected.size})`}
             </button>
           </div>
         </form>
@@ -435,6 +541,8 @@ export default function AttendanceDashboard({ lang }) {
     LATE: ta.statusLate,
     HALF_DAY: ta.statusHalfDay,
     ON_LEAVE: ta.statusOnLeave,
+    SICK_LEAVE: ta.statusSickLeave || 'Xəstəlikdə',
+    BUSINESS_TRIP: ta.statusBusinessTrip || 'Ezamiyyətdə',
     HOLIDAY: ta.statusHoliday,
   };
 
@@ -448,6 +556,7 @@ export default function AttendanceDashboard({ lang }) {
   const [quickCheck, setQuickCheck] = useState(null);
   const [showManual, setShowManual] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
+  const [showLeave, setShowLeave] = useState(false);
   const [showHoliday, setShowHoliday] = useState(false);
   const [editLog, setEditLog] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -518,6 +627,7 @@ export default function AttendanceDashboard({ lang }) {
           </button>
           <button className="ghost-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
           <button className="primary-btn" onClick={() => setShowBulk(true)}>{ta.bulkEntry || 'Toplu qeyd'}</button>
+          <button className="ghost-btn" onClick={() => setShowLeave(true)}>Məzuniyyət / Xəstəlik / Ezamiyyət</button>
           <button className="ghost-btn" onClick={() => setShowHoliday(true)}>Bayram qeyd et</button>
         </div>
       </div>
@@ -645,6 +755,16 @@ export default function AttendanceDashboard({ lang }) {
         <BulkModal
           employees={employees}
           onClose={() => setShowBulk(false)}
+          onSaved={load}
+          ta={ta}
+          tc={tc}
+        />
+      )}
+
+      {showLeave && (
+        <LeaveMarkModal
+          employees={employees}
+          onClose={() => setShowLeave(false)}
           onSaved={load}
           ta={ta}
           tc={tc}

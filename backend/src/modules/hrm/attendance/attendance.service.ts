@@ -214,17 +214,24 @@ export class AttendanceService {
         if (!schedule.workDays.includes(dow)) continue;
 
         const existing = existingMap.get(`${emp.id}_${dateOnly.toISOString().slice(0, 10)}`);
-        // Skip days already marked as ON_LEAVE or HOLIDAY
-        if (existing && ['ON_LEAVE', 'HOLIDAY'].includes(existing.status)) continue;
+
+        // When setting a leave/status override: only skip HOLIDAY (preserve public holidays)
+        // When doing normal check-in/out bulk: skip ON_LEAVE, SICK_LEAVE, BUSINESS_TRIP, HOLIDAY
+        const isStatusOverride = !!dto.status;
+        const protectedStatuses = isStatusOverride
+          ? ['HOLIDAY']
+          : ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP', 'HOLIDAY'];
+        if (existing && protectedStatuses.includes(existing.status)) continue;
 
         const checkIn = dto.checkInTime
           ? this.buildDateTimeFromTime(dateOnly, dto.checkInTime, tzOffset)
-          : (existing?.checkIn ?? null);
+          : (isStatusOverride ? null : (existing?.checkIn ?? null));
         const checkOut = dto.checkOutTime
           ? this.buildDateTimeFromTime(dateOnly, dto.checkOutTime, tzOffset)
-          : (existing?.checkOut ?? null);
+          : (isStatusOverride ? null : (existing?.checkOut ?? null));
 
         const calc = this.engine.calculate(checkIn, checkOut, dateOnly, schedule);
+        const resolvedStatus = (dto.status ?? calc.status) as never;
 
         ops.push(
           this.prisma.attendanceLog.upsert({
@@ -238,17 +245,17 @@ export class AttendanceService {
               workedMinutes: calc.workedMinutes || null,
               lateMinutes: calc.lateMinutes,
               overtimeMinutes: calc.overtimeMinutes,
-              status: calc.status as never,
+              status: resolvedStatus,
               note: dto.note,
               source: 'MANUAL',
             },
             update: {
-              ...(dto.checkInTime !== undefined && { checkIn }),
-              ...(dto.checkOutTime !== undefined && { checkOut }),
+              checkIn,
+              checkOut,
               workedMinutes: calc.workedMinutes || null,
               lateMinutes: calc.lateMinutes,
               overtimeMinutes: calc.overtimeMinutes,
-              status: calc.status as never,
+              status: resolvedStatus,
               ...(dto.note !== undefined && { note: dto.note }),
               source: 'MANUAL',
             },

@@ -112,6 +112,8 @@ enum AttendanceStatus {
   LATE
   HALF_DAY
   ON_LEAVE
+  SICK_LEAVE
+  BUSINESS_TRIP
   HOLIDAY
 }
 
