@@ -15684,6 +15684,9 @@ function renderItemsCatalog() {
                       <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                         {at.menuPass}
                       </button>
+                      <button className="profile-secondary-btn" type="button" onClick={() => { setActiveProduct("books"); setSection("settings"); setProfileMenuOpen(false); }}>
+                        {at.nav.settings}
+                      </button>
                       <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                         {at.menuLogout}
                       </button>
@@ -17071,6 +17074,9 @@ function renderItemsCatalog() {
                        ) : null}
                        <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                          {at.menuPass}
+                       </button>
+                       <button className="profile-secondary-btn" type="button" onClick={() => { setActiveProduct("books"); setSection("settings"); setProfileMenuOpen(false); }}>
+                         {at.nav.settings}
                        </button>
                        <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                          {at.menuLogout}
@@ -21388,6 +21394,9 @@ function renderSettings() {
                         ) : null}
                         <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                           {at.menuPass}
+                        </button>
+                        <button className="profile-secondary-btn" type="button" onClick={() => { setSection("settings"); setProfileMenuOpen(false); }}>
+                          {at.nav.settings}
                         </button>
                         <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                           {at.menuLogout}
