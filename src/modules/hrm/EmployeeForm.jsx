@@ -67,20 +67,24 @@ export default function EmployeeForm({ employee, onSaved, onCancel, lang }) {
     setError('');
     try {
       const payload = {
-        ...form,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        employmentType: form.employmentType,
+        startDate: form.startDate,
+        hrmRole: form.hrmRole,
         baseSalaryMinor: Math.round(parseFloat(form.baseSalaryMinor || '0') * 100),
-        dateOfBirth: form.dateOfBirth || undefined,
-        departmentId: form.departmentId || undefined,
-        positionId: form.positionId || undefined,
-        workScheduleId: form.workScheduleId || undefined,
-        managerId: form.managerId || undefined,
-        email: form.email || undefined,
-        phone: form.phone || undefined,
-        taxId: form.taxId || undefined,
-        ssn: form.ssn || undefined,
-        idCardNumber: form.idCardNumber || undefined,
-        education: form.education || undefined,
-        bankAccount: form.bankAccount || undefined,
+        ...(form.email        && { email: form.email }),
+        ...(form.phone        && { phone: form.phone }),
+        ...(form.dateOfBirth  && { dateOfBirth: form.dateOfBirth }),
+        ...(form.taxId        && { taxId: form.taxId }),
+        ...(form.ssn          && { ssn: form.ssn }),
+        ...(form.idCardNumber && { idCardNumber: form.idCardNumber }),
+        ...(form.education    && { education: form.education }),
+        ...(form.bankAccount  && { bankAccount: form.bankAccount }),
+        ...(form.departmentId  && { departmentId: form.departmentId }),
+        ...(form.positionId    && { positionId: form.positionId }),
+        ...(form.workScheduleId && { workScheduleId: form.workScheduleId }),
+        ...(form.managerId     && { managerId: form.managerId }),
       };
 
       if (employee) {
