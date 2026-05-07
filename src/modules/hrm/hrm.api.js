@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../../lib/api.js';
+import { API_BASE_URL, refreshTokens } from '../../lib/api.js';
 
 let _onSessionUpdate = null;
 
@@ -6,17 +6,14 @@ export function initHrmApi(onSessionUpdate) {
   _onSessionUpdate = onSessionUpdate;
 }
 
-async function hrmRequest(path, options = {}) {
-  const session = window.__hrmSession;
-  if (!session?.accessToken) throw new Error('Giriş tələb olunur');
-
+async function doFetch(path, options, token) {
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.accessToken}`,
+        Authorization: `Bearer ${token}`,
         ...(options.headers || {}),
       },
     });
@@ -28,13 +25,38 @@ async function hrmRequest(path, options = {}) {
   const payload = isJson ? await response.json() : null;
 
   if (!response.ok) {
+    const err = new Error();
+    err.status = response.status;
+    err.payload = payload;
     const msg = payload?.message || `HTTP ${response.status}`;
     const errors = payload?.errors;
     const detail = Array.isArray(errors) && errors.length > 0 ? errors.join(', ') : null;
-    throw new Error(detail || (Array.isArray(msg) ? msg.join(', ') : msg));
+    err.message = detail || (Array.isArray(msg) ? msg.join(', ') : msg);
+    throw err;
   }
 
   return payload?.data !== undefined ? payload.data : payload;
+}
+
+async function hrmRequest(path, options = {}) {
+  const session = window.__hrmSession;
+  if (!session?.accessToken) throw new Error('Giriş tələb olunur');
+
+  try {
+    return await doFetch(path, options, session.accessToken);
+  } catch (err) {
+    if (err.status !== 401 || !session?.refreshToken) throw err;
+
+    try {
+      const rotated = await refreshTokens(session.refreshToken);
+      const nextSession = { ...session, accessToken: rotated.accessToken, refreshToken: rotated.refreshToken };
+      window.__hrmSession = nextSession;
+      if (typeof _onSessionUpdate === 'function') _onSessionUpdate(nextSession);
+      return await doFetch(path, options, rotated.accessToken);
+    } catch {
+      throw err;
+    }
+  }
 }
 
 // ─── Employees ───────────────────────────────────────────────────────────────
