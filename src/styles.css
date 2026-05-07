@@ -1717,6 +1717,35 @@ button:disabled {
   background: rgba(220, 38, 38, 0.07);
 }
 
+.profile-lang-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 4px;
+  padding: 4px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+}
+.profile-lang-option {
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.15s;
+}
+.profile-lang-option:hover {
+  background: rgba(18,72,160,0.08);
+}
+.profile-lang-option.active {
+  background: rgba(18,72,160,0.13);
+  font-weight: 600;
+}
+
 .profile-signin-btn {
   width: 100%;
   min-height: 2.65rem;

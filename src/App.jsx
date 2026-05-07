@@ -2742,6 +2742,7 @@ function MainApp() {
   const [internalLoginStartedAt, setInternalLoginStartedAt] = useState(null);
   const [authProgressTick, setAuthProgressTick] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [langSubOpen, setLangSubOpen] = useState(false);
   const [appNavOpen, setAppNavOpen] = useState(false);
   const [accountPanel, setAccountPanel] = useState(null);
   const [passwordDraft, setPasswordDraft] = useState({ current: "", next: "", confirm: "", notice: "", tone: "" });
@@ -15682,6 +15683,18 @@ function renderItemsCatalog() {
                       <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                         {at.menuPass}
                       </button>
+                      <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
+                        {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
+                      </button>
+                      {langSubOpen && (
+                        <div className="profile-lang-list">
+                          {PUBLIC_MARKETING_LANGS.map(l => (
+                            <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
+                              {l.flag} {l.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                         {at.menuLogout}
                       </button>
@@ -17070,6 +17083,18 @@ function renderItemsCatalog() {
                        <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                          {at.menuPass}
                        </button>
+                       <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
+                         {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
+                       </button>
+                       {langSubOpen && (
+                         <div className="profile-lang-list">
+                           {PUBLIC_MARKETING_LANGS.map(l => (
+                             <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
+                               {l.flag} {l.label}
+                             </button>
+                           ))}
+                         </div>
+                       )}
                        <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                          {at.menuLogout}
                        </button>
@@ -20304,10 +20329,12 @@ function renderSettings() {
                   </div>
                   <span>{ownerUser?.fullName}</span>
                 </div>
-                <form className="form-grid" onSubmit={createTeamMember}>
-                  <label><span>{at.team_fullName}</span><input value={teamMemberDraft.fullName} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, fullName: event.target.value }))} required /></label>
-                  <label><span>{fld("E-poçt")}</span><input type="email" value={teamMemberDraft.email} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, email: event.target.value }))} required /></label>
-                  <label><span>{fld("Şifrə")}</span><input type="password" value={teamMemberDraft.password} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, password: event.target.value }))} required /></label>
+                <form className="form-grid" onSubmit={createTeamMember} autoComplete="off">
+                  <input type="text" name="prevent_autofill" style={{display:"none"}} readOnly />
+                  <input type="password" name="prevent_autofill_pw" style={{display:"none"}} readOnly />
+                  <label><span>{at.team_fullName}</span><input value={teamMemberDraft.fullName} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, fullName: event.target.value }))} required autoComplete="off" /></label>
+                  <label><span>{fld("E-poçt")}</span><input type="email" value={teamMemberDraft.email} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, email: event.target.value }))} required autoComplete="off" /></label>
+                  <label><span>{fld("Şifrə")}</span><input type="password" value={teamMemberDraft.password} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, password: event.target.value }))} required autoComplete="new-password" /></label>
                   <label><span>{at.team_colRole}</span><select value={teamMemberDraft.staffRole} onChange={(event) => setTeamMemberDraft((current) => ({ ...current, staffRole: event.target.value }))}>{Object.keys(STAFF_ROLE_CONFIG).map((roleName) => <option key={roleName} value={roleName}>{roleName}</option>)}</select></label>
                   <div className="ops-note-block">
                     <strong>{at.team_permsLabel}</strong>
@@ -20337,6 +20364,9 @@ function renderSettings() {
                   ))}
                 />
               </section>
+              <div style={{display:"flex", justifyContent:"flex-start", marginTop:8}}>
+                <button className="ghost-btn" type="button" onClick={() => setAccountPanel(null)}>{at.back}</button>
+              </div>
             </div>
           ) : (
             <div className="subscription-user-grid">
@@ -21368,6 +21398,18 @@ function renderSettings() {
                         <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                           {at.menuPass}
                         </button>
+                        <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
+                          {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
+                        </button>
+                        {langSubOpen && (
+                          <div className="profile-lang-list">
+                            {PUBLIC_MARKETING_LANGS.map(l => (
+                              <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
+                                {l.flag} {l.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                           {at.menuLogout}
                         </button>
