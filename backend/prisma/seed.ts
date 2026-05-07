@@ -17,7 +17,15 @@ async function main() {
   for (const plan of CANONICAL_PLANS) {
     await prisma.plan.upsert({
       where: { code: plan.code },
-      create: plan,
+      create: {
+        code: plan.code,
+        name: plan.name,
+        priceMinor: plan.priceMinor,
+        currency: plan.currency,
+        interval: plan.interval,
+        isActive: plan.isActive,
+        sortOrder: plan.sortOrder,
+      },
       update: {
         name: plan.name,
         priceMinor: plan.priceMinor,
