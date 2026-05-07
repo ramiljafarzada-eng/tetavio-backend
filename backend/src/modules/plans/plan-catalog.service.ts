@@ -16,7 +16,15 @@ export class PlanCatalogService implements OnModuleInit {
     for (const plan of CANONICAL_PLANS) {
       await this.prisma.plan.upsert({
         where: { code: plan.code },
-        create: { ...plan },
+        create: {
+          code: plan.code,
+          name: plan.name,
+          priceMinor: plan.priceMinor,
+          currency: plan.currency,
+          interval: plan.interval,
+          isActive: plan.isActive,
+          sortOrder: plan.sortOrder,
+        },
         update: {
           name: plan.name,
           priceMinor: plan.priceMinor,
