@@ -1544,9 +1544,9 @@ button:disabled {
   gap: 5px;
   padding: 0 12px;
   height: 2.1rem;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid rgba(23, 38, 59, 0.15);
   border-radius: 8px;
-  background: var(--card-bg);
+  background: #ffffff;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1565,8 +1565,8 @@ button:disabled {
   top: calc(100% + 6px);
   right: 0;
   min-width: 170px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  background: #ffffff;
+  border: 1px solid rgba(23, 38, 59, 0.12);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.13);
   padding: 6px;
