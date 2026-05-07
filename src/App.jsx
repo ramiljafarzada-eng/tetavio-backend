@@ -4165,6 +4165,12 @@ function MainApp() {
     }
 
     if (part1 === "accounting") {
+      const isAuthSubview = ["signin", "signup", "forgot", "reset", "verify-email"].includes(part2);
+      if (currentUser && isAuthSubview) {
+        setActiveProduct("books");
+        setSection("home");
+        return;
+      }
       setActiveProduct("booksLanding");
       setBooksView(landingRoute.initialBooksView);
       return;
