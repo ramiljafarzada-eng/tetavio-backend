@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { hrmListEmployees, hrmManualAttendance, hrmListAttendance } from './hrm.api.js';
+import {
+  hrmListEmployees,
+  hrmManualAttendance,
+  hrmUpdateAttendance,
+  hrmDeleteAttendance,
+  hrmListAttendance,
+} from './hrm.api.js';
 import { HRM_I18N } from './hrm-i18n.js';
 
 const STATUS_COLOR = {
@@ -10,6 +16,11 @@ const STATUS_COLOR = {
   ON_LEAVE: '#3b82f6',
   HOLIDAY: '#94a3b8',
 };
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
+}
 
 function fmtMin(min) {
   if (!min) return '—';
@@ -157,34 +168,70 @@ function ManualModal({ employees, onClose, onSaved, ta, tc }) {
   );
 }
 
-function buildSummary(logs) {
-  const byEmp = {};
-  logs.forEach((log) => {
-    const id = log.employeeId;
-    if (!byEmp[id]) {
-      byEmp[id] = {
-        employee: log.employee,
-        logs: [],
-        presentDays: 0,
-        lateDays: 0,
-        leaveDays: 0,
-        absentDays: 0,
-        totalWorkedMinutes: 0,
-      };
+function EditModal({ log, employees, onClose, onSaved, ta, tc }) {
+  const logDate = log.date ? log.date.slice(0, 10) : '';
+  const [checkIn, setCheckIn] = useState(log.checkIn ? new Date(log.checkIn).toTimeString().slice(0, 5) : '');
+  const [checkOut, setCheckOut] = useState(log.checkOut ? new Date(log.checkOut).toTimeString().slice(0, 5) : '');
+  const [note, setNote] = useState(log.note || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await hrmUpdateAttendance(log.id, {
+        employeeId: log.employeeId,
+        date: logDate,
+        checkIn: checkIn ? `${logDate}T${checkIn}:00` : undefined,
+        checkOut: checkOut ? `${logDate}T${checkOut}:00` : undefined,
+        note: note || undefined,
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
-    const e = byEmp[id];
-    e.logs.push(log);
-    if (log.status === 'PRESENT') e.presentDays++;
-    else if (log.status === 'LATE') { e.presentDays++; e.lateDays++; }
-    else if (log.status === 'ON_LEAVE') e.leaveDays++;
-    else if (log.status === 'ABSENT') e.absentDays++;
-    e.totalWorkedMinutes += log.workedMinutes || 0;
-  });
-  return Object.values(byEmp).map((e) => ({
-    ...e,
-    avgWorkedMinutes: e.logs.length > 0 ? Math.round(e.totalWorkedMinutes / e.logs.length) : 0,
-    lastStatus: e.logs[e.logs.length - 1]?.status,
-  }));
+  };
+
+  const empName = employees.find((e) => e.id === log.employeeId);
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{tc.edit}</h3>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 8 }}>
+          {empName ? `${empName.firstName} ${empName.lastName}` : log.employeeId} — {logDate}
+        </p>
+        {error && <div className="hrm-error">{error}</div>}
+        <form onSubmit={submit}>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>{ta.manualCheckIn}</label>
+              <input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
+            </div>
+            <div className="hrm-field">
+              <label>{ta.manualCheckOut}</label>
+              <input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+            </div>
+          </div>
+          <div className="hrm-field">
+            <label>{ta.manualNote}</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={255} />
+          </div>
+          <div className="hrm-modal-footer">
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+            <button type="submit" className="primary-btn" disabled={saving}>
+              {saving ? tc.saving : tc.save}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default function AttendanceDashboard({ lang }) {
@@ -204,12 +251,14 @@ export default function AttendanceDashboard({ lang }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [rows, setRows] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [quickCheck, setQuickCheck] = useState(null); // 'in' | 'out' | null
+  const [quickCheck, setQuickCheck] = useState(null);
   const [showManual, setShowManual] = useState(false);
+  const [editLog, setEditLog] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [actionMsg, setActionMsg] = useState('');
 
   const load = () => {
@@ -219,7 +268,7 @@ export default function AttendanceDashboard({ lang }) {
     const lastDay = new Date(year, month, 0).getDate();
     const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
     hrmListAttendance({ dateFrom, dateTo })
-      .then((logs) => setRows(buildSummary(logs)))
+      .then(setLogs)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
@@ -230,9 +279,16 @@ export default function AttendanceDashboard({ lang }) {
 
   useEffect(() => { load(); }, [year, month]);
 
-  const handleQuickSaved = (type) => {
-    setActionMsg(type === 'in' ? ta.checkInDone : ta.checkOutDone);
-    load();
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await hrmDeleteAttendance(deleteId);
+      setDeleteId(null);
+      load();
+    } catch (err) {
+      setError(err.message);
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -254,20 +310,12 @@ export default function AttendanceDashboard({ lang }) {
       {error && <div className="hrm-error">{error}</div>}
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-        <select
-          className="hrm-select"
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-        >
+        <select className="hrm-select" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
           {ta.months.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m}</option>
           ))}
         </select>
-        <select
-          className="hrm-select"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
+        <select className="hrm-select" value={year} onChange={(e) => setYear(Number(e.target.value))}>
           {[2024, 2025, 2026, 2027].map((y) => (
             <option key={y} value={y}>{y}</option>
           ))}
@@ -282,35 +330,40 @@ export default function AttendanceDashboard({ lang }) {
             <thead>
               <tr>
                 <th>{ta.colEmployee}</th>
-                <th>{ta.colPresent}</th>
-                <th>{ta.colLate}</th>
-                <th>{ta.colLeave}</th>
-                <th>{ta.colAbsent}</th>
+                <th>{ta.manualDate}</th>
+                <th>{ta.manualCheckIn}</th>
+                <th>{ta.manualCheckOut}</th>
                 <th>{ta.colAvgHours}</th>
                 <th>{ta.colLastStatus}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
+              {logs.length === 0 && (
                 <tr><td colSpan={7} className="hrm-empty">{ta.notFound}</td></tr>
               )}
-              {rows.map((row) => (
-                <tr key={row.employee?.id}>
+              {logs.map((log) => (
+                <tr key={log.id}>
                   <td>
-                    {row.employee?.firstName} {row.employee?.lastName}
-                    <div className="hrm-sub">{row.employee?.employeeCode}</div>
+                    {log.employee?.firstName} {log.employee?.lastName}
+                    <div className="hrm-sub">{log.employee?.employeeCode}</div>
                   </td>
-                  <td>{row.presentDays}</td>
-                  <td>{row.lateDays}</td>
-                  <td>{row.leaveDays}</td>
-                  <td>{row.absentDays}</td>
-                  <td>{fmtMin(row.avgWorkedMinutes)}</td>
+                  <td>{log.date ? log.date.slice(0, 10) : '—'}</td>
+                  <td>{fmtTime(log.checkIn)}</td>
+                  <td>{fmtTime(log.checkOut)}</td>
+                  <td>{fmtMin(log.workedMinutes)}</td>
                   <td>
-                    {row.lastStatus ? (
-                      <span className="hrm-badge" style={{ background: STATUS_COLOR[row.lastStatus] }}>
-                        {STATUS_LABEL[row.lastStatus]}
+                    {log.status ? (
+                      <span className="hrm-badge" style={{ background: STATUS_COLOR[log.status] }}>
+                        {STATUS_LABEL[log.status]}
                       </span>
                     ) : '—'}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button className="ghost-btn" onClick={() => setEditLog(log)}>{tc.edit}</button>
+                      <button className="ghost-btn" style={{ color: '#dc2626' }} onClick={() => setDeleteId(log.id)}>{tc.delete}</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -324,7 +377,7 @@ export default function AttendanceDashboard({ lang }) {
           type={quickCheck}
           employees={employees}
           onClose={() => setQuickCheck(null)}
-          onSaved={() => handleQuickSaved(quickCheck)}
+          onSaved={() => { setActionMsg(quickCheck === 'in' ? ta.checkInDone : ta.checkOutDone); load(); }}
           ta={ta}
           tc={tc}
         />
@@ -338,6 +391,29 @@ export default function AttendanceDashboard({ lang }) {
           ta={ta}
           tc={tc}
         />
+      )}
+
+      {editLog && (
+        <EditModal
+          log={editLog}
+          employees={employees}
+          onClose={() => setEditLog(null)}
+          onSaved={load}
+          ta={ta}
+          tc={tc}
+        />
+      )}
+
+      {deleteId && (
+        <div className="hrm-modal-backdrop" onClick={() => setDeleteId(null)}>
+          <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{tc.confirmDelete || 'Silmək istədiyinizə əminsiniz?'}</h3>
+            <div className="hrm-modal-footer">
+              <button className="ghost-btn" onClick={() => setDeleteId(null)}>{tc.cancelShort}</button>
+              <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>{tc.delete}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

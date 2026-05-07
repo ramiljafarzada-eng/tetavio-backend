@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -55,6 +58,23 @@ export class AttendanceController {
     @Query() query: ListAttendanceQueryDto,
   ) {
     return this.service.findAll(user, req, query);
+  }
+
+  @Patch(':id')
+  @HrmScopes('DEPT_ONLY', 'ACCOUNT_ALL')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ManualAttendanceDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.updateById(user, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @HrmScopes('DEPT_ONLY', 'ACCOUNT_ALL')
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.service.deleteById(user, id);
   }
 
   @Get('monthly/:employeeId/:year/:month')

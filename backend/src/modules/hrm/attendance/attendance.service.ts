@@ -165,6 +165,44 @@ export class AttendanceService {
     return log;
   }
 
+  async updateById(user: JwtPayload, id: string, dto: ManualAttendanceDto) {
+    const log = await this.prisma.attendanceLog.findFirst({
+      where: { id, accountId: user.accountId },
+      include: { employee: { include: { workSchedule: true } } },
+    });
+    if (!log) throw new NotFoundException('Davamiyyət qeydi tapılmadı');
+
+    const checkIn = dto.checkIn ? new Date(dto.checkIn) : log.checkIn;
+    const checkOut = dto.checkOut !== undefined
+      ? (dto.checkOut ? new Date(dto.checkOut) : null)
+      : log.checkOut;
+
+    const schedule = this.buildScheduleConfig(log.employee?.workSchedule ?? null);
+    const calc = this.engine.calculate(checkIn, checkOut, log.date, schedule);
+
+    return this.prisma.attendanceLog.update({
+      where: { id },
+      data: {
+        checkIn: checkIn ?? undefined,
+        checkOut,
+        workedMinutes: calc.workedMinutes || null,
+        lateMinutes: calc.lateMinutes,
+        overtimeMinutes: calc.overtimeMinutes,
+        status: (dto.status ?? calc.status) as never,
+        ...(dto.note !== undefined && { note: dto.note }),
+        source: 'MANUAL',
+      },
+    });
+  }
+
+  async deleteById(user: JwtPayload, id: string) {
+    const log = await this.prisma.attendanceLog.findFirst({
+      where: { id, accountId: user.accountId },
+    });
+    if (!log) throw new NotFoundException('Davamiyyət qeydi tapılmadı');
+    await this.prisma.attendanceLog.delete({ where: { id } });
+  }
+
   async findAll(
     user: JwtPayload,
     ctx: Pick<HrmRequestContext, 'hrmScope' | 'hrmEmployeeId' | 'hrmDeptId'>,

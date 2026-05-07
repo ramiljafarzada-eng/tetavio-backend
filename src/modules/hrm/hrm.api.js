@@ -131,6 +131,12 @@ export const hrmCheckOut = (data) =>
 export const hrmManualAttendance = (data) =>
   hrmRequest('/hrm/attendance/manual', { method: 'POST', body: JSON.stringify(data) });
 
+export const hrmUpdateAttendance = (id, data) =>
+  hrmRequest(`/hrm/attendance/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const hrmDeleteAttendance = (id) =>
+  hrmRequest(`/hrm/attendance/${id}`, { method: 'DELETE' });
+
 export const hrmMonthlyReport = (employeeId, year, month) =>
   hrmRequest(`/hrm/attendance/monthly/${employeeId}/${year}/${month}`);
 
