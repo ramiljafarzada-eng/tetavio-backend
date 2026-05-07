@@ -1180,13 +1180,52 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed {
-  grid-template-columns: 0px minmax(0, 1fr);
+  grid-template-columns: 4rem minmax(0, 1fr);
 }
 
 .app-shell.sidebar-collapsed .sidebar {
+  padding: var(--space-md) 0;
   overflow: hidden;
-  min-width: 0;
-  padding: 0;
+}
+
+.app-shell.sidebar-collapsed .brand-copy,
+.app-shell.sidebar-collapsed .sidebar-card,
+.app-shell.sidebar-collapsed .nav-label,
+.app-shell.sidebar-collapsed .subnav-list,
+.app-shell.sidebar-collapsed .erp-badge {
+  display: none;
+}
+
+.app-shell.sidebar-collapsed .brand-block {
+  justify-content: center;
+  padding: 10px 0 14px;
+  gap: 0;
+}
+
+.app-shell.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: var(--space-sm) 0;
+  border-radius: 0;
+  min-height: 44px;
+}
+
+.app-shell.sidebar-collapsed .nav-item:hover,
+.app-shell.sidebar-collapsed .nav-item.active {
+  border-radius: 0;
+}
+
+.app-shell.sidebar-collapsed .nav-icon {
+  font-size: 1.25rem;
+}
+
+.app-shell.sidebar-collapsed .nav-tree {
+  gap: 2px;
+}
+
+.nav-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .topbar-left {
@@ -7523,6 +7562,32 @@ span.doc-cat-receipt    { color: #92400e; background: rgba(245,158,11,0.12); }
 
   .app-shell.sidebar-collapsed {
     grid-template-columns: 1fr;
+  }
+
+  .app-shell.sidebar-collapsed .sidebar {
+    overflow-y: auto;
+    padding: 16px 14px;
+  }
+
+  .app-shell.sidebar-collapsed .brand-copy,
+  .app-shell.sidebar-collapsed .sidebar-card,
+  .app-shell.sidebar-collapsed .nav-label,
+  .app-shell.sidebar-collapsed .subnav-list,
+  .app-shell.sidebar-collapsed .erp-badge {
+    display: revert;
+  }
+
+  .app-shell.sidebar-collapsed .brand-block {
+    justify-content: flex-start;
+    padding: 18px 12px 22px;
+    gap: 12px;
+  }
+
+  .app-shell.sidebar-collapsed .nav-item {
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 14px;
+    min-height: 48px;
   }
 
   .sidebar-toggle-btn {

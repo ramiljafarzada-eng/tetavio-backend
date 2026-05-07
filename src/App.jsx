@@ -98,6 +98,19 @@ const NAV = [
   { id: "settings", label: "Tənzimləmələr" }
 ];
 
+const NAV_ICONS = {
+  home: "⊞",
+  accountant: "📒",
+  purchases: "🛒",
+  sales: "💰",
+  banking: "🏦",
+  reports: "📊",
+  hrm: "👥",
+  warehouse: "📦",
+  documents: "📁",
+  settings: "⚙",
+};
+
 const BOOKS_LANDING_AUTH_VIEWS = ["signin", "signup", "forgot", "reset", "demo", "verify-email"];
 const FUNNEL_PAGES = ["start", "demo", "pricing", "erp", "case-studies"];
 const COMPLIANCE_LEGAL_PAGES = [
@@ -21310,8 +21323,10 @@ function renderSettings() {
                     setAppNavOpen(false);
                   }
                 }}
+                title={sidebarCollapsed ? (at.nav[item.id] || item.label) : undefined}
               >
-                <span>{at.nav[item.id] || item.label}</span>
+                <span className="nav-icon" aria-hidden="true">{NAV_ICONS[item.id] || "•"}</span>
+                <span className="nav-label">{at.nav[item.id] || item.label}</span>
               </button>
               {item.children && isExpanded && !["banking", "purchases", "sales", "accountant"].includes(item.id) ? (
                 <div className="subnav-list">
