@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { hrmCreateDepartment, hrmDeleteDepartment, hrmListDepartments, hrmUpdateDepartment } from './hrm.api.js';
 import { HRM_I18N } from './hrm-i18n.js';
 
-const EMPTY = { name: '', description: '' };
+const EMPTY = { name: '' };
 
 export default function DepartmentList({ lang }) {
   const t = HRM_I18N[lang] || HRM_I18N.az;
@@ -29,7 +29,7 @@ export default function DepartmentList({ lang }) {
   useEffect(() => { load(); }, []);
 
   const openNew = () => { setForm(EMPTY); setFormError(''); setModal('new'); };
-  const openEdit = (d) => { setForm({ name: d.name, description: d.description || '' }); setFormError(''); setModal(d); };
+  const openEdit = (d) => { setForm({ name: d.name }); setFormError(''); setModal(d); };
   const closeModal = () => setModal(null);
 
   const submit = async (e) => {
@@ -122,14 +122,6 @@ export default function DepartmentList({ lang }) {
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   required maxLength={100}
-                />
-              </div>
-              <div className="hrm-field">
-                <label>{tc.description}</label>
-                <input
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  maxLength={255}
                 />
               </div>
               <div className="hrm-modal-footer">
