@@ -15683,18 +15683,6 @@ function renderItemsCatalog() {
                       <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                         {at.menuPass}
                       </button>
-                      <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
-                        {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
-                      </button>
-                      {langSubOpen && (
-                        <div className="profile-lang-list">
-                          {PUBLIC_MARKETING_LANGS.map(l => (
-                            <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
-                              {l.flag} {l.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
                       <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                         {at.menuLogout}
                       </button>
@@ -17083,18 +17071,6 @@ function renderItemsCatalog() {
                        <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                          {at.menuPass}
                        </button>
-                       <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
-                         {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
-                       </button>
-                       {langSubOpen && (
-                         <div className="profile-lang-list">
-                           {PUBLIC_MARKETING_LANGS.map(l => (
-                             <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
-                               {l.flag} {l.label}
-                             </button>
-                           ))}
-                         </div>
-                       )}
                        <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                          {at.menuLogout}
                        </button>
@@ -21255,7 +21231,7 @@ function renderSettings() {
   const showTrialWarning = !trialIsExpired && trialDaysLeft !== null && trialDaysLeft.totalSeconds > 0 && trialDaysLeft.totalSeconds <= 3 * 86400 && backendSubscription?.plan?.code === "FREE";
 
   return (
-    <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
+    <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (langSubOpen) setLangSubOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
       <button className={`mobile-nav-overlay${appNavOpen ? " visible" : ""}`} type="button" aria-label={appMenuLabel} onClick={() => setAppNavOpen(false)} />
 
       {trialIsExpired && (
@@ -21369,6 +21345,20 @@ function renderSettings() {
                   <span>{appMenuLabel}</span>
                 </button>
                 <button className="ghost-btn" onClick={() => setActiveProduct("hub")}>{at.btnProducts}</button>
+                <div className="topbar-lang-wrap" onClick={(e) => e.stopPropagation()}>
+                  <button className="topbar-lang-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
+                    {PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"} {hubLang.toUpperCase()}
+                  </button>
+                  {langSubOpen && (
+                    <div className="topbar-lang-dropdown">
+                      {PUBLIC_MARKETING_LANGS.map(l => (
+                        <button key={l.code} className={`topbar-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); }}>
+                          {l.flag} {l.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {currentUser ? (
                   <div className={`profile-menu ${profileMenuOpen ? "open" : ""}`}>
                     <button className="profile-trigger" type="button" onClick={() => setProfileMenuOpen((current) => !current)}>
@@ -21398,18 +21388,6 @@ function renderSettings() {
                         <button className="profile-secondary-btn" type="button" onClick={() => { setPasswordDraft({ current: "", next: "", confirm: "", notice: "", tone: "" }); setAccountPanel("changePassword"); setProfileMenuOpen(false); }}>
                           {at.menuPass}
                         </button>
-                        <button className="profile-secondary-btn" type="button" onClick={() => setLangSubOpen(v => !v)}>
-                          {at.menuLanguage} <span style={{marginLeft:4}}>{PUBLIC_MARKETING_LANGS.find(l => l.code === hubLang)?.flag || "🌐"}</span>
-                        </button>
-                        {langSubOpen && (
-                          <div className="profile-lang-list">
-                            {PUBLIC_MARKETING_LANGS.map(l => (
-                              <button key={l.code} className={`profile-lang-option${l.code === hubLang ? " active" : ""}`} type="button" onClick={() => { setHubLang(l.code); setLangSubOpen(false); setProfileMenuOpen(false); }}>
-                                {l.flag} {l.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                         <button className="profile-dropdown-btn" type="button" onClick={logoutUser}>
                           {at.menuLogout}
                         </button>
