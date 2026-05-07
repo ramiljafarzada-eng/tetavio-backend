@@ -23,7 +23,7 @@ import type { HrmRequestContext } from '../guards/hrm-scope.guard';
 import { HrmScopeGuard } from '../guards/hrm-scope.guard';
 import { AttendanceService } from './attendance.service';
 import { CheckInDto, CheckOutDto } from './dto/check-in.dto';
-import { ListAttendanceQueryDto, ManualAttendanceDto } from './dto/manual-attendance.dto';
+import { BulkAttendanceDto, ListAttendanceQueryDto, ManualAttendanceDto } from './dto/manual-attendance.dto';
 
 @ApiTags('HRM - Attendance')
 @ApiBearerAuth()
@@ -48,6 +48,12 @@ export class AttendanceController {
   @HrmScopes('DEPT_ONLY', 'ACCOUNT_ALL')
   manual(@Body() dto: ManualAttendanceDto, @CurrentUser() user: JwtPayload) {
     return this.service.manualEntry(user, dto);
+  }
+
+  @Post('bulk')
+  @HrmScopes('DEPT_ONLY', 'ACCOUNT_ALL')
+  bulk(@Body() dto: BulkAttendanceDto, @CurrentUser() user: JwtPayload) {
+    return this.service.bulkEntry(user, dto);
   }
 
   @Get()

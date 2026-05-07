@@ -131,6 +131,9 @@ export const hrmCheckOut = (data) =>
 export const hrmManualAttendance = (data) =>
   hrmRequest('/hrm/attendance/manual', { method: 'POST', body: JSON.stringify(data) });
 
+export const hrmBulkAttendance = (data) =>
+  hrmRequest('/hrm/attendance/bulk', { method: 'POST', body: JSON.stringify(data) });
+
 export const hrmUpdateAttendance = (id, data) =>
   hrmRequest(`/hrm/attendance/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 

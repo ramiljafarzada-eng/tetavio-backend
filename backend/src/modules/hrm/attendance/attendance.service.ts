@@ -13,7 +13,7 @@ import {
   WorkScheduleConfig,
 } from './attendance-engine.service';
 import { CheckInDto, CheckOutDto } from './dto/check-in.dto';
-import { ListAttendanceQueryDto, ManualAttendanceDto } from './dto/manual-attendance.dto';
+import { BulkAttendanceDto, ListAttendanceQueryDto, ManualAttendanceDto } from './dto/manual-attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -169,6 +169,58 @@ export class AttendanceService {
     });
 
     return log;
+  }
+
+  async bulkEntry(user: JwtPayload, dto: BulkAttendanceDto) {
+    const employees = await this.prisma.employee.findMany({
+      where: { id: { in: dto.employeeIds }, accountId: user.accountId, deletedAt: null },
+      include: { workSchedule: true },
+    });
+
+    const dateOnly = new Date(dto.date);
+    const checkIn = dto.checkIn ? new Date(dto.checkIn) : null;
+    const checkOut = dto.checkOut ? new Date(dto.checkOut) : null;
+
+    const results = await Promise.all(
+      employees.map(async (emp) => {
+        const existing = await this.prisma.attendanceLog.findUnique({
+          where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
+        });
+        const effectiveCheckIn = checkIn ?? existing?.checkIn ?? null;
+        const effectiveCheckOut = checkOut ?? existing?.checkOut ?? null;
+        const schedule = this.buildScheduleConfig(emp.workSchedule);
+        const calc = this.engine.calculate(effectiveCheckIn, effectiveCheckOut, dateOnly, schedule);
+
+        return this.prisma.attendanceLog.upsert({
+          where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
+          create: {
+            accountId: user.accountId,
+            employeeId: emp.id,
+            date: dateOnly,
+            checkIn: effectiveCheckIn,
+            checkOut: effectiveCheckOut,
+            workedMinutes: calc.workedMinutes || null,
+            lateMinutes: calc.lateMinutes,
+            overtimeMinutes: calc.overtimeMinutes,
+            status: calc.status as never,
+            note: dto.note,
+            source: 'MANUAL',
+          },
+          update: {
+            ...(checkIn !== null && { checkIn }),
+            ...(checkOut !== null && { checkOut }),
+            workedMinutes: calc.workedMinutes || null,
+            lateMinutes: calc.lateMinutes,
+            overtimeMinutes: calc.overtimeMinutes,
+            status: calc.status as never,
+            ...(dto.note !== undefined && { note: dto.note }),
+            source: 'MANUAL',
+          },
+        });
+      }),
+    );
+
+    return { count: results.length };
   }
 
   async updateById(user: JwtPayload, id: string, dto: ManualAttendanceDto) {

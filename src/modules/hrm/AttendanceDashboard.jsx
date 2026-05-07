@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   hrmListEmployees,
   hrmManualAttendance,
+  hrmBulkAttendance,
   hrmUpdateAttendance,
   hrmDeleteAttendance,
   hrmListAttendance,
@@ -42,6 +43,114 @@ function fmtMin(min) {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return h > 0 ? `${h}s ${m}d` : `${m}d`;
+}
+
+function BulkModal({ employees, onClose, onSaved, ta, tc }) {
+  const now = new Date();
+  const todayDate = localDateStr(now);
+
+  const [date, setDate] = useState(todayDate);
+  const [checkIn, setCheckIn] = useState('09:00');
+  const [checkOut, setCheckOut] = useState('18:00');
+  const [selected, setSelected] = useState(new Set(employees.map((e) => e.id)));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const allSelected = selected.size === employees.length;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(employees.map((e) => e.id)));
+    }
+  };
+
+  const toggleOne = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (selected.size === 0) { setError(tc.selectEmployee || 'Ən az 1 işçi seçin'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await hrmBulkAttendance({
+        employeeIds: [...selected],
+        date,
+        checkIn: checkIn ? toLocalISO(date, checkIn) : undefined,
+        checkOut: checkOut ? toLocalISO(date, checkOut) : undefined,
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" style={{ maxWidth: 520, width: '100%' }} onClick={(e) => e.stopPropagation()}>
+        <h3>{ta.bulkTitle || 'Toplu davamiyyət qeydi'}</h3>
+        {error && <div className="hrm-error">{error}</div>}
+        <form onSubmit={submit}>
+          <div className="hrm-field">
+            <label>{ta.manualDate}</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>{ta.manualCheckIn}</label>
+              <input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
+            </div>
+            <div className="hrm-field">
+              <label>{ta.manualCheckOut}</label>
+              <input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="hrm-field">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label style={{ margin: 0 }}>{ta.colEmployee} ({selected.size}/{employees.length})</label>
+              <button type="button" className="ghost-btn" style={{ padding: '2px 10px', fontSize: '0.8rem' }} onClick={toggleAll}>
+                {allSelected ? (tc.deselectAll || 'Heçbirini seçmə') : (tc.selectAll || 'Hamısını seç')}
+              </button>
+            </div>
+            <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: '4px 0' }}>
+              {employees.map((emp) => (
+                <label key={emp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(emp.id)}
+                    onChange={() => toggleOne(emp.id)}
+                    style={{ width: 15, height: 15, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '0.88rem' }}>
+                    {emp.firstName} {emp.lastName}
+                    <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: '0.78rem' }}>({emp.employeeCode})</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="hrm-modal-footer">
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+            <button type="submit" className="primary-btn" disabled={saving || selected.size === 0}>
+              {saving ? tc.saving : `${tc.save} (${selected.size})`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function QuickCheckModal({ type, employees, onClose, onSaved, ta, tc }) {
@@ -272,6 +381,7 @@ export default function AttendanceDashboard({ lang }) {
   const [error, setError] = useState('');
   const [quickCheck, setQuickCheck] = useState(null);
   const [showManual, setShowManual] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [editLog, setEditLog] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [actionMsg, setActionMsg] = useState('');
@@ -317,7 +427,8 @@ export default function AttendanceDashboard({ lang }) {
           <button className="ghost-btn" onClick={() => { setActionMsg(''); setQuickCheck('out'); }}>
             {ta.checkOut}
           </button>
-          <button className="primary-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
+          <button className="ghost-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
+          <button className="primary-btn" onClick={() => setShowBulk(true)}>{ta.bulkEntry || 'Toplu qeyd'}</button>
         </div>
       </div>
 
@@ -402,6 +513,16 @@ export default function AttendanceDashboard({ lang }) {
         <ManualModal
           employees={employees}
           onClose={() => setShowManual(false)}
+          onSaved={load}
+          ta={ta}
+          tc={tc}
+        />
+      )}
+
+      {showBulk && (
+        <BulkModal
+          employees={employees}
+          onClose={() => setShowBulk(false)}
           onSaved={load}
           ta={ta}
           tc={tc}
