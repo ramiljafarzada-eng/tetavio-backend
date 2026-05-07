@@ -21327,7 +21327,6 @@ function renderSettings() {
               >
                 <span className="nav-icon" aria-hidden="true">{NAV_ICONS[item.id] || "•"}</span>
                 <span className="nav-label">{at.nav[item.id] || item.label}</span>
-                {item.children && <span className={`nav-chevron${isExpanded ? " open" : ""}`} aria-hidden="true">›</span>}
               </button>
               {item.children && isExpanded && !["banking", "purchases", "sales", "accountant"].includes(item.id) ? (
                 <div className="subnav-list">
