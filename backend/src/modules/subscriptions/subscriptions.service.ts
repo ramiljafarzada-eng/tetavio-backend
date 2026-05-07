@@ -165,24 +165,31 @@ export class SubscriptionsService {
       },
     });
 
-    if (existingPendingOrder) {
-      return {
-        orderId: existingPendingOrder.id,
-        status: existingPendingOrder.status,
-        amountMinor: existingPendingOrder.amountMinor,
-        currency: existingPendingOrder.currency,
-        idempotencyKey: existingPendingOrder.idempotencyKey,
-        isReusedPendingOrder: true,
-        nextAction: {
-          type: 'PAYMENT_REQUIRED',
-          note: 'Use payments checkout flow to complete upgrade. Activation happens immediately after successful payment.',
-        },
-      };
-    }
-
     const isAnnual = dto.billingCycle === 'annual';
     const annualPrice = ANNUAL_PRICE_MINOR[targetPlan.code];
     const amountMinor = isAnnual && annualPrice ? annualPrice : targetPlan.priceMinor;
+
+    if (existingPendingOrder) {
+      if (existingPendingOrder.amountMinor === amountMinor) {
+        return {
+          orderId: existingPendingOrder.id,
+          status: existingPendingOrder.status,
+          amountMinor: existingPendingOrder.amountMinor,
+          currency: existingPendingOrder.currency,
+          idempotencyKey: existingPendingOrder.idempotencyKey,
+          isReusedPendingOrder: true,
+          nextAction: {
+            type: 'PAYMENT_REQUIRED',
+            note: 'Use payments checkout flow to complete upgrade. Activation happens immediately after successful payment.',
+          },
+        };
+      }
+
+      await this.prisma.order.update({
+        where: { id: existingPendingOrder.id },
+        data: { status: OrderStatus.CANCELED },
+      });
+    }
 
     const order = await this.prisma.order.create({
       data: {
