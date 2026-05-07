@@ -197,6 +197,7 @@ export class PashaGateway implements PaymentGateway {
       ...(passphrase ? { passphrase } : {}),
       rejectUnauthorized,
       minVersion: 'TLSv1.2',
+      checkServerIdentity: () => undefined,
     };
   }
 

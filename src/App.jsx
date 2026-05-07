@@ -2328,7 +2328,7 @@ function StandaloneLegalPage({ page, lang, onLangChange }) {
             </a>
           ))}
         </div>
-        <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+        <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, {(I18N[lang] || I18N.az).copyright}</small>
       </footer>
     </div>
   );
@@ -2980,7 +2980,7 @@ function MainApp() {
 
       return collected;
     } catch (error) {
-      setCustomersError(error?.message || "Müştəri məlumatları backend-dən alınmadı.");
+      setCustomersError(error?.message || at.err_loadFailed);
       setCustomersMeta(null);
       setState((current) => ({ ...current, customers: [] }));
       return [];
@@ -3060,7 +3060,7 @@ function MainApp() {
       await syncCustomersFromBackend();
       cancelEdit("customers");
     } catch (error) {
-      setCustomersError(error?.message || "Müştəri yadda saxlanmadı.");
+      setCustomersError(error?.message || at.err_saveFailed);
     } finally {
       setCustomersLoading(false);
     }
@@ -3077,7 +3077,7 @@ function MainApp() {
         cancelEdit("customers");
       }
     } catch (error) {
-      setCustomersError(error?.message || "Müştəri silinmədi.");
+      setCustomersError(error?.message || at.err_deleteFailed);
     } finally {
       setCustomersLoading(false);
     }
@@ -3145,7 +3145,7 @@ function MainApp() {
 
       return collected;
     } catch (error) {
-      setVendorsError(error?.message || "Təchizatçı məlumatları backend-dən alınmadı.");
+      setVendorsError(error?.message || at.err_loadFailed);
       setVendorsMeta(null);
       setState((current) => ({ ...current, vendors: [] }));
       return [];
@@ -3221,7 +3221,7 @@ function MainApp() {
       setState((current) => ({ ...current, chartOfAccounts: collected }));
       return collected;
     } catch (error) {
-      setAccountsError(error?.message || "Hesablar planı backend-dən alınmadı.");
+      setAccountsError(error?.message || at.err_loadFailed);
       return [];
     } finally {
       setAccountsLoading(false);
@@ -3255,7 +3255,7 @@ function MainApp() {
       setState((current) => ({ ...current, manualJournals: collected }));
       return collected;
     } catch (error) {
-      setJournalsError(error?.message || "Müxabirləşmə jurnalı backend-dən alınmadı.");
+      setJournalsError(error?.message || at.err_loadFailed);
       return [];
     } finally {
       setJournalsLoading(false);
@@ -3296,7 +3296,7 @@ function MainApp() {
       setState((current) => ({ ...current, bills: collected }));
       return collected;
     } catch (error) {
-      setBillsError(error?.message || "Hesab-fakturalar backend-dən alınmadı.");
+      setBillsError(error?.message || at.err_loadFailed);
       setState((current) => ({ ...current, bills: [] }));
       return [];
     } finally {
@@ -3358,7 +3358,7 @@ function MainApp() {
       setState((current) => ({ ...current, bankingAccounts: collected }));
       return collected;
     } catch (error) {
-      setBankingError(error?.message || "Bank hesabları backend-dən alınmadı.");
+      setBankingError(error?.message || at.err_loadFailed);
       setState((current) => ({ ...current, bankingAccounts: [] }));
       return [];
     } finally {
@@ -3400,7 +3400,7 @@ function MainApp() {
       setState((current) => ({ ...current, bankTransactions: collected }));
       return collected;
     } catch (error) {
-      setBankingError(error?.message || "Bank əməliyyatları backend-dən alınmadı.");
+      setBankingError(error?.message || at.err_loadFailed);
       setState((current) => ({ ...current, bankTransactions: [] }));
       return [];
     } finally {
@@ -3461,7 +3461,7 @@ function MainApp() {
         cancelEdit("incomingGoodsServices");
       }
     } catch (error) {
-      setBillsError(error?.message || "Hesab-faktura silinmədi.");
+      setBillsError(error?.message || at.err_deleteFailed);
     } finally {
       setBillsLoading(false);
     }
@@ -3494,7 +3494,7 @@ function MainApp() {
       await syncAccountsFromBackend();
       cancelEdit("chartOfAccounts");
     } catch (error) {
-      setAccountsError(error?.message || "Hesab yadda saxlanmadı.");
+      setAccountsError(error?.message || at.err_saveFailed);
     } finally {
       setAccountsLoading(false);
     }
@@ -3508,7 +3508,7 @@ function MainApp() {
       await syncAccountsFromBackend();
       if (editing.chartOfAccounts === recordId) cancelEdit("chartOfAccounts");
     } catch (error) {
-      setAccountsError(error?.message || "Hesab silinmədi.");
+      setAccountsError(error?.message || at.err_deleteFailed);
     } finally {
       setAccountsLoading(false);
     }
@@ -3546,7 +3546,7 @@ function MainApp() {
       await syncJournalsFromBackend();
       cancelEdit("manualJournals");
     } catch (error) {
-      setJournalsError(error?.message || "Müxabirləşmə yadda saxlanmadı.");
+      setJournalsError(error?.message || at.err_saveFailed);
     } finally {
       setJournalsLoading(false);
     }
@@ -3593,7 +3593,7 @@ function MainApp() {
       await syncBillsFromBackend();
       cancelEdit("incomingGoodsServices");
     } catch (error) {
-      setBillsError(error?.message || "Hesab-faktura yadda saxlanmadı.");
+      setBillsError(error?.message || at.err_saveFailed);
     } finally {
       setBillsLoading(false);
     }
@@ -3607,7 +3607,7 @@ function MainApp() {
       await syncJournalsFromBackend();
       if (editing.manualJournals === recordId) cancelEdit("manualJournals");
     } catch (error) {
-      setJournalsError(error?.message || "Müxabirləşmə silinmədi.");
+      setJournalsError(error?.message || at.err_deleteFailed);
     } finally {
       setJournalsLoading(false);
     }
@@ -3655,7 +3655,7 @@ function MainApp() {
       await syncVendorsFromBackend();
       cancelEdit("vendors");
     } catch (error) {
-      setVendorsError(error?.message || "Təchizatçı yadda saxlanmadı.");
+      setVendorsError(error?.message || at.err_saveFailed);
     } finally {
       setVendorsLoading(false);
     }
@@ -3672,7 +3672,7 @@ function MainApp() {
         cancelEdit("vendors");
       }
     } catch (error) {
-      setVendorsError(error?.message || "Təchizatçı silinmədi.");
+      setVendorsError(error?.message || at.err_deleteFailed);
     } finally {
       setVendorsLoading(false);
     }
@@ -3727,7 +3727,7 @@ function MainApp() {
       window.localStorage.removeItem(PARAMS_SETTINGS_KEY);
       return nextSettings;
     } catch (error) {
-      setCompanySettingsError(error?.message || "Şirkət məlumatları backend-dən alınmadı.");
+      setCompanySettingsError(error?.message || at.err_loadFailed);
       return null;
     } finally {
       setCompanySettingsLoading(false);
@@ -3842,7 +3842,7 @@ function MainApp() {
 
       return collected;
     } catch (error) {
-      setInvoicesError(error?.message || "Fakturalar backend-dən alınmadı.");
+      setInvoicesError(error?.message || at.err_loadFailed);
       setInvoicesMeta(null);
       setState((current) => ({ ...current, invoices: [] }));
       return [];
@@ -3900,7 +3900,7 @@ function MainApp() {
     try {
       payload = buildInvoiceApiPayload(activeDraft);
     } catch (error) {
-      setInvoicesError(error?.message || "Faktura payload qurulmadı.");
+      setInvoicesError(error?.message || at.err_saveFailed);
       return;
     }
 
@@ -3924,7 +3924,7 @@ function MainApp() {
       await syncInvoicesFromBackend();
       cancelEdit("invoices");
     } catch (error) {
-      setInvoicesError(error?.message || "Faktura yadda saxlanmadı.");
+      setInvoicesError(error?.message || at.err_saveFailed);
     } finally {
       setInvoicesLoading(false);
     }
@@ -3944,7 +3944,7 @@ function MainApp() {
         setInvoiceLedgerRecordId(null);
       }
     } catch (error) {
-      setInvoicesError(error?.message || "Faktura silinmədi.");
+      setInvoicesError(error?.message || at.err_deleteFailed);
     } finally {
       setInvoicesLoading(false);
     }
@@ -3976,7 +3976,7 @@ function MainApp() {
       setInvoicePaymentDraft({ amountMinor: "", paymentDate: "", method: "" });
       await syncInvoicesFromBackend();
     } catch (error) {
-      setInvoicePaymentsError(error?.message || "Ödəniş əlavə edilmədi.");
+      setInvoicePaymentsError(error?.message || at.err_saveFailed);
     } finally {
       setInvoicePaymentsLoading(false);
     }
@@ -3990,7 +3990,7 @@ function MainApp() {
       setInvoicePayments(Array.isArray(result?.payments) ? result.payments : []);
       await syncInvoicesFromBackend();
     } catch (error) {
-      setInvoicePaymentsError(error?.message || "Ödəniş silinmədi.");
+      setInvoicePaymentsError(error?.message || at.err_deleteFailed);
     } finally {
       setInvoicePaymentsLoading(false);
     }
@@ -4010,20 +4010,21 @@ function MainApp() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      setPdfError(error?.message || "PDF yüklənmədi.");
+      setPdfError(error?.message || at.err_loadFailed);
     } finally {
       setPdfLoading(false);
     }
   }
 
   async function sendInvoiceByEmail(invoiceId) {
+    const at = I18N[hubLang] || I18N.az;
     setSendEmailLoading(true);
     setSendEmailMessage("");
     try {
       await apiSendInvoiceEmail(invoiceId, updateBackendSession);
-      setSendEmailMessage("Invoice göndərildi");
+      setSendEmailMessage(at.inv_emailSent);
     } catch (error) {
-      setSendEmailMessage(error?.message || "Göndərmə uğursuz oldu.");
+      setSendEmailMessage(error?.message || at.inv_sendFail);
     } finally {
       setSendEmailLoading(false);
     }
@@ -4036,7 +4037,7 @@ function MainApp() {
       const data = await apiListTeam(updateBackendSession);
       setTeamMembers(Array.isArray(data) ? data : []);
     } catch (err) {
-      setTeamError(err?.message || "Komanda üzvləri yüklənmədi.");
+      setTeamError(err?.message || at.err_loadFailed);
     } finally {
       setTeamLoading(false);
     }
@@ -4052,9 +4053,9 @@ function MainApp() {
       setTeamMembers((prev) => [...prev, created]);
       setTeamDraft({ email: "", fullName: "", role: "ACCOUNTANT", password: "" });
       setTeamFormVisible(false);
-      setTeamActionMsg("Üzv əlavə edildi.");
+      setTeamActionMsg(at.team_memberAddedOk);
     } catch (err) {
-      setTeamError(err?.message || "Üzv əlavə edilmədi.");
+      setTeamError(err?.message || at.err_saveFailed);
     } finally {
       setTeamLoading(false);
     }
@@ -4066,9 +4067,9 @@ function MainApp() {
     try {
       const updated = await apiUpdateTeamMember(memberId, { role }, updateBackendSession);
       setTeamMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
-      setTeamActionMsg("Rol yeniləndi.");
+      setTeamActionMsg(at.team_roleUpdatedOk);
     } catch (err) {
-      setTeamError(err?.message || "Rol yenilənmədi.");
+      setTeamError(err?.message || at.err_saveFailed);
     }
   }
 
@@ -4078,9 +4079,9 @@ function MainApp() {
     try {
       const updated = await apiDeactivateTeamMember(memberId, updateBackendSession);
       setTeamMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
-      setTeamActionMsg("Üzv deaktiv edildi.");
+      setTeamActionMsg(at.team_memberDeactivatedOk);
     } catch (err) {
-      setTeamError(err?.message || "Deaktiv edilmədi.");
+      setTeamError(err?.message || at.err_deleteFailed);
     }
   }
 
@@ -4365,7 +4366,7 @@ function MainApp() {
     }
 
     syncBackendSubscription(backendSession).catch((error) => {
-      setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+      setBooksNotice(error?.message || (I18N[hubLang] || I18N.az).sync_error);
     });
   }, [backendSession?.accessToken]);
 
@@ -4376,9 +4377,8 @@ function MainApp() {
 
     if (!pendingPaymentReturn.uiHandled) {
       const status = String(pendingPaymentReturn.status || "").toLowerCase();
-      const fallbackMessage = status === "success"
-        ? "Ödəniş uğurla tamamlandı. Abunəliyiniz yenilənir."
-        : "Ödəniş tamamlanmadı və ya bank tərəfindən təsdiqlənmədi.";
+      const _at = I18N[hubLang] || I18N.az;
+      const fallbackMessage = status === "success" ? _at.pay_returnSuccess : _at.pay_returnFail;
 
       setActiveProduct("hub");
       setAccountPanel("plans");
@@ -4396,7 +4396,7 @@ function MainApp() {
     }
 
     syncBackendSubscription(backendSession).catch((error) => {
-      setBooksNotice(error?.message || "Abunəlik məlumatı yenilənmədi.");
+      setBooksNotice(error?.message || (I18N[hubLang] || I18N.az).sync_subError);
     });
 
     apiGetMyOrders(updateBackendSession)
@@ -4425,7 +4425,7 @@ function MainApp() {
         setActiveVerifyToken("");
       })
       .catch((err) => {
-        setVerifyEmailError(err?.message || "Doğrulama linki etibarsız və ya müddəti bitib.");
+        setVerifyEmailError(err?.message || at.err_loadFailed);
         setActiveVerifyToken("");
       });
   }, [activeVerifyToken]);
@@ -4511,7 +4511,7 @@ function MainApp() {
         setAdminOverviewLoading(false);
       })
       .catch((err) => {
-        setAdminOverviewError(err?.message || "Admin məlumatları yüklənmədi.");
+        setAdminOverviewError(err?.message || at.err_loadFailed);
         setAdminOverviewLoading(false);
       });
   }, [currentUser]);
@@ -4530,7 +4530,7 @@ function MainApp() {
         setAdminAccountsLoading(false);
       })
       .catch((err) => {
-        setAdminAccountsError(err?.message || "Accounts yüklənmədi.");
+        setAdminAccountsError(err?.message || at.err_loadFailed);
         setAdminAccountsLoading(false);
       });
   }, [currentUser, adminActiveTab, adminAccountsPage, adminAccountsSearch]);
@@ -4546,7 +4546,7 @@ function MainApp() {
         setAdminFinanceLoading(false);
       })
       .catch((err) => {
-        setAdminFinanceError(err?.message || "Finance məlumatları yüklənmədi.");
+        setAdminFinanceError(err?.message || at.err_loadFailed);
         setAdminFinanceLoading(false);
       });
   }, [currentUser, adminActiveTab]);
@@ -4567,7 +4567,7 @@ function MainApp() {
         setAdminSubsLoading(false);
       })
       .catch((err) => {
-        setAdminSubsError(err?.message || "Subscriptions yüklənmədi.");
+        setAdminSubsError(err?.message || at.err_loadFailed);
         setAdminSubsLoading(false);
       });
   }, [currentUser, adminActiveTab, adminSubsPage, adminSubsSearch, adminSubsStatus]);
@@ -4587,7 +4587,7 @@ function MainApp() {
         setAdminActivityLoading(false);
       })
       .catch((err) => {
-        setAdminActivityError(err?.message || "Activity yüklənmədi.");
+        setAdminActivityError(err?.message || at.err_loadFailed);
         setAdminActivityLoading(false);
       });
   }, [currentUser, adminActiveTab, adminActivityPage, adminActivitySearch, adminActivityType]);
@@ -4603,7 +4603,7 @@ function MainApp() {
         setAdminSystemHealthLoading(false);
       })
       .catch((err) => {
-        setAdminSystemHealthError(err?.message || "System health yüklənmədi.");
+        setAdminSystemHealthError(err?.message || at.err_loadFailed);
         setAdminSystemHealthLoading(false);
       });
   }, [currentUser, adminActiveTab]);
@@ -4623,7 +4623,7 @@ function MainApp() {
         setAdminAnomaliesLoading(false);
       })
       .catch((err) => {
-        setAdminAnomaliesError(err?.message || "Anomalies yüklənmədi.");
+        setAdminAnomaliesError(err?.message || at.err_loadFailed);
         setAdminAnomaliesLoading(false);
       });
   }, [currentUser, adminActiveTab, adminAnomaliesPage, adminAnomaliesSearch, adminAnomaliesSeverity, adminAnomaliesType, adminAnomaliesKey]);
@@ -4642,7 +4642,7 @@ function MainApp() {
         setAdminAccountDetailLoading(false);
       })
       .catch((err) => {
-        setAdminAccountDetailError(err?.message || "Account detail yüklənmədi.");
+        setAdminAccountDetailError(err?.message || at.err_loadFailed);
         setAdminAccountDetailLoading(false);
       });
   }, [adminAccountDetailId, adminAccountDetailKey]);
@@ -4702,7 +4702,7 @@ function MainApp() {
         setArAgingLoading(false);
       })
       .catch((err) => {
-        setArAgingError(err?.message || "AR aging hesabatı yüklənmədi.");
+        setArAgingError(err?.message || at.err_loadFailed);
         setArAgingLoading(false);
       });
   }, [currentUser, activeModule]);
@@ -5030,9 +5030,10 @@ function MainApp() {
   function guardOperationAccess() {
     if (canUsePaidFeatures()) return true;
     const plan = getCurrentPlan();
+    const at = I18N[hubLang] || I18N.az;
     setBackupStatus({
       tone: "warning",
-      message: `${plan.name} planı üçün əməliyyat limiti bitib. Davam etmək üçün planı yeniləyin və ya daha yüksək paket seçin.`
+      message: at.guard_opLimitExceeded.replace("{plan}", plan.name)
     });
     setAccountPanel("plans");
     setProfileMenuOpen(false);
@@ -5081,14 +5082,14 @@ function MainApp() {
       return;
     }
     if (authUsers.some((user) => user.email.toLowerCase() === email)) {
-      setBackupStatus({ tone: "warning", message: "Bu e-poçt ilə artıq istifadəçi mövcuddur." });
+      setBackupStatus({ tone: "warning", message: at.team_emailTaken });
       return;
     }
 
     const config = getStaffRoleConfig(teamMemberDraft.staffRole);
     const usedCount = authUsers.filter((user) => getAccountOwnerEmail(user) === ownerEmail && isInternalUser(user) && user.staffRole === teamMemberDraft.staffRole).length;
     if (usedCount >= config.maxUsers) {
-      setBackupStatus({ tone: "warning", message: `${teamMemberDraft.staffRole} üçün maksimum ${config.maxUsers} nəfər yaratmaq olar.` });
+      setBackupStatus({ tone: "warning", message: at.team_maxUsersReached.replace("{role}", teamMemberDraft.staffRole).replace("{max}", config.maxUsers) });
       return;
     }
 
@@ -5104,12 +5105,12 @@ function MainApp() {
 
     setAuthUsers((current) => [...current, nextUser]);
     setTeamMemberDraft({ fullName: "", email: "", password: "", staffRole: "Admin" });
-    setBackupStatus({ tone: "success", message: `${teamMemberDraft.staffRole} rolu ilə yeni istifadəçi yaradıldı.` });
+    setBackupStatus({ tone: "success", message: at.team_memberAdded.replace("{role}", teamMemberDraft.staffRole) });
   }
 
   function removeTeamMember(userEmail) {
     setAuthUsers((current) => current.filter((user) => user.email !== userEmail));
-    setBackupStatus({ tone: "success", message: "Daxili istifadəçi silindi." });
+    setBackupStatus({ tone: "success", message: at.team_memberRemoved });
   }
 
   function openPaymentPanel(planCode, billingCycle) {
@@ -5130,8 +5131,9 @@ function MainApp() {
   }
 
   async function submitTestPayment() {
+    const at = I18N[hubLang] || I18N.az;
     if (!currentUser || !paymentDraft.planCode) {
-      setBooksNotice("Plan seçimi tapılmadı.");
+      setBooksNotice(at.pay_noPlan);
       return;
     }
 
@@ -5155,22 +5157,23 @@ function MainApp() {
       });
 
       if (checkout.gateway === "PASHA" && checkout.checkoutUrl) {
-        setBooksNotice("Təhlükəsiz ödəniş səhifəsinə yönləndirilirsiniz.");
+        setBooksNotice(at.pay_redirecting);
         window.location.assign(checkout.checkoutUrl);
         return;
       }
 
-      setBooksNotice("Ödəniş rejimi MOCK olaraq qalır. Render env-də PAYMENT_GATEWAY=PASHA və PASHA sertifikatları qurulduqdan sonra real ödəniş səhifəsinə yönləndiriləcəksiniz.");
+      setBooksNotice(at.pay_mockMode);
     } catch (error) {
-      setBooksNotice(error?.message || "Upgrade/checkout alınmadı.");
+      setBooksNotice(error?.message || at.pay_upgradeFail);
     } finally {
       setSubscriptionLoading(false);
     }
   }
 
   async function submitMockPaymentResult() {
+    const at = I18N[hubLang] || I18N.az;
     if (!checkoutResult?.gatewayPaymentId) {
-      setBooksNotice("Əvvəlcə checkout yaradın.");
+      setBooksNotice(at.pay_noCheckout);
       return;
     }
 
@@ -5192,11 +5195,11 @@ function MainApp() {
 
       setBooksNotice(
         paymentStatusDraft === "SUCCESS"
-          ? "Mock payment SUCCESS tətbiq edildi. Abunəlik yeniləndi."
-          : "Mock payment FAILED tətbiq edildi. Abunəlik dəyişmədən qaldı.",
+          ? at.pay_mockSuccess
+          : at.pay_mockFailed,
       );
     } catch (error) {
-      setBooksNotice(error?.message || "Mock payment callback alınmadı.");
+      setBooksNotice(error?.message || at.pay_mockCallbackFail);
     } finally {
       setSubscriptionLoading(false);
     }
@@ -5666,7 +5669,7 @@ function MainApp() {
           {moduleSupportsSalesControls(moduleId) && state.settings.salespersonField === "Bəli" ? (
             <label>
               <span>{at.inv_form_salesperson}</span>
-              <input value={draft.salesperson || ""} onChange={(event) => updateDraft(moduleId, "salesperson", event.target.value)} placeholder="Ad və soyad" />
+              <input value={draft.salesperson || ""} onChange={(event) => updateDraft(moduleId, "salesperson", event.target.value)} placeholder={at.inv_form_salespersonPh} />
             </label>
           ) : null}
           {moduleSupportsSalesControls(moduleId) && state.settings.discountMode !== "Endirim verilmir" ? (
@@ -5874,20 +5877,21 @@ function MainApp() {
   }
 
   function getAccountTypeMeta(accountType) {
+    const at = I18N[hubLang] || I18N.az;
     const normalizedType = normalizeAccountTypeValue(accountType);
     switch (normalizedType) {
       case "Gəlir":
-        return { label: "Gəlir hesabı", shortLabel: "Gəlir", className: "income" };
+        return { label: at.coa_incomeAcc, shortLabel: at.coa_income, className: "income" };
       case "Xərc":
-        return { label: "Xərc hesabı", shortLabel: "Xərc", className: "expense" };
+        return { label: at.coa_expenseAcc, shortLabel: at.coa_expense, className: "expense" };
       case "Aktiv":
-        return { label: "Balans hesabı", shortLabel: "Aktiv", className: "asset" };
+        return { label: at.coa_balanceAcc, shortLabel: at.coa_asset, className: "asset" };
       case "Öhdəlik":
-        return { label: "Balans hesabı", shortLabel: "Öhdəlik", className: "liability" };
+        return { label: at.coa_balanceAcc, shortLabel: at.coa_liability, className: "liability" };
       case "Kapital":
-        return { label: "Balans hesabı", shortLabel: "Kapital", className: "equity" };
+        return { label: at.coa_balanceAcc, shortLabel: at.coa_equity, className: "equity" };
       default:
-        return { label: "Hesab tipi seçilməyib", shortLabel: "Naməlum", className: "neutral" };
+        return { label: at.coa_unknownAcc, shortLabel: at.coa_unknown, className: "neutral" };
     }
   }
 
@@ -6185,18 +6189,19 @@ function MainApp() {
   }
 
   function closeProfitLossToPeriodResult(range = getReportRange()) {
+    const at = I18N[hubLang] || I18N.az;
     const plan = buildProfitLossClosingPlan(range);
     const existingAutoCloseJournal = state.manualJournals.find((journal) => journal.autoCloseType === "profit_loss_closure" && journal.autoCloseKey === plan.periodKey);
     if (existingAutoCloseJournal) {
-      window.alert("Bu hesabat dövrü üçün mənfəət və zərər bağlanışı artıq yaradılıb.");
+      window.alert(at.pl_alreadyClosed);
       return;
     }
     if (!plan.lines.length) {
-      window.alert("Bağlanacaq gəlir və ya xərc qalığı tapılmadı.");
+      window.alert(at.pl_alertNothingToClose);
       return;
     }
     if (!guardOperationAccess()) return;
-    const confirmed = window.confirm(`Seçilmiş dövr üçün gəlir və xərc hesabları 801 hesabına bağlanacaq. Davam edilsin?`);
+    const confirmed = window.confirm(at.pl_confirmClosePeriod);
     if (!confirmed) return;
 
     const reference = `P&L close ${plan.range.start} - ${plan.range.end}`;
@@ -6238,7 +6243,7 @@ function MainApp() {
       };
     });
     markOperationUsage();
-    window.alert("Mənfəət və zərər bağlanışı yaradıldı.");
+    window.alert(at.pl_alertClosed);
   }
 
   function buildProfitLossClosingPlan(range = getReportRange(), lookup = getTrialBalanceLookup(range)) {
@@ -7200,7 +7205,8 @@ function MainApp() {
   }
 
   function resetDemoData() {
-    if (!window.confirm("Proqramdakı bütün mövcud məlumatlar sıfırlanacaq. Davam etmək istəyirsiniz?")) return;
+    const at = I18N[hubLang] || I18N.az;
+    if (!window.confirm(at.confirmReset)) return;
     const seed = normalizeAppState(createResetData());
     setState(seed);
     setDrafts({});
@@ -7213,17 +7219,18 @@ function MainApp() {
   }
 
   async function exportBackup() {
-    if (!window.confirm("Cari məlumatların backup faylı yaradılsın?")) return;
-    setBackupStatus({ tone: "info", message: "Backup hazırlanır..." });
+    const at = I18N[hubLang] || I18N.az;
+    if (!window.confirm(at.confirmBackup)) return;
+    setBackupStatus({ tone: "info", message: at.backup_creating });
     const invoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
     if (invoke) {
       try {
         const backupPath = await invoke("export_backup", { state });
-        setBackupStatus({ tone: "success", message: `Backup faylı yaradıldı: ${backupPath}` });
+        setBackupStatus({ tone: "success", message: at.backup_created.replace("{path}", backupPath) });
         return;
       } catch (error) {
         const message = error?.message || String(error || "");
-        setBackupStatus({ tone: "warning", message: `Desktop backup alınmadı${message ? `: ${message}` : ""}. Brauzer üsulu ilə yenidən cəhd edilir.` });
+        setBackupStatus({ tone: "warning", message: at.backup_desktopFailed + (message ? `: ${message}` : "") });
       }
     }
 
@@ -7234,20 +7241,22 @@ function MainApp() {
     link.download = "finotam-erp-backup.json";
     link.click();
     URL.revokeObjectURL(url);
-    setBackupStatus({ tone: "success", message: "Backup endirilmək üçün hazırlandı." });
+    setBackupStatus({ tone: "success", message: at.backup_ready });
   }
 
   function triggerRestore() {
-    if (!window.confirm("Backup faylından məlumatlar bərpa olunacaq. Cari məlumatların üzərinə yazıla bilər. Davam etmək istəyirsiniz?")) return;
+    const at = I18N[hubLang] || I18N.az;
+    if (!window.confirm(at.confirmRestore)) return;
     restoreInputRef.current?.click();
   }
 
   async function restoreBackup(event) {
+    const at = I18N[hubLang] || I18N.az;
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
-      setBackupStatus({ tone: "info", message: "Backup bərpa olunur..." });
+      setBackupStatus({ tone: "info", message: at.backup_restoring });
       const text = await file.text();
       const restored = normalizeAppState(JSON.parse(text));
       setState(restored);
@@ -7258,10 +7267,10 @@ function MainApp() {
       setEditingBank(null);
       setEditingDocument(null);
       setSection("home");
-      setBackupStatus({ tone: "success", message: `Backup uğurla bərpa olundu: ${file.name}` });
+      setBackupStatus({ tone: "success", message: at.backup_restored.replace("{file}", file.name) });
     } catch (error) {
       const message = error?.message || String(error || "");
-      setBackupStatus({ tone: "warning", message: `Backup bərpa olunmadı${message ? `: ${message}` : ""}` });
+      setBackupStatus({ tone: "warning", message: `${at.backup_restoreFail}${message ? `: ${message}` : ""}` });
     } finally {
       event.target.value = "";
     }
@@ -7595,6 +7604,7 @@ function MainApp() {
 
   async function submitModule(moduleId, event) {
     event.preventDefault();
+    const at = I18N[hubLang] || I18N.az;
     const config = MODULES[moduleId];
     const activeDraft = drafts[moduleId] || createModuleDraft(moduleId);
     const editingId = editing[moduleId];
@@ -7765,7 +7775,7 @@ function MainApp() {
       return nextState;
     });
     if (blockedByInventory) {
-      window.alert("Inventory tracking aktiv olan mal üçün miqdar daxil edin və stok qalığını yoxlayın.");
+      window.alert(at.inv_blockAlert);
       return;
     }
 
@@ -7904,7 +7914,7 @@ function MainApp() {
 
       setProfileSaved(true);
     } catch (error) {
-      setCompanySettingsError(error?.message || "Şirkət məlumatları yadda saxlanmadı.");
+      setCompanySettingsError(error?.message || at.err_saveFailed);
       setProfileSaved(false);
     } finally {
       setCompanySettingsLoading(false);
@@ -8015,7 +8025,7 @@ function MainApp() {
       setEditingBank(null);
       setBankView(bankFormOrigin || "banks");
     } catch (error) {
-      setBankingError(error?.message || "Bank hesabı yadda saxlanmadı.");
+      setBankingError(error?.message || at.err_saveFailed);
     } finally {
       setBankingLoading(false);
     }
@@ -8093,7 +8103,7 @@ function renderItemsCatalog() {
                 <div className="item-editor-fields">
                   <label><span>{at.ic_name}</span><input value={draft.name ?? ""} onChange={(event) => updateDraft("itemsCatalog", "name", event.target.value)} required /></label>
                   <label><span>{at.ic_type}</span><div className="type-toggle-group"><button className={`type-toggle ${draft.type === "Anbar malı" ? "active" : ""}`} type="button" onClick={() => updateDraft("itemsCatalog", "type", "Anbar malı")}>{at.ic_typeGoods}</button><button className={`type-toggle ${draft.type === "Xidmət" ? "active" : ""}`} type="button" onClick={() => updateDraft("itemsCatalog", "type", "Xidmət")}>{at.ic_typeService}</button></div></label>
-                  <label><span>{at.ic_unit}</span><input value={draft.usageUnit ?? ""} onChange={(event) => updateDraft("itemsCatalog", "usageUnit", event.target.value)} placeholder="ədəd, kq, gün..." /></label>
+                  <label><span>{at.ic_unit}</span><input value={draft.usageUnit ?? ""} onChange={(event) => updateDraft("itemsCatalog", "usageUnit", event.target.value)} placeholder={at.ic_unitPh} /></label>
                   <label><span>SKU</span><input value={draft.sku ?? ""} onChange={(event) => updateDraft("itemsCatalog", "sku", event.target.value)} /></label>
                   <label><span>{at.ic_openingQty}</span><input type="number" step="0.01" value={draft.stockOnHand ?? ""} onChange={(event) => updateDraft("itemsCatalog", "stockOnHand", event.target.value)} disabled={draft.type === "Xidmət"} /></label>
                   <label><span>{at.ic_tracking}</span><select value={draft.trackInventory ?? "Xeyr"} onChange={(event) => updateDraft("itemsCatalog", "trackInventory", event.target.value)}><option value="Bəli">{at.yes}</option><option value="Xeyr">{at.no}</option></select></label>
@@ -8150,7 +8160,7 @@ function renderItemsCatalog() {
             emptyMessage={at.noItems}
             rows={rows.map((record) => (
               <tr key={record.id}>
-                <td>{record.name}{isLowStockItem(record) ? <div className="inline-warning">Minimum həddə çatıb</div> : null}</td>
+                <td>{record.name}{isLowStockItem(record) ? <div className="inline-warning">{at.ic_lowStockWarn}</div> : null}</td>
                 <td>{record.purchaseDescription || "-"}</td>
                 <td>{currency(record.purchaseRate, state.settings.currency)}</td>
                 <td>{record.salesDescription || "-"}</td>
@@ -8346,7 +8356,7 @@ function renderItemsCatalog() {
               <label>
                 <span>{at.ic_unit}</span>
                 <div className="nomen-unit-field">
-                  <input list="nomen-unit-list" value={draft.unit ?? ""} onChange={(e) => updateDraft("goods", "unit", e.target.value)} placeholder="Seçin və ya yazın..." />
+                  <input list="nomen-unit-list" value={draft.unit ?? ""} onChange={(e) => updateDraft("goods", "unit", e.target.value)} placeholder={at.opt_selectOrType} />
                   <datalist id="nomen-unit-list">
                     {["ədəd","kq","qram","ton","litr","ml","metr","sm","m²","m³","km","qutu","paket","dəst","cüt","top","çuval","xidmət","saat","gün","ay","il"].map((u) => <option key={u} value={u} />)}
                   </datalist>
@@ -8630,7 +8640,7 @@ function renderItemsCatalog() {
                   <td><div className="row-actions">
                     <button className="table-btn" onClick={() => startEdit("invoices", record)} disabled={invoicesLoading}>{at.edit}</button>
                     <button className="table-btn danger-btn" onClick={() => removeModuleRecord("invoices", record.id)} disabled={invoicesLoading}>{at.delete}</button>
-                    <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId((current) => current === record.id ? null : record.id)} disabled={invoicesLoading}>Müxabirləşməyə bax</button>
+                    <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId((current) => current === record.id ? null : record.id)} disabled={invoicesLoading}>{at.inv_viewLedger}</button>
                   </div></td>
                 </tr>
               ))}
@@ -8639,7 +8649,7 @@ function renderItemsCatalog() {
               <div className="incoming-ledger-panel">
                 <div className="incoming-ledger-panel-head">
                   <strong>Müxabirləşmə: {activeInvoiceLedgerRecord.invoiceNumber || "Satış qaiməsi"}</strong>
-                  <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId(null)}>Bağla</button>
+                  <button className="table-btn" type="button" onClick={() => setInvoiceLedgerRecordId(null)}{at.close}</button>
                 </div>
                 <Table
                   headers={["Hesab", "Debet", "Kredit"]}
@@ -8652,7 +8662,7 @@ function renderItemsCatalog() {
                     </tr>
                   )).concat([
                     <tr key="invoice-ledger-total">
-                      <td><strong>Cəmi</strong></td>
+                      <td><strong>{col("Cəmi")}</strong></td>
                       <td><strong>{formatInvoiceLedgerAmount(activeInvoiceLedgerTotals.debit)}</strong></td>
                       <td><strong>{formatInvoiceLedgerAmount(activeInvoiceLedgerTotals.credit)}</strong></td>
                     </tr>
@@ -8680,7 +8690,7 @@ function renderItemsCatalog() {
                     onClick={() => downloadInvoicePdf(editing.invoices, draft.invoiceNumber)}
                     disabled={pdfLoading}
                   >
-                    {pdfLoading ? "Yüklənir..." : "PDF Yüklə"}
+                    {pdfLoading ? at.loading : at.inv_pdfDownload}
                   </button>
                   {pdfError ? <span style={{ color: "var(--danger)", fontSize: 12 }}>{pdfError}</span> : null}
                   <button
@@ -8689,10 +8699,10 @@ function renderItemsCatalog() {
                     onClick={() => sendInvoiceByEmail(editing.invoices)}
                     disabled={sendEmailLoading || !state.customers.find((c) => c.id === draft.customerId)?.email}
                   >
-                    {sendEmailLoading ? "Göndərilir..." : "E-poçtla göndər"}
+                    {sendEmailLoading ? at.inv_sending : at.inv_sendEmail}
                   </button>
                   {sendEmailMessage ? (
-                    <span style={{ color: sendEmailMessage === "Invoice göndərildi" ? "var(--success, #16a34a)" : "var(--danger)", fontSize: 12 }}>
+                    <span style={{ color: sendEmailMessage === at.inv_emailSent ? "var(--success, #16a34a)" : "var(--danger)", fontSize: 12 }}>
                       {sendEmailMessage}
                     </span>
                   ) : null}
@@ -8714,7 +8724,7 @@ function renderItemsCatalog() {
                 </label>
                 {editing.invoices && draft.paidAt ? (
                   <label className="bill-header-field">
-                    <span>Ödəniş tarixi</span>
+                    <span>{at.inv_payDate}</span>
                     <input type="date" value={draft.paidAt} readOnly disabled style={{ opacity: 0.7 }} />
                   </label>
                 ) : null}
@@ -8726,7 +8736,7 @@ function renderItemsCatalog() {
                     updateDraft("invoices", "customerId", selectedId);
                     updateDraft("invoices", "customerName", selectedCustomer ? String(selectedCustomer.companyName || selectedCustomer.displayName || "").trim() : "");
                   }} required disabled={invoicesLoading}>
-                    <option value="">Müştəri seçin...</option>
+                    <option value="">{at.inv_selectCustomer}</option>
                     {invoiceCustomerOptions.map((customer) => <option key={customer.id} value={customer.id}>{customer.label}</option>)}
                   </select>
                 </label>
@@ -8824,10 +8834,10 @@ function renderItemsCatalog() {
                 <div className="panel" style={{ margin: "1.5rem 0 0", padding: "1.25rem 1.5rem" }}>
                   <div className="panel-head" style={{ marginBottom: "1rem" }}>
                     <div>
-                      <h3 style={{ margin: 0 }}>Ödənişlər</h3>
+                      <h3 style={{ margin: 0 }}>{at.inv_payments}</h3>
                       <p className="panel-copy" style={{ marginTop: 4 }}>
-                        Ödənilib: <strong>{currency(paidAmountMinor / 100, cur)}</strong>
-                        {" · "}Qalıq: <strong style={{ color: outstandingMinor > 0 ? "var(--danger)" : "#10b981" }}>{currency(outstandingMinor / 100, cur)}</strong>
+                        {at.inv_paidLabel}: <strong>{currency(paidAmountMinor / 100, cur)}</strong>
+                        {" · "}{at.inv_outstandingLabel}: <strong style={{ color: outstandingMinor > 0 ? "var(--danger)" : "#10b981" }}>{currency(outstandingMinor / 100, cur)}</strong>
                       </p>
                     </div>
                   </div>
@@ -8838,9 +8848,9 @@ function renderItemsCatalog() {
                     <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "1rem", fontSize: 13 }}>
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                          <th style={{ textAlign: "left", padding: "4px 8px" }}>Tarix</th>
-                          <th style={{ textAlign: "left", padding: "4px 8px" }}>Üsul</th>
-                          <th style={{ textAlign: "right", padding: "4px 8px" }}>Məbləğ</th>
+                          <th style={{ textAlign: "left", padding: "4px 8px" }}>{col("Tarix")}</th>
+                          <th style={{ textAlign: "left", padding: "4px 8px" }}>{col("Üsul")}</th>
+                          <th style={{ textAlign: "right", padding: "4px 8px" }}>{col("Məbləğ")}</th>
                           <th style={{ padding: "4px 8px" }}></th>
                         </tr>
                       </thead>
@@ -8863,13 +8873,13 @@ function renderItemsCatalog() {
                       </tbody>
                     </table>
                   ) : (
-                    <p className="panel-copy" style={{ marginBottom: "1rem" }}>Hələ ödəniş yoxdur.</p>
+                    <p className="panel-copy" style={{ marginBottom: "1rem" }}>{at.inv_noPayments}</p>
                   )}
 
                   {outstandingMinor > 0 ? (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-                        <span>Məbləğ ({cur})</span>
+                        <span>{at.inv_amountLabel.replace("{cur}", cur)}</span>
                         <input
                           type="number"
                           step="0.01"
@@ -8883,7 +8893,7 @@ function renderItemsCatalog() {
                         />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-                        <span>Tarix</span>
+                        <span>{col("Tarix")}</span>
                         <input
                           type="date"
                           value={invoicePaymentDraft.paymentDate}
@@ -8893,14 +8903,14 @@ function renderItemsCatalog() {
                         />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-                        <span>Üsul</span>
+                        <span>{col("Üsul")}</span>
                         <select
                           value={invoicePaymentDraft.method}
                           onChange={(e) => setInvoicePaymentDraft((d) => ({ ...d, method: e.target.value }))}
                           disabled={invoicePaymentsLoading}
                           style={{ padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 6 }}
                         >
-                          <option value="">Seçin...</option>
+                          <option value="">{at.selectPlaceholder}</option>
                           <option value="Bank köçürməsi">Bank köçürməsi</option>
                           <option value="Nağd">Nağd</option>
                           <option value="Kart">Kart</option>
@@ -8912,10 +8922,10 @@ function renderItemsCatalog() {
                         disabled={invoicePaymentsLoading}
                         onClick={() => submitInvoicePayment(editing.invoices)}
                         style={{ marginBottom: 0 }}
-                      >Ödəniş əlavə et</button>
+                      >{at.inv_addPayment}</button>
                     </div>
                   ) : (
-                    <p style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>✓ Faktura tam ödənilib.</p>
+                    <p style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>{at.inv_fullyPaid}</p>
                   )}
                 </div>
               );
@@ -8927,8 +8937,9 @@ function renderItemsCatalog() {
   }
 
   function renderDebtReport(type) {
+    const at = I18N[hubLang] || I18N.az;
     const isReceivables = type === "receivables";
-    const title = isReceivables ? "Debitor borclar" : "Kreditor borclar";
+    const title = isReceivables ? at.mod_receivables : at.mod_payables;
     const icon = isReceivables ? "🟢" : "🔴";
     const query = debtSearch[type] || "";
     const cur = state.settings.currency;
@@ -9169,7 +9180,7 @@ function renderItemsCatalog() {
     const totalPaidAmount = mergedItems.reduce((sum, item) => sum + Number(item.paidAmount || 0), 0);
 
     const exportDebtPdf = () => {
-      const headers = ["#", isReceivables ? "Müştəri / Debitor" : "Təchizatçı / Kreditor", "Debet", "Kredit", "Qalıq"];
+      const headers = ["#", isReceivables ? at.debt_colCustomer : at.debt_colVendor, at.col["Debet"], at.col["Kredit"], at.debt_colBalance];
       const rows = sorted.map((item, idx) => [
         idx + 1,
         item.name + (item.company ? ` (${item.company})` : ""),
@@ -9179,7 +9190,7 @@ function renderItemsCatalog() {
       ]);
       rows.push([
         "",
-        "<strong>Cəmi</strong>",
+        `<strong>${at.tb_subtotal}</strong>`,
         `<strong>${currency(totalDebitTurnover, cur)}</strong>`,
         `<strong>${currency(totalCreditTurnover, cur)}</strong>`,
         `<strong>${currency(totalDebt, cur)}</strong>`
@@ -9187,7 +9198,7 @@ function renderItemsCatalog() {
 
       const printWindow = window.open("", "_blank", "width=980,height=720");
       if (!printWindow) {
-        setBackupStatus({ tone: "warning", message: "Çap pəncərəsi açıla bilmədi." });
+        setBackupStatus({ tone: "warning", message: at.print_blocked });
         return;
       }
       printWindow.document.write(buildTableReportDocument(title, headers, rows));
@@ -9301,9 +9312,9 @@ function renderItemsCatalog() {
               <div className="debt-table-head">
                 <span>#</span>
                 <span>{isReceivables ? "Müştəri / Debitor" : "Təchizatçı / Kreditor"}</span>
-                <span className="debt-col-center">Debet</span>
-                <span className="debt-col-center">Kredit</span>
-                <span className="debt-col-right">Qalıq</span>
+                <span className="debt-col-center">{col("Debet")}</span>
+                <span className="debt-col-center">{col("Kredit")}</span>
+                <span className="debt-col-right">{col("Qalıq")}</span>
               </div>
               {sorted.map((item, index) => {
                 const amount = item.balanceAmount;
@@ -9613,39 +9624,39 @@ function renderItemsCatalog() {
             <section className="modal-card subscription-modal debt-card-modal" onClick={(event) => event.stopPropagation()}>
               <div className="item-editor-topbar">
                 <div>
-                  <h3>{debtCard.type === "receivables" ? "Debitor kartı" : "Kreditor kartı"}</h3>
-                  <p className="panel-copy">Borcla bağlı əsas məlumatlar və mənbə detalları.</p>
+                  <h3>{debtCard.type === "receivables" ? at.debt_receivableCard : at.debt_payableCard}</h3>
+                  <p className="panel-copy">{at.debt_cardDesc}</p>
                 </div>
                 <button className="icon-btn" type="button" onClick={() => setDebtCard(null)}>×</button>
               </div>
               <div className="debt-card-grid">
                 <article className="debt-card-hero">
-                  <span className="debt-card-eyebrow">{debtCard.vendor ? "Əlaqəli kart tapıldı" : "Manual / GL mənbəsi"}</span>
+                  <span className="debt-card-eyebrow">{debtCard.vendor ? at.debt_linkedCard : at.debt_glSource}</span>
                   <strong>{debtCard.title}</strong>
-                  <p>{debtCard.vendor?.companyName || debtCard.item.company || "Şirkət məlumatı yoxdur"}</p>
+                  <p>{debtCard.vendor?.companyName || debtCard.item.company || at.debt_noCompany}</p>
                 </article>
                 <article className="summary-card">
-                  <span>Debet</span>
+                  <span>{col("Debet")}</span>
                   <strong>{currency(debtCard.item.debitTurnover || 0, cur)}</strong>
                 </article>
                 <article className="summary-card">
-                  <span>Kredit</span>
+                  <span>{col("Kredit")}</span>
                   <strong>{currency(debtCard.item.creditTurnover || 0, cur)}</strong>
                 </article>
                 <article className="summary-card">
-                  <span>Qalıq</span>
+                  <span>{col("Qalıq")}</span>
                   <strong>{currency(debtCard.item.balanceAmount || 0, cur)}</strong>
                 </article>
               </div>
               <div className="debt-card-details">
                 <div className="debt-card-detail-block">
-                  <strong>Əlaqə məlumatı</strong>
-                  <span>Satıcı: {debtCard.vendor?.vendorName || debtCard.item.name || "—"}</span>
-                  <span>Şirkət: {debtCard.vendor?.companyName || debtCard.item.company || "—"}</span>
-                  <span>E-poçt: {debtCard.vendor?.email || "—"}</span>
+                  <strong>{at.debt_contactInfo}</strong>
+                  <span>{col("Satıcı")}: {debtCard.vendor?.vendorName || debtCard.item.name || "—"}</span>
+                  <span>{col("Şirkət")}: {debtCard.vendor?.companyName || debtCard.item.company || "—"}</span>
+                  <span>{fld("E-poçt")}: {debtCard.vendor?.email || "—"}</span>
                 </div>
                 <div className="debt-card-detail-block">
-                  <strong>Mənbə</strong>
+                  <strong>{at.debt_source}</strong>
                   <span>{debtCard.item.sourceNoteText || "—"}</span>
                   <span>GL: {debtCard.item.glAccountText || "—"}</span>
                 </div>
@@ -9665,7 +9676,7 @@ function renderItemsCatalog() {
                     Təchizatçı kartını aç
                   </button>
                 ) : null}
-                <button className="ghost-btn" type="button" onClick={() => setDebtCard(null)}>Bağla</button>
+                <button className="ghost-btn" type="button" onClick={() => setDebtCard(null)}{at.close}</button>
               </div>
             </section>
           </div>
@@ -9848,13 +9859,13 @@ function renderItemsCatalog() {
             ) : (
               <div className="mj-journal-table">
                 <div className="mj-journal-table-head">
-                  <span>Jurnal</span>
-                  <span>Təyinat</span>
-                  <span>Tarix</span>
-                  <span>Debet</span>
-                  <span>Kredit</span>
-                  <span>Status</span>
-                  <span>Əməliyyat</span>
+                  <span>{at.mod_sing_mj}</span>
+                  <span>{col("Təyinat")}</span>
+                  <span>{col("Tarix")}</span>
+                  <span>{col("Debet")}</span>
+                  <span>{col("Kredit")}</span>
+                  <span>{col("Status")}</span>
+                  <span>{at.action}</span>
                 </div>
                 {rows.map((record) => {
                   const lines = Array.isArray(record.journalLines) && record.journalLines.length
@@ -9962,13 +9973,13 @@ function renderItemsCatalog() {
                     const selectedInventoryItem = state.items.find((item) => item.id === line.linkedEntityId);
                     const isTrackedInventoryItem = subledgerCategory === "goods" && selectedInventoryItem?.trackInventory === "Bəli" && selectedInventoryItem?.type !== "Xidmət";
                     const subledgerTabs = [
-                      { id: "goods", label: "Mallar" },
-                      { id: "services", label: "Xidmətlər" },
-                      { id: "expenses", label: "Xərclər" },
-                      { id: "incomes", label: "Gəlirlər" },
-                      { id: "debtors", label: "Debitorlar" },
-                      { id: "creditors", label: "Kreditorlar" },
-                      { id: "bank", label: "Bank" }
+                      { id: "goods", label: at.subl_goods },
+                      { id: "services", label: at.subl_services },
+                      { id: "expenses", label: at.subl_expenses },
+                      { id: "incomes", label: at.subl_incomes },
+                      { id: "debtors", label: at.subl_debtors },
+                      { id: "creditors", label: at.subl_creditors },
+                      { id: "bank", label: at.subl_bank }
                     ];
                     return (
                       <div className="mj-line-card" key={line.id}>
@@ -10007,7 +10018,7 @@ function renderItemsCatalog() {
                             </div>
                             <div className="mj-subledger-grid">
                               <label className="mj-line-related-field">
-                                <span>Alt bölmə seçimi</span>
+                                <span>{at.mj_subledgerSelect}</span>
                                 <select
                                   value={line.linkedEntityId || ""}
                                   onChange={(event) => {
@@ -10016,13 +10027,13 @@ function renderItemsCatalog() {
                                     updateJournalLineLinkedEntity(line.id, subledgerCategory, selectedId, selectedOption?.label || "", selectedOption?.unit || "");
                                   }}
                                 >
-                                  <option value="">Seçin</option>
+                                  <option value="">{at.selectPlaceholder}</option>
                                   {subledgerOptions.map((option) => <option key={`${line.id}-${subledgerCategory}-${option.id}`} value={option.id}>{option.label}</option>)}
                                 </select>
                               </label>
                               {subledgerCategory === "goods" ? (
                                 <label className="mj-line-related-field">
-                                  <span>Miqdar və ölçü vahidi</span>
+                                  <span>{at.mj_qtyUnit}</span>
                                   <div className="mj-qty-unit-row">
                                     <input
                                       type="number"
@@ -10030,23 +10041,23 @@ function renderItemsCatalog() {
                                       min="0"
                                       value={line.linkedQuantity ?? "0"}
                                       onChange={(event) => updateJournalLine(line.id, "linkedQuantity", event.target.value)}
-                                      placeholder="Miqdar daxil edin"
+                                      placeholder={at.mj_qtyPlaceholder}
                                     />
                                     <input
                                       value={line.linkedUnit ?? ""}
                                       onChange={(event) => updateJournalLine(line.id, "linkedUnit", event.target.value)}
-                                      placeholder="Ölçü vahidi"
+                                      placeholder={fld("Ölçü vahidi")}
                                     />
                                   </div>
                                   {isTrackedInventoryItem ? (
-                                    <small className="mj-stock-hint">Inventory tracking aktivdir. Mövcud qalıq: {selectedInventoryItem?.stockOnHand || 0} {selectedInventoryItem?.usageUnit || line.linkedUnit || ""}</small>
+                                    <small className="mj-stock-hint">{at.mj_stockActive.replace("{stock}", selectedInventoryItem?.stockOnHand || 0).replace("{unit}", selectedInventoryItem?.usageUnit || line.linkedUnit || "")}</small>
                                   ) : (
-                                    <small className="mj-stock-hint">Inventory tracking yalnız izlənən anbar mallarında stok qalığını yeniləyir.</small>
+                                    <small className="mj-stock-hint">{at.mj_stockNote}</small>
                                   )}
                                 </label>
                               ) : null}
                               <label className="mj-line-related-field">
-                                <span>Yeni yarat</span>
+                                <span>{at.mj_inlineCreate}</span>
                                 <div className="mj-inline-create-row">
                                   <input
                                     value={journalInlineCreate[line.id]?.[subledgerCategory] || ""}
@@ -10057,9 +10068,9 @@ function renderItemsCatalog() {
                                         [subledgerCategory]: event.target.value
                                       }
                                     }))}
-                                    placeholder={`Yeni ${subledgerTabs.find((tab) => tab.id === subledgerCategory)?.label?.toLowerCase() || "alt bölmə"}...`}
+                                    placeholder={`${at.mj_inlineCreate} ${subledgerTabs.find((tab) => tab.id === subledgerCategory)?.label?.toLowerCase() || ""}...`}
                                   />
-                                  <button className="ghost-btn compact-btn" type="button" onClick={() => createJournalSubledgerEntity(line.id, subledgerCategory)}>Yarat</button>
+                                  <button className="ghost-btn compact-btn" type="button" onClick={() => createJournalSubledgerEntity(line.id, subledgerCategory)}>{at.mj_createBtn}</button>
                                 </div>
                               </label>
                             </div>
@@ -10247,7 +10258,7 @@ function renderItemsCatalog() {
                       <div className="row-actions">
                         <button className="table-btn" type="button" onClick={() => startEdit("incomingGoodsServices", record)}>{at.edit}</button>
                         <button className="table-btn danger-btn" type="button" onClick={() => removeModuleRecord("incomingGoodsServices", record.id)}>{at.delete}</button>
-                        <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId((current) => current === record.id ? null : record.id)}>Müxabirləşməyə bax</button>
+                        <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId((current) => current === record.id ? null : record.id)}>{at.inv_viewLedger}</button>
                       </div>
                     </td>
                   </tr>
@@ -10257,7 +10268,7 @@ function renderItemsCatalog() {
                 <div className="incoming-ledger-panel">
                   <div className="incoming-ledger-panel-head">
                     <strong>Müxabirləşmə: {activeIncomingLedgerRecord.billNumber || "Mal qaiməsi"}</strong>
-                    <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId(null)}>Bağla</button>
+                    <button className="table-btn" type="button" onClick={() => setIncomingLedgerRecordId(null)}{at.close}</button>
                   </div>
                   <Table
                     headers={["Hesab", "Debet", "Kredit"]}
@@ -10270,7 +10281,7 @@ function renderItemsCatalog() {
                       </tr>
                     )).concat([
                       <tr key="incoming-ledger-total">
-                        <td><strong>Cəmi</strong></td>
+                        <td><strong>{col("Cəmi")}</strong></td>
                         <td><strong>{formatLedgerAmount(activeIncomingLedgerTotals.debit)}</strong></td>
                         <td><strong>{formatLedgerAmount(activeIncomingLedgerTotals.credit)}</strong></td>
                       </tr>
@@ -11124,12 +11135,12 @@ function renderItemsCatalog() {
                   <thead>
                     <tr>
                       <th className="opj-th-num">#</th>
-                      <th className="opj-th-date">Tarix</th>
-                      <th className="opj-th-type">Növ</th>
-                      <th className="opj-th-ref">İstinad</th>
-                      <th className="opj-th-accounts">Müxabirləşmə</th>
-                      <th className="opj-th-amount opj-th-debit">Debet</th>
-                      <th className="opj-th-amount opj-th-credit">Kredit</th>
+                      <th className="opj-th-date">{col("Tarix")}</th>
+                      <th className="opj-th-type">{col("Növ")}</th>
+                      <th className="opj-th-ref">{col("İstinad")}</th>
+                      <th className="opj-th-accounts">{at.inv_posting}</th>
+                      <th className="opj-th-amount opj-th-debit">{col("Debet")}</th>
+                      <th className="opj-th-amount opj-th-credit">{col("Kredit")}</th>
                       <th className="opj-th-expand"></th>
                     </tr>
                   </thead>
@@ -11188,10 +11199,10 @@ function renderItemsCatalog() {
                                 <div className="opj-detail-inner">
                                   <div className="opj-detail-lines">
                                     <div className="opj-detail-header">
-                                      <span>Hesab kodu</span>
-                                      <span>Hesab adı</span>
-                                      <span className="opj-detail-debit-col">Debet</span>
-                                      <span className="opj-detail-credit-col">Kredit</span>
+                                      <span>{at.opj_accCode}</span>
+                                      <span>{at.opj_accName}</span>
+                                      <span className="opj-detail-debit-col">{col("Debet")}</span>
+                                      <span className="opj-detail-credit-col">{col("Kredit")}</span>
                                     </div>
                                     {entry.lines.map((line, li) => (
                                       <div key={li} className={`opj-detail-line${line.debit > 0 ? " opj-dl-debit" : " opj-dl-credit"}`}>
@@ -11207,7 +11218,7 @@ function renderItemsCatalog() {
                                     ))}
                                     <div className="opj-detail-totals">
                                       <span className="opj-detail-code"></span>
-                                      <span className="opj-detail-name opj-detail-totals-label">Cəmi</span>
+                                      <span className="opj-detail-name opj-detail-totals-label">{col("Cəmi")}</span>
                                       <span className="opj-detail-debit-col opj-detail-total-val">{currency(entry.totalDebit, cur)}</span>
                                       <span className="opj-detail-credit-col opj-detail-total-val">{currency(entry.totalCredit, cur)}</span>
                                     </div>
@@ -11320,10 +11331,10 @@ function renderItemsCatalog() {
           }
 
           syncBackendSubscription(session).catch((error) => {
-            setInternalGateError(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+            setInternalGateError(error?.message || at.sync_error);
           });
         } catch (error) {
-          setInternalGateError(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+          setInternalGateError(error?.message || at.login_failed);
         } finally {
           setInternalLoginStartedAt(null);
         }
@@ -11338,7 +11349,7 @@ function renderItemsCatalog() {
             <form onSubmit={handleInternalLogin} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
               <input
                 type="email"
-                placeholder="E-poçt"
+                placeholder={fld("E-poçt")}
                 value={authDraft.email}
                 onChange={(e) => setAuthDraft((c) => ({ ...c, email: e.target.value }))}
                 className="internal-admin-input"
@@ -11347,7 +11358,7 @@ function renderItemsCatalog() {
               />
               <input
                 type="password"
-                placeholder="Şifrə"
+                placeholder={fld("Şifrə")}
                 value={authDraft.password}
                 onChange={(e) => setAuthDraft((c) => ({ ...c, password: e.target.value }))}
                 className="internal-admin-input"
@@ -11361,7 +11372,7 @@ function renderItemsCatalog() {
                 </p>
               ) : null}
               <button className="internal-admin-link-btn" type="submit" disabled={Boolean(internalLoginStartedAt)}>
-                {internalLoginStartedAt ? "Daxil olunur..." : "Daxil ol"}
+                {internalLoginStartedAt ? at.adm_loggingIn : at.menuSignin}
               </button>
             </form>
           </div>
@@ -11375,9 +11386,9 @@ function renderItemsCatalog() {
         <div className="internal-admin-gate">
           <div className="internal-admin-gate-box">
             <div className="internal-admin-403">403</div>
-            <h2>Giriş qadağandır</h2>
-            <p>Bu panelə daxil olmaq üçün icazəniz yoxdur.</p>
-            <button className="internal-admin-link-btn" onClick={() => { window.location.href = "/dashboard"; }}>Əsas panelə qayıt</button>
+            <h2>{at.adm_forbidden}</h2>
+            <p>{at.adm_forbiddenDesc}</p>
+            <button className="internal-admin-link-btn" onClick={() => { window.location.href = "/dashboard"; }}>{at.adm_backToDash}</button>
           </div>
         </div>
       );
@@ -11571,7 +11582,7 @@ function renderItemsCatalog() {
                     </table>
                   </div>
                 ) : (
-                  <div className="internal-admin-empty">Hələ heç bir qeydiyyat yoxdur.</div>
+                  <div className="internal-admin-empty">{at.adm_noRegistrations}</div>
                 )}
               </div>
             </>
@@ -11827,7 +11838,7 @@ function renderItemsCatalog() {
               <span className="iac-section-lbl">Top Accounts by Revenue</span>
             </div>
             {fd.topAccountsByRevenue.length === 0 ? (
-              <div className="internal-admin-empty">Hələ heç bir invoice yoxdur.</div>
+              <div className="internal-admin-empty">{at.adm_noInvoices}</div>
             ) : (
               <div className="internal-admin-table-wrap">
                 <table className="internal-admin-table">
@@ -12190,7 +12201,7 @@ function renderItemsCatalog() {
       }
 
       if (adminSystemHealthLoading) {
-        return <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir...</div>;
+        return <div className="iac-state-msg"><span className="internal-admin-spinner" /> {at.loading}</div>;
       }
       if (adminSystemHealthError) {
         return <div className="iac-state-err">{adminSystemHealthError}</div>;
@@ -12359,7 +12370,7 @@ function renderItemsCatalog() {
           </form>
 
           {adminAnomaliesLoading && (
-            <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir...</div>
+            <div className="iac-state-msg"><span className="internal-admin-spinner" /> {at.loading}</div>
           )}
           {adminAnomaliesError && !adminAnomaliesLoading && (
             <div className="iac-state-err">{adminAnomaliesError}</div>
@@ -12758,7 +12769,7 @@ function renderItemsCatalog() {
 
             <div style={{ padding: "20px 24px" }}>
               {adminAccountDetailLoading && (
-                <div className="iac-state-msg"><span className="internal-admin-spinner" /> Yüklənir…</div>
+                <div className="iac-state-msg"><span className="internal-admin-spinner" /> {at.loading}</div>
               )}
               {adminAccountDetailError && !adminAccountDetailLoading && (
                 <div className="iac-state-err">{adminAccountDetailError}</div>
@@ -14023,6 +14034,616 @@ function renderItemsCatalog() {
         ctaStartBtn: "Demo hesab aç →",
         ctaDemoBtn: "Demo sifariş et",
         footerNote: "© 2025 Tetavio MMC · VÖEN: 2009752131",
+        accountCreated: "Hesabınız yaradıldı!", checkEmail: "Giriş üçün e-poçtunuzu yoxlayın.",
+        requestReceived: "Müraciətiniz qəbul edildi!", contactIn24h: "Komandamız 24 saat ərzində sizinlə əlaqə saxlayacaq.",
+      },
+      en: {
+        brandSub: "Product Platform",
+        nav: [
+          { id: "start", label: "Get started" },
+          { id: "demo", label: "Demo" },
+          { id: "pricing", label: "Pricing" },
+          { id: "erp", label: "ERP" },
+          { id: "case-studies", label: "Customers" },
+        ],
+        login: "Sign in",
+        register: "Start demo",
+        startEyebrow: "14-day free trial",
+        startH1: "Set up accounting right — from the start",
+        startSub: "With Tetavio — sales, purchases, banking and reports all in one place. No credit card required.",
+        startSteps: [
+          { title: "Create an account", text: "Register with email in 30 seconds." },
+          { title: "Configure your company", text: "Set up currency, financial year, and team roles." },
+          { title: "Get to work", text: "Invoices, purchases, bank transactions — everything is ready." },
+        ],
+        startCtaTitle: "Start your free trial",
+        startCtaText: "No credit card · Cancel anytime · 14 days full access",
+        startEmailPh: "Your email",
+        startNamePh: "Your name",
+        startBtn: "Create account →",
+        startTrust: ["No credit card required", "Cancel anytime", "HTTPS encrypted connection"],
+        featsTitle: "Why Tetavio?",
+        feats: [
+          { icon: "🧾", title: "Document workflow", text: "Invoices, receipts, payments in one system." },
+          { icon: "📊", title: "Instant reports", text: "P&L, balance sheet, cash flow ready to view." },
+          { icon: "🏦", title: "Banking integration", text: "Manage bank transactions directly inside the platform." },
+          { icon: "👥", title: "Team roles", text: "Accountant, manager, HR — separate access for each role." },
+          { icon: "🔒", title: "High security", text: "Role-based access control and audit trail." },
+          { icon: "⚡", title: "Fast interface", text: "Comfortable in daily work, easy to learn." },
+        ],
+        demoEyebrow: "Live demonstration",
+        demoH1: "See the platform for yourself",
+        demoSub: "Book a 30-minute live demo. Our team will show you Tetavio tailored to your company's workflow.",
+        demoBenefits: [
+          { icon: "🎯", title: "Personalized demo", text: "The demo is tailored to your industry and company size." },
+          { icon: "❓", title: "Your questions answered", text: "Our team will answer every question live." },
+          { icon: "⏱", title: "30 minutes is enough", text: "Short, focused, respectful of your time." },
+          { icon: "🚀", title: "Activate a trial account", text: "Start a 14-day free trial immediately after the demo." },
+        ],
+        demoFormTitle: "Request a demo",
+        demoFName: "First name",
+        demoLName: "Last name",
+        demoEmail: "Email",
+        demoPhone: "Contact number",
+        demoCompany: "Company name",
+        demoSize: "Company size",
+        demoSizes: ["1–5 people", "6–20 people", "21–50 people", "50+ people"],
+        demoTime: "Preferred time",
+        demoTimes: ["Morning (09:00–12:00)", "Afternoon (12:00–15:00)", "Evening (15:00–18:00)"],
+        demoBtn: "Book demo →",
+        demoNote: "Your demo request will be confirmed within 24 hours.",
+        pricingEyebrow: "Transparent pricing",
+        pricingH1: "Choose the right plan for your business",
+        pricingSub: "All plans include operation limits, team roles and full functionality. Save with annual billing.",
+        annualLabel: "Annual", monthlyLabel: "Monthly", saveLabel: "Save 35%",
+        freePrice: "Demo",
+        perMonth: "/mo",
+        annualNote: "with annual billing",
+        planDescs: {
+          free: "14-day demo trial",
+          standard: "Base plan for small teams",
+          professional: "For active workflows",
+          premium: "Extensive use and flexibility",
+          elite: "For professional users",
+          ultimate: "Maximum package",
+        },
+        planFeatures: {
+          free: ["14 days full access", "Unlimited operations (during trial)", "All modules active", "1 user"],
+          standard: ["5,000 operations/mo", "Sales and purchase module", "Bank transactions", "3 users", "Email support"],
+          professional: ["10,000 operations/mo", "Team roles", "Document management", "5 users", "Priority support"],
+          premium: ["25,000 operations/mo", "Full functionality", "Unlimited users", "API access", "Support SLA"],
+          elite: ["100,000 operations/mo", "Custom reports", "Accountant panel", "Audit trail", "Fast support"],
+          ultimate: ["200,000 operations/mo", "Full customization", "Dedicated accountant support", "SLA guarantee", "Priority onboarding"],
+        },
+        recommended: "Recommended",
+        pricingStartBtn: "Start demo",
+        pricingUpgradeBtn: "Choose plan",
+        faqTitle: "Frequently asked questions",
+        faqs: [
+          { q: "Is a credit card required?", a: "No. The demo plan requires no credit card. Paid plans require card details at checkout." },
+          { q: "Can I change my plan later?", a: "Yes. You can upgrade or downgrade your plan at any time from your account." },
+          { q: "What do I get with annual billing?", a: "With annual billing, the monthly equivalent price is 35% lower." },
+          { q: "Can team members have separate access?", a: "Yes. Team roles are active from the Standard plan." },
+        ],
+        erpEyebrow: "Tetavio ERP",
+        erpH1: "The complete accounting solution",
+        erpSub: "From invoices to bank transactions, from purchases to reports — all financial processes on one platform. Built for local markets, cloud-based, team-friendly.",
+        erpModulesTitle: "Core modules",
+        erpModules: [
+          { icon: "🧾", name: "Sales & Invoicing", desc: "Create invoices, send them, track payments. Accounts receivable calculated automatically." },
+          { icon: "🛒", name: "Purchasing", desc: "Supplier, goods, incoming receipts — the purchase process fully under control." },
+          { icon: "🏦", name: "Banking", desc: "Multiple bank accounts, income/expense, bank statements." },
+          { icon: "📚", name: "General Ledger", desc: "Journal entries, chart of accounts, manual journals." },
+          { icon: "📊", name: "Reports", desc: "P&L, balance sheet, cash flow, AR ageing." },
+          { icon: "👥", name: "Team management", desc: "Roles, permissions, multi-user access." },
+          { icon: "📁", name: "Document management", desc: "Contracts, acts, receipts — every document linked to a transaction." },
+          { icon: "⚙️", name: "Settings", desc: "Company parameters, currency, financial year, plan management." },
+        ],
+        erpSpecsTitle: "Technical specifications",
+        erpSpecs: [
+          { label: "Platform type", value: "Cloud SaaS (Web-based)" },
+          { label: "Access devices", value: "Desktop, Tablet, Mobile" },
+          { label: "Language support", value: "Azerbaijani, English, Russian, Turkish, German" },
+          { label: "Currency", value: "Multi-currency support" },
+          { label: "Data transfer", value: "HTTPS (TLS 1.2+)" },
+          { label: "Uptime guarantee", value: "99.9% SLA" },
+          { label: "Backup", value: "Daily automatic backup" },
+          { label: "Support channels", value: "Email, Onboarding, Demo" },
+        ],
+        csEyebrow: "Customer success stories",
+        csH1: "What did companies achieve with Tetavio?",
+        csSub: "Real results from customers across different industries.",
+        csStats: [
+          { num: "50+", label: "Active companies" },
+          { num: "200K+", label: "Operations processed" },
+          { num: "99.9%", label: "Uptime" },
+          { num: "4.8★", label: "Average rating" },
+        ],
+        csCards: [
+          {
+            quote: "After switching to Tetavio, invoice processing time dropped from 3 days to 4 hours. Our accountant can now view P&L with a single click.",
+            name: "Ali Mammadov", role: "Trading company — CEO", init: "A",
+            metrics: [{ val: "18×", label: "Speed increase" }, { val: "0 errors", label: "Reporting" }],
+          },
+          {
+            quote: "We used to get lost in Excel spreadsheets. Now everything is in one place — purchases, sales, banking. Our team learned it in 2 days.",
+            name: "Lala Huseynova", role: "Manufacturing company — Accountant", init: "L",
+            metrics: [{ val: "3 days", label: "Onboarding" }, { val: "40%", label: "Time saved" }],
+          },
+          {
+            quote: "Getting a report is now a matter of seconds, not hours. Our CFO makes decisions faster.",
+            name: "Rauf Aliyev", role: "Service company — CFO", init: "R",
+            metrics: [{ val: "∞", label: "Report speed" }, { val: "2×", label: "Decision speed" }],
+          },
+          {
+            quote: "Tetavio is more than just accounting software for us — it's the financial backbone of our business. Our whole team uses it.",
+            name: "Nigar Guliyeva", role: "E-commerce — Operations manager", init: "N",
+            metrics: [{ val: "5 roles", label: "Team access" }, { val: "24/7", label: "Availability" }],
+          },
+        ],
+        ctaTitle: "Start today",
+        ctaText: "14-day demo trial. No credit card required.",
+        ctaStartBtn: "Open demo account →",
+        ctaDemoBtn: "Book a demo",
+        footerNote: "© 2025 Tetavio LLC · Tax ID: 2009752131",
+        accountCreated: "Your account has been created!", checkEmail: "Check your email to sign in.",
+        requestReceived: "Your request has been received!", contactIn24h: "Our team will contact you within 24 hours.",
+      },
+      ru: {
+        brandSub: "Платформа продуктов",
+        nav: [
+          { id: "start", label: "Начать" },
+          { id: "demo", label: "Демо" },
+          { id: "pricing", label: "Тарифы" },
+          { id: "erp", label: "ERP" },
+          { id: "case-studies", label: "Клиенты" },
+        ],
+        login: "Войти",
+        register: "Начать демо",
+        startEyebrow: "14 дней бесплатно",
+        startH1: "Настройте учёт правильно — с самого начала",
+        startSub: "С Tetavio — продажи, закупки, банк и отчёты всё в одном месте. Кредитная карта не нужна.",
+        startSteps: [
+          { title: "Создайте аккаунт", text: "Зарегистрируйтесь по email за 30 секунд." },
+          { title: "Настройте компанию", text: "Установите валюту, финансовый год, роли команды." },
+          { title: "Начните работать", text: "Счета-фактуры, закупки, банковские операции — всё готово." },
+        ],
+        startCtaTitle: "Начните бесплатный период",
+        startCtaText: "Без кредитной карты · Отмена в любое время · 14 дней полного доступа",
+        startEmailPh: "Ваш email",
+        startNamePh: "Ваше имя",
+        startBtn: "Создать аккаунт →",
+        startTrust: ["Кредитная карта не нужна", "Отмена в любое время", "Зашифрованное HTTPS соединение"],
+        featsTitle: "Почему Tetavio?",
+        feats: [
+          { icon: "🧾", title: "Документооборот", text: "Счета-фактуры, накладные, платежи в одной системе." },
+          { icon: "📊", title: "Мгновенные отчёты", text: "П&У, баланс, движение денежных средств готовы к просмотру." },
+          { icon: "🏦", title: "Банковская интеграция", text: "Управляйте банковскими операциями прямо внутри платформы." },
+          { icon: "👥", title: "Роли команды", text: "Бухгалтер, руководитель, HR — отдельный доступ для каждой роли." },
+          { icon: "🔒", title: "Высокая безопасность", text: "Ролевое управление доступом и журнал аудита." },
+          { icon: "⚡", title: "Быстрый интерфейс", text: "Удобен в ежедневной работе, легко освоить." },
+        ],
+        demoEyebrow: "Живая демонстрация",
+        demoH1: "Увидьте платформу своими глазами",
+        demoSub: "Закажите 30-минутную живую демонстрацию. Наша команда покажет Tetavio, адаптированный к рабочему процессу вашей компании.",
+        demoBenefits: [
+          { icon: "🎯", title: "Персонализированное демо", text: "Демо адаптировано к вашей отрасли и размеру компании." },
+          { icon: "❓", title: "Ответы на ваши вопросы", text: "Наша команда ответит на каждый вопрос в прямом эфире." },
+          { icon: "⏱", title: "30 минут достаточно", text: "Коротко, конкретно, уважаем ваше время." },
+          { icon: "🚀", title: "Активируйте пробный аккаунт", text: "Начните 14-дневный бесплатный период сразу после демо." },
+        ],
+        demoFormTitle: "Запросить демо",
+        demoFName: "Имя",
+        demoLName: "Фамилия",
+        demoEmail: "Email",
+        demoPhone: "Контактный номер",
+        demoCompany: "Название компании",
+        demoSize: "Размер компании",
+        demoSizes: ["1–5 человек", "6–20 человек", "21–50 человек", "50+ человек"],
+        demoTime: "Удобное время",
+        demoTimes: ["Утро (09:00–12:00)", "День (12:00–15:00)", "Вечер (15:00–18:00)"],
+        demoBtn: "Заказать демо →",
+        demoNote: "Ваш запрос на демо будет подтверждён в течение 24 часов.",
+        pricingEyebrow: "Прозрачные тарифы",
+        pricingH1: "Выберите подходящий план для вашего бизнеса",
+        pricingSub: "Все планы включают лимит операций, роли команды и полную функциональность. Экономьте при годовой оплате.",
+        annualLabel: "Годовой", monthlyLabel: "Ежемесячный", saveLabel: "Экономия 35%",
+        freePrice: "Демо",
+        perMonth: "/мес",
+        annualNote: "при годовой оплате",
+        planDescs: {
+          free: "14-дневный демо-период",
+          standard: "Базовый план для небольших команд",
+          professional: "Для активного рабочего процесса",
+          premium: "Широкое использование и гибкость",
+          elite: "Для профессиональных пользователей",
+          ultimate: "Максимальный пакет",
+        },
+        planFeatures: {
+          free: ["14 дней полного доступа", "Безлимитные операции (в период пробы)", "Все модули активны", "1 пользователь"],
+          standard: ["5 000 операций/мес", "Модуль продаж и закупок", "Банковские операции", "3 пользователя", "Email поддержка"],
+          professional: ["10 000 операций/мес", "Роли команды", "Управление документами", "5 пользователей", "Приоритетная поддержка"],
+          premium: ["25 000 операций/мес", "Полная функциональность", "Без ограничений по пользователям", "API доступ", "SLA поддержки"],
+          elite: ["100 000 операций/мес", "Кастомные отчёты", "Панель бухгалтера", "Аудиторский след", "Быстрая поддержка"],
+          ultimate: ["200 000 операций/мес", "Полная кастомизация", "Выделенная поддержка бухгалтера", "Гарантия SLA", "Приоритетный онбординг"],
+        },
+        recommended: "Рекомендуется",
+        pricingStartBtn: "Начать демо",
+        pricingUpgradeBtn: "Выбрать план",
+        faqTitle: "Часто задаваемые вопросы",
+        faqs: [
+          { q: "Нужна ли кредитная карта?", a: "Нет. Демо-план не требует кредитной карты. Для платных планов данные карты вводятся на этапе оплаты." },
+          { q: "Можно ли сменить план позже?", a: "Да. Вы можете повысить или понизить план в любое время из вашего аккаунта." },
+          { q: "Что я получаю при годовой оплате?", a: "При годовой оплате ежемесячный эквивалент цены на 35% ниже." },
+          { q: "Можно ли дать отдельный доступ членам команды?", a: "Да. Роли команды активны начиная с плана Standard." },
+        ],
+        erpEyebrow: "Tetavio ERP",
+        erpH1: "Комплексное решение для бухгалтерского учёта",
+        erpSub: "От счетов-фактур до банковских операций, от закупок до отчётов — все финансовые процессы на одной платформе. Адаптировано для местного рынка, облачное, командно-ориентированное.",
+        erpModulesTitle: "Основные модули",
+        erpModules: [
+          { icon: "🧾", name: "Продажи и выставление счетов", desc: "Создавайте счета, отправляйте их, отслеживайте платежи. Дебиторская задолженность рассчитывается автоматически." },
+          { icon: "🛒", name: "Закупки", desc: "Поставщик, товары, входящие накладные — процесс закупок полностью под контролем." },
+          { icon: "🏦", name: "Банк", desc: "Несколько банковских счетов, приход/расход, выписки." },
+          { icon: "📚", name: "Главная книга", desc: "Журнальные записи, план счетов, ручные журналы." },
+          { icon: "📊", name: "Отчёты", desc: "П&У, баланс, движение денежных средств, AR ageing." },
+          { icon: "👥", name: "Управление командой", desc: "Роли, разрешения, многопользовательский доступ." },
+          { icon: "📁", name: "Управление документами", desc: "Договоры, акты, накладные — каждый документ привязан к операции." },
+          { icon: "⚙️", name: "Настройки", desc: "Параметры компании, валюта, финансовый год, управление планом." },
+        ],
+        erpSpecsTitle: "Технические характеристики",
+        erpSpecs: [
+          { label: "Тип платформы", value: "Cloud SaaS (веб-приложение)" },
+          { label: "Устройства доступа", value: "Десктоп, планшет, мобильный" },
+          { label: "Поддержка языков", value: "Азербайджанский, английский, русский, турецкий, немецкий" },
+          { label: "Валюта", value: "Мультивалютная поддержка" },
+          { label: "Передача данных", value: "HTTPS (TLS 1.2+)" },
+          { label: "Гарантия работоспособности", value: "99.9% SLA" },
+          { label: "Резервное копирование", value: "Ежедневный автоматический бэкап" },
+          { label: "Каналы поддержки", value: "Email, онбординг, демо" },
+        ],
+        csEyebrow: "Истории успеха клиентов",
+        csH1: "Чего достигли компании с Tetavio?",
+        csSub: "Реальные результаты клиентов из разных отраслей.",
+        csStats: [
+          { num: "50+", label: "Активных компаний" },
+          { num: "200К+", label: "Обработано операций" },
+          { num: "99.9%", label: "Работоспособность" },
+          { num: "4.8★", label: "Средний рейтинг" },
+        ],
+        csCards: [
+          {
+            quote: "После перехода на Tetavio время обработки счетов сократилось с 3 дней до 4 часов. Наш бухгалтер теперь может просматривать П&У одним кликом.",
+            name: "Али Мамедов", role: "Торговая компания — Генеральный директор", init: "А",
+            metrics: [{ val: "18×", label: "Рост скорости" }, { val: "0 ошибок", label: "Отчётность" }],
+          },
+          {
+            quote: "Раньше мы запутывались в таблицах Excel. Теперь всё в одном месте — закупки, продажи, банк. Команда освоила за 2 дня.",
+            name: "Лала Гусейнова", role: "Производственная компания — Бухгалтер", init: "Л",
+            metrics: [{ val: "3 дня", label: "Онбординг" }, { val: "40%", label: "Экономия времени" }],
+          },
+          {
+            quote: "Получить отчёт теперь — дело секунд, а не часов. Наш финансовый директор принимает решения быстрее.",
+            name: "Рауф Алиев", role: "Сервисная компания — CFO", init: "Р",
+            metrics: [{ val: "∞", label: "Скорость отчётов" }, { val: "2×", label: "Скорость решений" }],
+          },
+          {
+            quote: "Tetavio для нас — это не просто бухгалтерская программа, это финансовый хребет бизнеса. Вся команда использует её.",
+            name: "Нигяр Гулиева", role: "Электронная торговля — Операционный директор", init: "Н",
+            metrics: [{ val: "5 ролей", label: "Доступ команды" }, { val: "24/7", label: "Доступность" }],
+          },
+        ],
+        ctaTitle: "Начните сегодня",
+        ctaText: "14-дневный демо-период. Кредитная карта не нужна.",
+        ctaStartBtn: "Открыть демо-аккаунт →",
+        ctaDemoBtn: "Заказать демо",
+        footerNote: "© 2025 Tetavio ООО · ИНН: 2009752131",
+        accountCreated: "Ваш аккаунт создан!", checkEmail: "Проверьте почту для входа.",
+        requestReceived: "Ваша заявка принята!", contactIn24h: "Наша команда свяжется с вами в течение 24 часов.",
+      },
+      tr: {
+        brandSub: "Ürün Platformu",
+        nav: [
+          { id: "start", label: "Başla" },
+          { id: "demo", label: "Demo" },
+          { id: "pricing", label: "Fiyatlar" },
+          { id: "erp", label: "ERP" },
+          { id: "case-studies", label: "Müşteriler" },
+        ],
+        login: "Giriş yap",
+        register: "Demo başlat",
+        startEyebrow: "14 gün ücretsiz deneme",
+        startH1: "Muhasebeyi doğru kurun — başından itibaren",
+        startSub: "Tetavio ile satış, satın alma, banka ve raporlar hepsi bir arada. Kredi kartı gerekmez.",
+        startSteps: [
+          { title: "Hesap oluşturun", text: "E-posta ile 30 saniyede kayıt olun." },
+          { title: "Şirketi yapılandırın", text: "Para birimi, mali yıl ve ekip rollerini ayarlayın." },
+          { title: "Çalışmaya başlayın", text: "Faturalar, satın almalar, banka işlemleri — her şey hazır." },
+        ],
+        startCtaTitle: "Ücretsiz denemenizi başlatın",
+        startCtaText: "Kredi kartı yok · İstediğiniz zaman iptal edin · 14 gün tam erişim",
+        startEmailPh: "E-postanız",
+        startNamePh: "Adınız",
+        startBtn: "Hesap oluştur →",
+        startTrust: ["Kredi kartı gerekmez", "İstediğiniz zaman iptal edin", "HTTPS şifreli bağlantı"],
+        featsTitle: "Neden Tetavio?",
+        feats: [
+          { icon: "🧾", title: "Belge akışı", text: "Faturalar, irsaliyeler, ödemeler tek bir sistemde." },
+          { icon: "📊", title: "Anlık raporlar", text: "Gelir-gider, bilanço, nakit akışı hazır formatta." },
+          { icon: "🏦", title: "Banka entegrasyonu", text: "Banka işlemlerini doğrudan platform içinden yönetin." },
+          { icon: "👥", title: "Ekip rolleri", text: "Muhasebeci, yönetici, İK — her rol için ayrı erişim." },
+          { icon: "🔒", title: "Yüksek güvenlik", text: "Role dayalı erişim kontrolü ve denetim izi." },
+          { icon: "⚡", title: "Hızlı arayüz", text: "Günlük çalışmada konforlu, öğrenmesi kolay panel." },
+        ],
+        demoEyebrow: "Canlı gösteri",
+        demoH1: "Platformu kendi gözlerinizle görün",
+        demoSub: "30 dakikalık canlı demo rezervasyonu yapın. Ekibimiz Tetavio'yu şirketinizin iş akışına göre gösterecek.",
+        demoBenefits: [
+          { icon: "🎯", title: "Kişiselleştirilmiş demo", text: "Demo, sektörünüze ve şirket büyüklüğünüze göre hazırlanır." },
+          { icon: "❓", title: "Sorularınız yanıtlanır", text: "Ekibimiz her soruyu canlı olarak yanıtlayacak." },
+          { icon: "⏱", title: "30 dakika yeterli", text: "Kısa, odaklı, zamanınıza saygılı." },
+          { icon: "🚀", title: "Deneme hesabı oluşturun", text: "Demodan hemen sonra 14 günlük ücretsiz denemeyi başlatın." },
+        ],
+        demoFormTitle: "Demo talep edin",
+        demoFName: "Adınız",
+        demoLName: "Soyadınız",
+        demoEmail: "E-posta",
+        demoPhone: "İletişim numarası",
+        demoCompany: "Şirket adı",
+        demoSize: "Şirket büyüklüğü",
+        demoSizes: ["1–5 kişi", "6–20 kişi", "21–50 kişi", "50+ kişi"],
+        demoTime: "Uygun zaman",
+        demoTimes: ["Sabah (09:00–12:00)", "Öğleden sonra (12:00–15:00)", "Akşam (15:00–18:00)"],
+        demoBtn: "Demo rezervasyonu yap →",
+        demoNote: "Demo talebiniz 24 saat içinde onaylanacaktır.",
+        pricingEyebrow: "Şeffaf fiyatlandırma",
+        pricingH1: "İşletmenize uygun planı seçin",
+        pricingSub: "Tüm planlar işlem limiti, ekip rolleri ve tam işlevsellik içerir. Yıllık ödemede tasarruf edin.",
+        annualLabel: "Yıllık", monthlyLabel: "Aylık", saveLabel: "%35 tasarruf",
+        freePrice: "Demo",
+        perMonth: "/ay",
+        annualNote: "yıllık ödemede",
+        planDescs: {
+          free: "14 günlük demo denemesi",
+          standard: "Küçük ekipler için temel plan",
+          professional: "Aktif iş akışı için",
+          premium: "Kapsamlı kullanım ve esneklik için",
+          elite: "Profesyonel kullanıcılar için",
+          ultimate: "Maksimum paket",
+        },
+        planFeatures: {
+          free: ["14 gün tam erişim", "Sınırsız işlem (deneme süresince)", "Tüm modüller aktif", "1 kullanıcı"],
+          standard: ["5.000 işlem/ay", "Satış ve satın alma modülü", "Banka işlemleri", "3 kullanıcı", "E-posta desteği"],
+          professional: ["10.000 işlem/ay", "Ekip rolleri", "Belge yönetimi", "5 kullanıcı", "Öncelikli destek"],
+          premium: ["25.000 işlem/ay", "Tam işlevsellik", "Sınırsız kullanıcı", "API erişimi", "Destek SLA"],
+          elite: ["100.000 işlem/ay", "Özel raporlar", "Muhasebeci paneli", "Denetim izi", "Hızlı destek"],
+          ultimate: ["200.000 işlem/ay", "Tam özelleştirme", "Kişisel muhasebeci desteği", "SLA garantisi", "Öncelikli onboarding"],
+        },
+        recommended: "Önerilen",
+        pricingStartBtn: "Demo başlat",
+        pricingUpgradeBtn: "Plan seç",
+        faqTitle: "Sık sorulan sorular",
+        faqs: [
+          { q: "Kredi kartı gerekiyor mu?", a: "Hayır. Demo plan kredi kartı gerektirmez. Ücretli planlarda ödeme aşamasında kart bilgileri girilir." },
+          { q: "Planı daha sonra değiştirmek mümkün mü?", a: "Evet. Hesabınızdan istediğiniz zaman planınızı yükseltebilir veya düşürebilirsiniz." },
+          { q: "Yıllık ödemede ne kazanıyorum?", a: "Yıllık ödemede aylık eşdeğer fiyat %35 daha düşük olur." },
+          { q: "Ekip üyeleri için ayrı giriş mümkün mü?", a: "Evet. Standard plandan itibaren ekip rolleri aktiftir." },
+        ],
+        erpEyebrow: "Tetavio ERP",
+        erpH1: "Muhasebe kaydının tam çözümü",
+        erpSub: "Faturalardan banka işlemlerine, satın almalardan raporlara — tüm mali süreçler tek platformda. Yerel pazara uygun, bulut tabanlı, ekip dostu.",
+        erpModulesTitle: "Temel modüller",
+        erpModules: [
+          { icon: "🧾", name: "Satış ve Faturalama", desc: "Fatura oluşturun, gönderin, ödemeleri takip edin. Alacaklar otomatik hesaplanır." },
+          { icon: "🛒", name: "Satın Alma", desc: "Tedarikçi, ürün, gelen irsaliyeler — satın alma süreci tam kontrol altında." },
+          { icon: "🏦", name: "Banka", desc: "Birden fazla banka hesabı, gelir/gider, hesap özeti." },
+          { icon: "📚", name: "Genel Defter", desc: "Yevmiye kayıtları, hesap planı, manuel günlükler." },
+          { icon: "📊", name: "Raporlar", desc: "Gelir-gider, bilanço, nakit akışı, AR yaşlandırma." },
+          { icon: "👥", name: "Ekip yönetimi", desc: "Roller, izinler, çok kullanıcılı erişim." },
+          { icon: "📁", name: "Belge yönetimi", desc: "Sözleşmeler, tutanaklar, irsaliyeler — her belge bir işleme bağlı." },
+          { icon: "⚙️", name: "Ayarlar", desc: "Şirket parametreleri, para birimi, mali yıl, plan yönetimi." },
+        ],
+        erpSpecsTitle: "Teknik bilgiler",
+        erpSpecs: [
+          { label: "Platform türü", value: "Cloud SaaS (Web tabanlı)" },
+          { label: "Erişim cihazları", value: "Masaüstü, Tablet, Mobil" },
+          { label: "Dil desteği", value: "Azerbaycanca, İngilizce, Rusça, Türkçe, Almanca" },
+          { label: "Para birimi", value: "Çoklu para birimi desteği" },
+          { label: "Veri aktarımı", value: "HTTPS (TLS 1.2+)" },
+          { label: "Çalışma süresi garantisi", value: "%99.9 SLA" },
+          { label: "Yedekleme", value: "Günlük otomatik yedekleme" },
+          { label: "Destek kanalları", value: "E-posta, Onboarding, Demo" },
+        ],
+        csEyebrow: "Müşteri başarı hikayeleri",
+        csH1: "Şirketler Tetavio ile ne elde etti?",
+        csSub: "Farklı sektörlerden gerçek müşteri sonuçları.",
+        csStats: [
+          { num: "50+", label: "Aktif şirket" },
+          { num: "200B+", label: "İşlem işlendi" },
+          { num: "99.9%", label: "Çalışma süresi" },
+          { num: "4.8★", label: "Ortalama puan" },
+        ],
+        csCards: [
+          {
+            quote: "Tetavio'ya geçtikten sonra fatura işlem süresi 3 günden 4 saate düştü. Muhasebecimiz artık tek tıkla gelir-gidere bakabiliyor.",
+            name: "Ali Memmedov", role: "Ticaret şirketi — Genel Müdür", init: "A",
+            metrics: [{ val: "18×", label: "Hız artışı" }, { val: "0 hata", label: "Raporlama" }],
+          },
+          {
+            quote: "Eskiden Excel tablolarında kayboluyorduk. Şimdi her şey tek yerde — satın alma, satış, banka. Ekibimiz 2 günde öğrendi.",
+            name: "Lale Hüseynova", role: "Üretim işletmesi — Muhasebeci", init: "L",
+            metrics: [{ val: "3 gün", label: "Onboarding" }, { val: "40%", label: "Zaman tasarrufu" }],
+          },
+          {
+            quote: "Rapor almak artık saatler değil saniyeler meselesi. Mali müdürümüz kararları daha hızlı veriyor.",
+            name: "Rauf Aliyev", role: "Hizmet şirketi — CFO", init: "R",
+            metrics: [{ val: "∞", label: "Rapor hızı" }, { val: "2×", label: "Karar hızı" }],
+          },
+          {
+            quote: "Tetavio bizim için sadece muhasebe programı değil — işin mali omurgası. Tüm ekibimiz kullanıyor.",
+            name: "Nigar Guliyeva", role: "E-ticaret — Operasyon müdürü", init: "N",
+            metrics: [{ val: "5 rol", label: "Ekip erişimi" }, { val: "24/7", label: "Erişilebilirlik" }],
+          },
+        ],
+        ctaTitle: "Bugün başlayın",
+        ctaText: "14 günlük demo denemesi. Kredi kartı gerekmez.",
+        ctaStartBtn: "Demo hesabı aç →",
+        ctaDemoBtn: "Demo rezervasyonu yap",
+        footerNote: "© 2025 Tetavio LLC · VKN: 2009752131",
+        accountCreated: "Hesabınız oluşturuldu!", checkEmail: "Giriş için e-postanızı kontrol edin.",
+        requestReceived: "Talebiniz alındı!", contactIn24h: "Ekibimiz 24 saat içinde sizinle iletişime geçecek.",
+      },
+      de: {
+        brandSub: "Produktplattform",
+        nav: [
+          { id: "start", label: "Loslegen" },
+          { id: "demo", label: "Demo" },
+          { id: "pricing", label: "Preise" },
+          { id: "erp", label: "ERP" },
+          { id: "case-studies", label: "Kunden" },
+        ],
+        login: "Anmelden",
+        register: "Demo starten",
+        startEyebrow: "14 Tage kostenlos testen",
+        startH1: "Buchhaltung richtig aufsetzen — von Anfang an",
+        startSub: "Mit Tetavio — Verkauf, Einkauf, Banking und Berichte alles an einem Ort. Keine Kreditkarte erforderlich.",
+        startSteps: [
+          { title: "Konto erstellen", text: "In 30 Sekunden per E-Mail registrieren." },
+          { title: "Unternehmen konfigurieren", text: "Währung, Geschäftsjahr und Teamrollen einrichten." },
+          { title: "Loslegen", text: "Rechnungen, Einkäufe, Banktransaktionen — alles ist bereit." },
+        ],
+        startCtaTitle: "Kostenlose Testphase starten",
+        startCtaText: "Keine Kreditkarte · Jederzeit kündigen · 14 Tage Vollzugriff",
+        startEmailPh: "Ihre E-Mail",
+        startNamePh: "Ihr Name",
+        startBtn: "Konto erstellen →",
+        startTrust: ["Keine Kreditkarte erforderlich", "Jederzeit kündigen", "HTTPS-verschlüsselte Verbindung"],
+        featsTitle: "Warum Tetavio?",
+        feats: [
+          { icon: "🧾", title: "Dokumentenworkflow", text: "Rechnungen, Belege, Zahlungen in einem System." },
+          { icon: "📊", title: "Sofortberichte", text: "G&V, Bilanz, Cashflow sofort einsehbar." },
+          { icon: "🏦", title: "Bankintegration", text: "Banktransaktionen direkt innerhalb der Plattform verwalten." },
+          { icon: "👥", title: "Teamrollen", text: "Buchhalter, Manager, HR — separater Zugang für jede Rolle." },
+          { icon: "🔒", title: "Hohe Sicherheit", text: "Rollenbasierte Zugriffskontrolle und Audit-Trail." },
+          { icon: "⚡", title: "Schnelle Oberfläche", text: "Komfortabel im Alltag, leicht zu erlernen." },
+        ],
+        demoEyebrow: "Live-Demonstration",
+        demoH1: "Sehen Sie die Plattform mit eigenen Augen",
+        demoSub: "Buchen Sie eine 30-minütige Live-Demo. Unser Team zeigt Ihnen Tetavio, angepasst an den Workflow Ihres Unternehmens.",
+        demoBenefits: [
+          { icon: "🎯", title: "Personalisierte Demo", text: "Die Demo wird auf Ihre Branche und Unternehmensgröße zugeschnitten." },
+          { icon: "❓", title: "Ihre Fragen beantwortet", text: "Unser Team beantwortet jede Frage live." },
+          { icon: "⏱", title: "30 Minuten reichen", text: "Kurz, konkret, respektvoll gegenüber Ihrer Zeit." },
+          { icon: "🚀", title: "Testkonto aktivieren", text: "Starten Sie direkt nach der Demo eine 14-tägige kostenlose Testphase." },
+        ],
+        demoFormTitle: "Demo anfordern",
+        demoFName: "Vorname",
+        demoLName: "Nachname",
+        demoEmail: "E-Mail",
+        demoPhone: "Kontaktnummer",
+        demoCompany: "Firmenname",
+        demoSize: "Unternehmensgröße",
+        demoSizes: ["1–5 Personen", "6–20 Personen", "21–50 Personen", "50+ Personen"],
+        demoTime: "Bevorzugte Zeit",
+        demoTimes: ["Morgen (09:00–12:00)", "Mittag (12:00–15:00)", "Abend (15:00–18:00)"],
+        demoBtn: "Demo buchen →",
+        demoNote: "Ihre Demo-Anfrage wird innerhalb von 24 Stunden bestätigt.",
+        pricingEyebrow: "Transparente Preise",
+        pricingH1: "Wählen Sie den richtigen Plan für Ihr Unternehmen",
+        pricingSub: "Alle Pläne beinhalten Operationslimits, Teamrollen und volle Funktionalität. Sparen Sie mit jährlicher Abrechnung.",
+        annualLabel: "Jährlich", monthlyLabel: "Monatlich", saveLabel: "35% sparen",
+        freePrice: "Demo",
+        perMonth: "/Monat",
+        annualNote: "bei jährlicher Abrechnung",
+        planDescs: {
+          free: "14-tägige Demo-Testphase",
+          standard: "Basisplan für kleine Teams",
+          professional: "Für aktive Workflows",
+          premium: "Umfangreiche Nutzung und Flexibilität",
+          elite: "Für professionelle Nutzer",
+          ultimate: "Maximales Paket",
+        },
+        planFeatures: {
+          free: ["14 Tage Vollzugriff", "Unlimitierte Operationen (während der Testphase)", "Alle Module aktiv", "1 Benutzer"],
+          standard: ["5.000 Operationen/Monat", "Verkaufs- und Einkaufsmodul", "Banktransaktionen", "3 Benutzer", "E-Mail-Support"],
+          professional: ["10.000 Operationen/Monat", "Teamrollen", "Dokumentenverwaltung", "5 Benutzer", "Prioritätssupport"],
+          premium: ["25.000 Operationen/Monat", "Volle Funktionalität", "Unbegrenzte Benutzer", "API-Zugang", "Support-SLA"],
+          elite: ["100.000 Operationen/Monat", "Benutzerdefinierte Berichte", "Buchhalterpanel", "Audit-Trail", "Schneller Support"],
+          ultimate: ["200.000 Operationen/Monat", "Vollständige Anpassung", "Dedizierter Buchhaltungsservice", "SLA-Garantie", "Prioritäres Onboarding"],
+        },
+        recommended: "Empfohlen",
+        pricingStartBtn: "Demo starten",
+        pricingUpgradeBtn: "Plan wählen",
+        faqTitle: "Häufig gestellte Fragen",
+        faqs: [
+          { q: "Ist eine Kreditkarte erforderlich?", a: "Nein. Der Demo-Plan erfordert keine Kreditkarte. Bei kostenpflichtigen Plänen werden Kartendaten beim Checkout eingegeben." },
+          { q: "Kann ich den Plan später wechseln?", a: "Ja. Sie können Ihren Plan jederzeit aus Ihrem Konto heraus upgraden oder downgraden." },
+          { q: "Was bekomme ich bei jährlicher Abrechnung?", a: "Bei jährlicher Abrechnung ist der monatliche Äquivalentpreis 35% günstiger." },
+          { q: "Können Teammitglieder separaten Zugang haben?", a: "Ja. Teamrollen sind ab dem Standard-Plan aktiv." },
+        ],
+        erpEyebrow: "Tetavio ERP",
+        erpH1: "Die komplette Buchhaltungslösung",
+        erpSub: "Von Rechnungen bis Banktransaktionen, von Einkäufen bis Berichten — alle Finanzprozesse auf einer Plattform. Für lokale Märkte entwickelt, Cloud-basiert, teamfreundlich.",
+        erpModulesTitle: "Kernmodule",
+        erpModules: [
+          { icon: "🧾", name: "Verkauf & Rechnungsstellung", desc: "Rechnungen erstellen, versenden, Zahlungen verfolgen. Forderungen werden automatisch berechnet." },
+          { icon: "🛒", name: "Einkauf", desc: "Lieferant, Waren, eingehende Belege — der Einkaufsprozess vollständig unter Kontrolle." },
+          { icon: "🏦", name: "Banking", desc: "Mehrere Bankkonten, Einnahmen/Ausgaben, Kontoauszüge." },
+          { icon: "📚", name: "Hauptbuch", desc: "Buchungseinträge, Kontenplan, manuelle Journale." },
+          { icon: "📊", name: "Berichte", desc: "G&V, Bilanz, Cashflow, AR-Aging." },
+          { icon: "👥", name: "Teamverwaltung", desc: "Rollen, Berechtigungen, Mehrbenutzerzugang." },
+          { icon: "📁", name: "Dokumentenverwaltung", desc: "Verträge, Protokolle, Belege — jedes Dokument an eine Transaktion geknüpft." },
+          { icon: "⚙️", name: "Einstellungen", desc: "Unternehmensparameter, Währung, Geschäftsjahr, Planverwaltung." },
+        ],
+        erpSpecsTitle: "Technische Daten",
+        erpSpecs: [
+          { label: "Plattformtyp", value: "Cloud SaaS (webbasiert)" },
+          { label: "Zugriffsgeräte", value: "Desktop, Tablet, Mobil" },
+          { label: "Sprachunterstützung", value: "Aserbaidschanisch, Englisch, Russisch, Türkisch, Deutsch" },
+          { label: "Währung", value: "Mehrwährungsunterstützung" },
+          { label: "Datenübertragung", value: "HTTPS (TLS 1.2+)" },
+          { label: "Verfügbarkeitsgarantie", value: "99,9% SLA" },
+          { label: "Datensicherung", value: "Tägliche automatische Sicherung" },
+          { label: "Supportkanäle", value: "E-Mail, Onboarding, Demo" },
+        ],
+        csEyebrow: "Kundenerfolgsgeschichten",
+        csH1: "Was haben Unternehmen mit Tetavio erreicht?",
+        csSub: "Echte Kundenergebnisse aus verschiedenen Branchen.",
+        csStats: [
+          { num: "50+", label: "Aktive Unternehmen" },
+          { num: "200K+", label: "Verarbeitete Operationen" },
+          { num: "99.9%", label: "Verfügbarkeit" },
+          { num: "4.8★", label: "Durchschnittliche Bewertung" },
+        ],
+        csCards: [
+          {
+            quote: "Nach dem Wechsel zu Tetavio sank die Rechnungsbearbeitungszeit von 3 Tagen auf 4 Stunden. Unser Buchhalter kann jetzt mit einem Klick die G&V einsehen.",
+            name: "Ali Mammadov", role: "Handelsunternehmen — Geschäftsführer", init: "A",
+            metrics: [{ val: "18×", label: "Geschwindigkeitszuwachs" }, { val: "0 Fehler", label: "Berichterstattung" }],
+          },
+          {
+            quote: "Früher haben wir uns in Excel-Tabellen verloren. Jetzt ist alles an einem Ort — Einkauf, Verkauf, Banking. Unser Team hat es in 2 Tagen gelernt.",
+            name: "Lala Huseynova", role: "Fertigungsunternehmen — Buchhalterin", init: "L",
+            metrics: [{ val: "3 Tage", label: "Onboarding" }, { val: "40%", label: "Zeitersparnis" }],
+          },
+          {
+            quote: "Einen Bericht zu erhalten ist jetzt eine Frage von Sekunden, nicht Stunden. Unser CFO trifft Entscheidungen schneller.",
+            name: "Rauf Aliyev", role: "Dienstleistungsunternehmen — CFO", init: "R",
+            metrics: [{ val: "∞", label: "Berichtsgeschwindigkeit" }, { val: "2×", label: "Entscheidungsgeschwindigkeit" }],
+          },
+          {
+            quote: "Tetavio ist für uns mehr als nur Buchhaltungssoftware — es ist das finanzielle Rückgrat unseres Unternehmens. Unser gesamtes Team nutzt es.",
+            name: "Nigar Guliyeva", role: "E-Commerce — Betriebsleiterin", init: "N",
+            metrics: [{ val: "5 Rollen", label: "Teamzugang" }, { val: "24/7", label: "Verfügbarkeit" }],
+          },
+        ],
+        ctaTitle: "Starten Sie heute",
+        ctaText: "14-tägige Demo-Testphase. Keine Kreditkarte erforderlich.",
+        ctaStartBtn: "Demo-Konto öffnen →",
+        ctaDemoBtn: "Demo buchen",
+        footerNote: "© 2025 Tetavio GmbH · Steuernr.: 2009752131",
+        accountCreated: "Ihr Konto wurde erstellt!", checkEmail: "Überprüfen Sie Ihre E-Mail zur Anmeldung.",
+        requestReceived: "Ihre Anfrage wurde entgegengenommen!", contactIn24h: "Unser Team meldet sich innerhalb von 24 Stunden bei Ihnen.",
       },
     };
 
@@ -14133,8 +14754,8 @@ function renderItemsCatalog() {
                   {startSent ? (
                     <div style={{ textAlign: "center", padding: "16px 0" }}>
                       <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-                      <strong style={{ color: "var(--fn-green)", fontSize: 15 }}>Hesabınız yaradıldı!</strong>
-                      <p style={{ color: "var(--fn-muted)", fontSize: 13, marginTop: 6 }}>Giriş üçün e-poçtunuzu yoxlayın.</p>
+                      <strong style={{ color: "var(--fn-green)", fontSize: 15 }}>{t.accountCreated}</strong>
+                      <p style={{ color: "var(--fn-muted)", fontSize: 13, marginTop: 6 }}>{t.checkEmail}</p>
                     </div>
                   ) : (
                     <>
@@ -14206,8 +14827,8 @@ function renderItemsCatalog() {
                   {demoSent ? (
                     <div style={{ textAlign: "center", padding: "24px 0" }}>
                       <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
-                      <strong style={{ color: "var(--fn-green)", fontSize: 16 }}>Müraciətiniz qəbul edildi!</strong>
-                      <p style={{ color: "var(--fn-muted)", fontSize: 14, marginTop: 8 }}>Komandamız 24 saat ərzində sizinlə əlaqə saxlayacaq.</p>
+                      <strong style={{ color: "var(--fn-green)", fontSize: 16 }}>{t.requestReceived}</strong>
+                      <p style={{ color: "var(--fn-muted)", fontSize: 14, marginTop: 8 }}>{t.contactIn24h}</p>
                     </div>
                   ) : (
                     <>
@@ -15278,7 +15899,7 @@ function renderItemsCatalog() {
   async function submitSignIn(event) {
     event.preventDefault();
     if (RECAPTCHA_ENABLED && !signInRecaptcha) {
-      setBooksNotice("Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.");
+      setBooksNotice(t.fCaptchaError);
       return;
     }
     try {
@@ -15298,15 +15919,15 @@ function renderItemsCatalog() {
         setCurrentUser(optimisticUser);
       }
 
-      setBooksNotice("Uğurla daxil oldunuz.");
+      setBooksNotice(t.fSigninSuccess);
       setActiveProduct("books");
       setBooksView("home");
 
       syncBackendSubscription(session).catch((error) => {
-        setBooksNotice(error?.message || "Backend ilə sinxronizasiya zamanı xəta baş verdi.");
+        setBooksNotice(error?.message || t.fSyncError);
       });
     } catch (error) {
-      setBooksNotice(error?.message || "Giriş alınmadı. Yenidən yoxlayın.");
+      setBooksNotice(error?.message || t.fSigninError);
       setSignInRecaptcha("");
       recaptchaRef.current?.reset();
     } finally {
@@ -15327,7 +15948,7 @@ function renderItemsCatalog() {
       return;
     }
     if (RECAPTCHA_ENABLED && !signUpRecaptcha) {
-      setSignUpError("Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.");
+      setSignUpError(t.fCaptchaError);
       return;
     }
 
@@ -15396,10 +16017,10 @@ function renderItemsCatalog() {
   function submitDemoRequest(event) {
     event.preventDefault();
     if (!demoDraft.companyName || !demoDraft.fullName || !demoDraft.email) {
-      setBooksNotice("Demo sorğusu üçün bütün sahələri doldurun.");
+      setBooksNotice(t.fDemoFormError);
       return;
     }
-    setBooksNotice("Demo sorğunuz qəbul edildi. Növbəti mərhələdə bu axını dərinləşdirəcəyik.");
+    setBooksNotice(t.fDemoFormSuccess);
     setBooksView("home");
     setDemoDraft({ companyName: "", fullName: "", email: "" });
   }
@@ -15417,7 +16038,8 @@ function renderItemsCatalog() {
   }
 
   async function logoutUser() {
-    if (!window.confirm("Sistemdən çıxmaq istədiyinizə əminsiniz?")) return;
+    const at = I18N[hubLang] || I18N.az;
+    if (!window.confirm(at.confirmLogout)) return;
     if (backendSession?.refreshToken) {
       try {
         await apiLogout(backendSession.refreshToken);
@@ -15437,7 +16059,7 @@ function renderItemsCatalog() {
     setActiveModule(null);
     setActiveProduct("booksLanding");
     setBooksView("signin");
-    setBooksNotice("Çıxış edildi. Yenidən daxil ola bilərsiniz.");
+    setBooksNotice(t.fLogoutNotice);
   }
 
   function getValidResetRequest(token) {
@@ -15447,7 +16069,8 @@ function renderItemsCatalog() {
 
   function legacySubmitForgotPassword(event) {
     event.preventDefault();
-    setBooksNotice("Parol bərpası lokal olaraq saxlanılmır. Bu funksiya backend üzərindən ayrıca aktiv edilməlidir.");
+    const at = I18N[hubLang] || I18N.az;
+    setBooksNotice(at.pay_localForgot);
   }
 
   async function submitForgotPassword(event) {
@@ -15462,12 +16085,13 @@ function renderItemsCatalog() {
 
   async function submitResetPassword(event) {
     event.preventDefault();
+    const at = I18N[hubLang] || I18N.az;
     if (resetDraft.password !== resetDraft.confirmPassword) {
-      setBooksNotice("Şifrələr uyğun gəlmir. Zəhmət olmasa yenidən yoxlayın.");
+      setBooksNotice(t.fPasswordMismatch);
       return;
     }
     if (!activeResetToken) {
-      setBooksNotice("Bərpa linki etibarsızdır. Zəhmət olmasa yenidən şifrə bərpası tələb edin.");
+      setBooksNotice(t.fResetLinkInvalid);
       return;
     }
     try {
@@ -15476,7 +16100,7 @@ function renderItemsCatalog() {
       setActiveResetToken("");
       setResetSuccess(true);
     } catch (error) {
-      setBooksNotice(`Xəta: ${error.message}`);
+      setBooksNotice(`${at.err_prefix}: ${error.message}`);
     }
   }
 
@@ -15552,6 +16176,44 @@ function renderItemsCatalog() {
         fDemoCompany:    "Şirkət adı",
         fDemoPerson:     "Əlaqəli şəxs",
         fDemoBtn:        "Sorğu göndər →",
+        fPlanFreeDesc:   "Pulsuz plan",
+        fPlanDemoDesc:   "14 günlük sınaq",
+        fSignupLoading:  "Hesab yaradılır...",
+        legalBackHome:   "Ana səhifəyə qayıt",
+        fSigninLoading:  "Daxil olunur...",
+        fLoginChecking:  "Giriş yoxlanılır...",
+        fLoginConnecting: "Daxil olunur... {s} san",
+        fLoginWaiting:   "Server cavabı gözlənilir... {s} san",
+        fLoginSlow:      "Gözləmə uzanıb... {s} san",
+        fVerifySuccess:  "Email doğrulandı!",
+        fVerifySuccessHint: "E-poçt ünvanınız uğurla təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.",
+        fVerifySuccessBtn:  "Daxil ol",
+        fVerifyFail:     "Doğrulama uğursuz oldu",
+        fVerifyFailBtn:  "Daxil ol",
+        fVerifyLoading:  "Email doğrulanır...",
+        fVerifyLoadingHint: "Bir saniyə gözləyin.",
+        fVerifyTitle:    "Email-inizi doğrulayın",
+        fVerifyHintSent: "Doğrulama linki",
+        fVerifyHintSentTo: "ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).",
+        fVerifyResend:   "Yenidən göndər",
+        fVerifyResendCooldown: "Yenidən göndər ({s}s)",
+        fVerifyBack:     "Daxil olmağa qayıt",
+        fForgotSentTitle: "Email göndərildi",
+        fForgotSentHint:  "Parol bərpası linki {email} ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).",
+        fForgotSentBack:  "Daxil olmağa qayıt",
+        fResetSentTitle:  "Şifrə yeniləndi!",
+        fResetSentHint:   "Şifrəniz uğurla yeniləndi. İndi hesabınıza daxil ola bilərsiniz.",
+        fResetSentBtn:    "Daxil ol",
+        fCaptchaError:    "Zəhmət olmasa \"Robot deyiləm\" düyməsini işarələyin.",
+        fPasswordMismatch: "Şifrələr uyğun gəlmir. Zəhmət olmasa yenidən yoxlayın.",
+        fResetLinkInvalid: "Bərpa linki etibarsızdır. Zəhmət olmasa yenidən şifrə bərpası tələb edin.",
+        fAuthRequired:    "Hesaba giriş tələb olunur. Zəhmət olmasa çıxıb yenidən daxil olun.",
+        fSigninSuccess:   "Uğurla daxil oldunuz.",
+        fSyncError:       "Backend ilə sinxronizasiya zamanı xəta baş verdi.",
+        fSigninError:     "Giriş alınmadı. Yenidən yoxlayın.",
+        fDemoFormError:   "Demo sorğusu üçün bütün sahələri doldurun.",
+        fDemoFormSuccess: "Demo sorğunuz qəbul edildi.",
+        fLogoutNotice:    "Çıxış edildi. Yenidən daxil ola bilərsiniz.",
       },
       en: {
         brandSub:        "Accounting Software",
@@ -15610,6 +16272,44 @@ function renderItemsCatalog() {
         fDemoCompany:    "Company name",
         fDemoPerson:     "Contact person",
         fDemoBtn:        "Send request →",
+        fPlanFreeDesc:   "Free plan",
+        fPlanDemoDesc:   "14-day trial",
+        fSignupLoading:  "Creating account...",
+        legalBackHome:   "Back to homepage",
+        fSigninLoading:  "Signing in...",
+        fLoginChecking:  "Verifying...",
+        fLoginConnecting: "Signing in... {s}s",
+        fLoginWaiting:   "Waiting for server... {s}s",
+        fLoginSlow:      "Taking longer than usual... {s}s",
+        fVerifySuccess:  "Email verified!",
+        fVerifySuccessHint: "Your email address has been confirmed. You can now sign in.",
+        fVerifySuccessBtn:  "Sign in",
+        fVerifyFail:     "Verification failed",
+        fVerifyFailBtn:  "Sign in",
+        fVerifyLoading:  "Verifying email...",
+        fVerifyLoadingHint: "Please wait a moment.",
+        fVerifyTitle:    "Verify your email",
+        fVerifyHintSent: "Verification link sent to",
+        fVerifyHintSentTo: ". Please check your inbox (and spam folder).",
+        fVerifyResend:   "Resend",
+        fVerifyResendCooldown: "Resend ({s}s)",
+        fVerifyBack:     "Back to sign in",
+        fForgotSentTitle: "Email sent",
+        fForgotSentHint:  "Password recovery link sent to {email}. Please check your inbox (and spam folder).",
+        fForgotSentBack:  "Back to sign in",
+        fResetSentTitle:  "Password updated!",
+        fResetSentHint:   "Your password has been successfully updated. You can now sign in.",
+        fResetSentBtn:    "Sign in",
+        fCaptchaError:    "Please check the \"I'm not a robot\" box.",
+        fPasswordMismatch: "Passwords do not match. Please try again.",
+        fResetLinkInvalid: "Recovery link is invalid. Please request a new password reset.",
+        fAuthRequired:    "Authentication required. Please sign out and sign in again.",
+        fSigninSuccess:   "Signed in successfully.",
+        fSyncError:       "An error occurred during synchronisation.",
+        fSigninError:     "Sign-in failed. Please try again.",
+        fDemoFormError:   "Please fill all fields for the demo request.",
+        fDemoFormSuccess: "Your demo request has been received.",
+        fLogoutNotice:    "Signed out. You can sign in again.",
       },
       ru: {
         brandSub:        "Бухгалтерское ПО",
@@ -15668,6 +16368,44 @@ function renderItemsCatalog() {
         fDemoCompany:    "Название компании",
         fDemoPerson:     "Контактное лицо",
         fDemoBtn:        "Отправить запрос →",
+        fPlanFreeDesc:   "Бесплатный тариф",
+        fPlanDemoDesc:   "14-дневный период",
+        fSignupLoading:  "Создание аккаунта...",
+        legalBackHome:   "На главную",
+        fSigninLoading:  "Выполняется вход...",
+        fLoginChecking:  "Проверка...",
+        fLoginConnecting: "Вход... {s}с",
+        fLoginWaiting:   "Ожидание сервера... {s}с",
+        fLoginSlow:      "Дольше обычного... {s}с",
+        fVerifySuccess:  "Email подтверждён!",
+        fVerifySuccessHint: "Ваш email успешно подтверждён. Теперь вы можете войти.",
+        fVerifySuccessBtn:  "Войти",
+        fVerifyFail:     "Подтверждение не удалось",
+        fVerifyFailBtn:  "Войти",
+        fVerifyLoading:  "Подтверждение email...",
+        fVerifyLoadingHint: "Пожалуйста, подождите.",
+        fVerifyTitle:    "Подтвердите email",
+        fVerifyHintSent: "Ссылка для подтверждения отправлена на",
+        fVerifyHintSentTo: ". Проверьте почту (и папку «Спам»).",
+        fVerifyResend:   "Отправить повторно",
+        fVerifyResendCooldown: "Повторная отправка ({s}с)",
+        fVerifyBack:     "Назад ко входу",
+        fForgotSentTitle: "Email отправлен",
+        fForgotSentHint:  "Ссылка для сброса пароля отправлена на {email}. Проверьте почту (и папку «Спам»).",
+        fForgotSentBack:  "Назад ко входу",
+        fResetSentTitle:  "Пароль обновлён!",
+        fResetSentHint:   "Ваш пароль успешно обновлён. Теперь вы можете войти.",
+        fResetSentBtn:    "Войти",
+        fCaptchaError:    "Пожалуйста, отметьте флажок «Я не робот».",
+        fPasswordMismatch: "Пароли не совпадают. Пожалуйста, проверьте ещё раз.",
+        fResetLinkInvalid: "Ссылка для восстановления недействительна. Запросите сброс пароля повторно.",
+        fAuthRequired:    "Требуется авторизация. Пожалуйста, выйдите и войдите снова.",
+        fSigninSuccess:   "Вход выполнен успешно.",
+        fSyncError:       "Произошла ошибка при синхронизации с сервером.",
+        fSigninError:     "Вход не удался. Попробуйте ещё раз.",
+        fDemoFormError:   "Пожалуйста, заполните все поля для запроса демо.",
+        fDemoFormSuccess: "Ваш запрос демо получен.",
+        fLogoutNotice:    "Вы вышли из системы. Можете войти снова.",
       },
       tr: {
         brandSub:        "Muhasebe Yazılımı",
@@ -15726,6 +16464,44 @@ function renderItemsCatalog() {
         fDemoCompany:    "Şirket adı",
         fDemoPerson:     "İlgili kişi",
         fDemoBtn:        "Talep gönder →",
+        fPlanFreeDesc:   "Ücretsiz plan",
+        fPlanDemoDesc:   "14 günlük deneme",
+        fSignupLoading:  "Hesap oluşturuluyor...",
+        legalBackHome:   "Ana sayfaya dön",
+        fSigninLoading:  "Giriş yapılıyor...",
+        fLoginChecking:  "Doğrulanıyor...",
+        fLoginConnecting: "Giriş yapılıyor... {s}s",
+        fLoginWaiting:   "Sunucu bekleniyor... {s}s",
+        fLoginSlow:      "Normalden uzun sürüyor... {s}s",
+        fVerifySuccess:  "E-posta doğrulandı!",
+        fVerifySuccessHint: "E-posta adresiniz başarıyla onaylandı. Artık giriş yapabilirsiniz.",
+        fVerifySuccessBtn:  "Giriş yap",
+        fVerifyFail:     "Doğrulama başarısız",
+        fVerifyFailBtn:  "Giriş yap",
+        fVerifyLoading:  "E-posta doğrulanıyor...",
+        fVerifyLoadingHint: "Lütfen bekleyin.",
+        fVerifyTitle:    "E-postanızı doğrulayın",
+        fVerifyHintSent: "Doğrulama bağlantısı gönderildi:",
+        fVerifyHintSentTo: ". Gelen kutunuzu kontrol edin (spam klasörüne de bakın).",
+        fVerifyResend:   "Yeniden gönder",
+        fVerifyResendCooldown: "Yeniden gönder ({s}s)",
+        fVerifyBack:     "Girişe dön",
+        fForgotSentTitle: "E-posta gönderildi",
+        fForgotSentHint:  "Şifre sıfırlama bağlantısı {email} adresine gönderildi. Gelen kutunuzu kontrol edin (spam klasörüne de bakın).",
+        fForgotSentBack:  "Girişe dön",
+        fResetSentTitle:  "Şifre güncellendi!",
+        fResetSentHint:   "Şifreniz başarıyla güncellendi. Artık giriş yapabilirsiniz.",
+        fResetSentBtn:    "Giriş yap",
+        fCaptchaError:    "Lütfen \"Robot değilim\" kutusunu işaretleyin.",
+        fPasswordMismatch: "Şifreler eşleşmiyor. Lütfen tekrar deneyin.",
+        fResetLinkInvalid: "Kurtarma bağlantısı geçersiz. Lütfen yeni bir şifre sıfırlama talep edin.",
+        fAuthRequired:    "Kimlik doğrulama gerekli. Lütfen çıkış yapıp yeniden giriş yapın.",
+        fSigninSuccess:   "Başarıyla giriş yapıldı.",
+        fSyncError:       "Sunucu ile senkronizasyon sırasında hata oluştu.",
+        fSigninError:     "Giriş başarısız. Lütfen tekrar deneyin.",
+        fDemoFormError:   "Lütfen demo talebi için tüm alanları doldurun.",
+        fDemoFormSuccess: "Demo talebiniz alındı.",
+        fLogoutNotice:    "Çıkış yapıldı. Tekrar giriş yapabilirsiniz.",
       },
       de: {
         brandSub:        "Buchhaltungssoftware",
@@ -15784,10 +16560,55 @@ function renderItemsCatalog() {
         fDemoCompany:    "Firmenname",
         fDemoPerson:     "Ansprechpartner",
         fDemoBtn:        "Anfrage senden →",
+        fPlanFreeDesc:   "Kostenloser Plan",
+        fPlanDemoDesc:   "14-tägige Testphase",
+        fSignupLoading:  "Konto wird erstellt...",
+        legalBackHome:   "Zur Startseite",
+        fSigninLoading:  "Anmeldung läuft...",
+        fLoginChecking:  "Überprüfung...",
+        fLoginConnecting: "Anmeldung... {s}s",
+        fLoginWaiting:   "Warte auf Server... {s}s",
+        fLoginSlow:      "Dauert länger als üblich... {s}s",
+        fVerifySuccess:  "E-Mail verifiziert!",
+        fVerifySuccessHint: "Ihre E-Mail-Adresse wurde erfolgreich bestätigt. Sie können sich jetzt anmelden.",
+        fVerifySuccessBtn:  "Anmelden",
+        fVerifyFail:     "Verifizierung fehlgeschlagen",
+        fVerifyFailBtn:  "Anmelden",
+        fVerifyLoading:  "E-Mail wird verifiziert...",
+        fVerifyLoadingHint: "Bitte warten Sie einen Moment.",
+        fVerifyTitle:    "E-Mail verifizieren",
+        fVerifyHintSent: "Verifizierungslink gesendet an",
+        fVerifyHintSentTo: ". Bitte prüfen Sie Ihr Postfach (und den Spam-Ordner).",
+        fVerifyResend:   "Erneut senden",
+        fVerifyResendCooldown: "Erneut senden ({s}s)",
+        fVerifyBack:     "Zurück zur Anmeldung",
+        fForgotSentTitle: "E-Mail gesendet",
+        fForgotSentHint:  "Link zum Zurücksetzen des Passworts wurde an {email} gesendet. Bitte prüfen Sie Ihr Postfach (und den Spam-Ordner).",
+        fForgotSentBack:  "Zurück zur Anmeldung",
+        fResetSentTitle:  "Passwort aktualisiert!",
+        fResetSentHint:   "Ihr Passwort wurde erfolgreich aktualisiert. Sie können sich jetzt anmelden.",
+        fResetSentBtn:    "Anmelden",
+        fCaptchaError:    "Bitte markieren Sie das Feld \"Ich bin kein Roboter\".",
+        fPasswordMismatch: "Passwörter stimmen nicht überein. Bitte erneut prüfen.",
+        fResetLinkInvalid: "Wiederherstellungslink ist ungültig. Bitte fordern Sie eine neue Passwortzurücksetzung an.",
+        fAuthRequired:    "Authentifizierung erforderlich. Bitte abmelden und erneut anmelden.",
+        fSigninSuccess:   "Erfolgreich angemeldet.",
+        fSyncError:       "Fehler bei der Synchronisierung mit dem Server.",
+        fSigninError:     "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+        fDemoFormError:   "Bitte füllen Sie alle Felder für die Demo-Anfrage aus.",
+        fDemoFormSuccess: "Ihre Demo-Anfrage wurde empfangen.",
+        fLogoutNotice:    "Abgemeldet. Sie können sich erneut anmelden.",
       },
     };
     const activeLang = LANGS.find((l) => l.code === hubLang) || LANGS[0];
     const t = LP_T[hubLang] || LP_T.az;
+
+    function loginProgressText(secs) {
+      if (secs <= 1) return t.fLoginChecking;
+      if (secs <= 3) return t.fLoginConnecting.replace("{s}", secs);
+      if (secs <= 8) return t.fLoginWaiting.replace("{s}", secs);
+      return t.fLoginSlow.replace("{s}", secs);
+    }
 
     function goAuth(view) {
       setBooksView(view);
@@ -15826,7 +16647,7 @@ function renderItemsCatalog() {
                 <p>{legalPage.summary}</p>
               </div>
               <button type="button" className="lp-btn-ghost lp-legal-back" onClick={() => setBooksView("home")}>
-                Ana səhifəyə qayıt
+                {t.legalBackHome}
               </button>
             </div>
             <div className="lp-legal-links">
@@ -15836,7 +16657,7 @@ function renderItemsCatalog() {
                   className={`lp-legal-link${item.id === activeLegalNavId ? " active" : ""}`}
                   href={item.href}
                 >
-                  {item.label}
+                  {getLegalNavLabel(item.id, hubLang)}
                 </a>
               ))}
             </div>
@@ -15898,7 +16719,7 @@ function renderItemsCatalog() {
 
           <footer className="lp-footer">
             {renderLegalLinks("lp-footer-links")}
-            <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+            <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, {at.copyright}</small>
           </footer>
         </div>
       );
@@ -15964,11 +16785,11 @@ function renderItemsCatalog() {
                 ) : null}
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                    {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
+                    {loginProgressText(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
                 <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || (RECAPTCHA_ENABLED && !signInRecaptcha)}>
-                  {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
+                  {signInStartedAt ? t.fSigninLoading : t.fSigninBtn}
                 </button>
               </form>
 
@@ -16009,7 +16830,7 @@ function renderItemsCatalog() {
                         onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free_basic" }))}
                       >
                         <strong>Free</strong>
-                        <span>Free plan</span>
+                        <span>{t.fPlanFreeDesc}</span>
                       </button>
                       <button
                         type="button"
@@ -16017,7 +16838,7 @@ function renderItemsCatalog() {
                         onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free" }))}
                       >
                         <strong>Demo</strong>
-                        <span>14 günlük sınaq</span>
+                        <span>{t.fPlanDemoDesc}</span>
                       </button>
                     </div>
                   </div>
@@ -16045,7 +16866,7 @@ function renderItemsCatalog() {
                   </div>
                 ) : null}
                 {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
-                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? t.fSignupLoading : t.fSignupBtn}</button>
               </form>
 
             ) : booksView === "verify-email" ? (
@@ -16053,36 +16874,35 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✅</div>
-                    <p className="lp-form-title">Email doğrulandı!</p>
-                    <p className="lp-form-hint">E-poçt ünvanınız uğurla təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <p className="lp-form-title">{t.fVerifySuccess}</p>
+                    <p className="lp-form-hint">{t.fVerifySuccessHint}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifySuccessBtn}</button>
                   </div>
                 </div>
               ) : verifyEmailError ? (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">❌</div>
-                    <p className="lp-form-title">Doğrulama uğursuz oldu</p>
+                    <p className="lp-form-title">{t.fVerifyFail}</p>
                     <p className="lp-form-hint">{verifyEmailError}</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifyFailBtn}</button>
                   </div>
                 </div>
               ) : activeVerifyToken ? (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon" style={{ fontSize: "2rem" }}>⏳</div>
-                    <p className="lp-form-title">Email doğrulanır...</p>
-                    <p className="lp-form-hint">Bir saniyə gözləyin.</p>
+                    <p className="lp-form-title">{t.fVerifyLoading}</p>
+                    <p className="lp-form-hint">{t.fVerifyLoadingHint}</p>
                   </div>
                 </div>
               ) : (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✉️</div>
-                    <p className="lp-form-title">Email-inizi doğrulayın</p>
+                    <p className="lp-form-title">{t.fVerifyTitle}</p>
                     <p className="lp-form-hint">
-                      Doğrulama linki <strong>{pendingVerificationEmail || currentUser?.email || "email-iniz"}</strong> ünvanına göndərildi.
-                      Emailinizi yoxlayın (spam qovluğuna da baxın).
+                      {t.fVerifyHintSent} <strong>{pendingVerificationEmail || currentUser?.email || "email"}</strong> {t.fVerifyHintSentTo}
                     </p>
                     <button
                       className="lp-submit-btn"
@@ -16091,9 +16911,9 @@ function renderItemsCatalog() {
                       style={{ marginTop: "1.25rem" }}
                       onClick={resendVerificationEmail}
                     >
-                      {verifyEmailResendCooldown > 0 ? `Yenidən göndər (${verifyEmailResendCooldown}s)` : "Yenidən göndər"}
+                      {verifyEmailResendCooldown > 0 ? t.fVerifyResendCooldown.replace("{s}", verifyEmailResendCooldown) : t.fVerifyResend}
                     </button>
-                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifyBack}</button>
                   </div>
                 </div>
               )
@@ -16103,9 +16923,9 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✉️</div>
-                    <p className="lp-form-title">Email göndərildi</p>
-                    <p className="lp-form-hint">Parol bərpası linki <strong>{forgotDraft.email}</strong> ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).</p>
-                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                    <p className="lp-form-title">{t.fForgotSentTitle}</p>
+                    <p className="lp-form-hint">{t.fForgotSentHint.replace("{email}", forgotDraft.email)}</p>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>{t.fForgotSentBack}</button>
                   </div>
                 </div>
               ) : (
@@ -16127,9 +16947,9 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✅</div>
-                    <p className="lp-form-title">Şifrə dəyişdirildi</p>
-                    <p className="lp-form-hint">Yeni şifrəniz uğurla təyin edildi. İndi hesabınıza daxil ola bilərsiniz.</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <p className="lp-form-title">{t.fResetSentTitle}</p>
+                    <p className="lp-form-hint">{t.fResetSentHint}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>{t.fResetSentBtn}</button>
                   </div>
                 </div>
               ) : (
@@ -16385,11 +17205,11 @@ function renderItemsCatalog() {
                 ) : null}
                 {signInStartedAt ? (
                   <p className="lp-form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                    {getLoginProgressCopy(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
+                    {loginProgressText(Math.max(1, Math.floor(((authProgressTick || Date.now()) - signInStartedAt) / 1000)))}
                   </p>
                 ) : null}
                 <button className="lp-submit-btn" type="submit" disabled={Boolean(signInStartedAt) || (RECAPTCHA_ENABLED && !signInRecaptcha)}>
-                  {signInStartedAt ? "Daxil olunur..." : t.fSigninBtn}
+                  {signInStartedAt ? t.fSigninLoading : t.fSigninBtn}
                 </button>
               </form>
 
@@ -16430,7 +17250,7 @@ function renderItemsCatalog() {
                         onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free_basic" }))}
                       >
                         <strong>Free</strong>
-                        <span>Free plan</span>
+                        <span>{t.fPlanFreeDesc}</span>
                       </button>
                       <button
                         type="button"
@@ -16438,7 +17258,7 @@ function renderItemsCatalog() {
                         onClick={() => setAuthDraft((c) => ({ ...c, signupPlan: "free" }))}
                       >
                         <strong>Demo</strong>
-                        <span>14 günlük sınaq</span>
+                        <span>{t.fPlanDemoDesc}</span>
                       </button>
                     </div>
                   </div>
@@ -16466,7 +17286,7 @@ function renderItemsCatalog() {
                   </div>
                 ) : null}
                 {signUpError ? <p className="lp-form-error">{signUpError}</p> : null}
-                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? "Hesab yaradılır..." : t.fSignupBtn}</button>
+                <button className="lp-submit-btn" type="submit" disabled={signUpLoading || (RECAPTCHA_ENABLED && !signUpRecaptcha)}>{signUpLoading ? t.fSignupLoading : t.fSignupBtn}</button>
               </form>
 
             ) : booksView === "verify-email" ? (
@@ -16474,36 +17294,35 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✅</div>
-                    <p className="lp-form-title">Email doğrulandı!</p>
-                    <p className="lp-form-hint">E-poçt ünvanınız uğurla təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <p className="lp-form-title">{t.fVerifySuccess}</p>
+                    <p className="lp-form-hint">{t.fVerifySuccessHint}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifySuccessBtn}</button>
                   </div>
                 </div>
               ) : verifyEmailError ? (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">❌</div>
-                    <p className="lp-form-title">Doğrulama uğursuz oldu</p>
+                    <p className="lp-form-title">{t.fVerifyFail}</p>
                     <p className="lp-form-hint">{verifyEmailError}</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setVerifyEmailError(""); setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifyFailBtn}</button>
                   </div>
                 </div>
               ) : activeVerifyToken ? (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon" style={{ fontSize: "2rem" }}>⏳</div>
-                    <p className="lp-form-title">Email doğrulanır...</p>
-                    <p className="lp-form-hint">Bir saniyə gözləyin.</p>
+                    <p className="lp-form-title">{t.fVerifyLoading}</p>
+                    <p className="lp-form-hint">{t.fVerifyLoadingHint}</p>
                   </div>
                 </div>
               ) : (
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✉️</div>
-                    <p className="lp-form-title">Email-inizi doğrulayın</p>
+                    <p className="lp-form-title">{t.fVerifyTitle}</p>
                     <p className="lp-form-hint">
-                      Doğrulama linki <strong>{pendingVerificationEmail || currentUser?.email || "email-iniz"}</strong> ünvanına göndərildi.
-                      Emailinizi yoxlayın (spam qovluğuna da baxın).
+                      {t.fVerifyHintSent} <strong>{pendingVerificationEmail || currentUser?.email || "email"}</strong> {t.fVerifyHintSentTo}
                     </p>
                     <button
                       className="lp-submit-btn"
@@ -16512,9 +17331,9 @@ function renderItemsCatalog() {
                       style={{ marginTop: "1.25rem" }}
                       onClick={resendVerificationEmail}
                     >
-                      {verifyEmailResendCooldown > 0 ? `Yenidən göndər (${verifyEmailResendCooldown}s)` : "Yenidən göndər"}
+                      {verifyEmailResendCooldown > 0 ? t.fVerifyResendCooldown.replace("{s}", verifyEmailResendCooldown) : t.fVerifyResend}
                     </button>
-                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem", display: "block" }} onClick={() => { setBooksView("signin"); setBooksNotice(""); }}>{t.fVerifyBack}</button>
                   </div>
                 </div>
               )
@@ -16524,9 +17343,9 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✉️</div>
-                    <p className="lp-form-title">Email göndərildi</p>
-                    <p className="lp-form-hint">Parol bərpası linki <strong>{forgotDraft.email}</strong> ünvanına göndərildi. Emailinizi yoxlayın (spam qovluğuna da baxın).</p>
-                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>Daxil olmağa qayıt</button>
+                    <p className="lp-form-title">{t.fForgotSentTitle}</p>
+                    <p className="lp-form-hint">{t.fForgotSentHint.replace("{email}", forgotDraft.email)}</p>
+                    <button className="lp-text-link" type="button" style={{ marginTop: "1rem" }} onClick={() => { setForgotSent(false); setForgotDraft({ email: "" }); setBooksView("signin"); setBooksNotice(""); }}>{t.fForgotSentBack}</button>
                   </div>
                 </div>
               ) : (
@@ -16548,9 +17367,9 @@ function renderItemsCatalog() {
                 <div className="lp-form">
                   <div className="lp-forgot-sent">
                     <div className="lp-forgot-sent-icon">✅</div>
-                    <p className="lp-form-title">Şifrə dəyişdirildi</p>
-                    <p className="lp-form-hint">Yeni şifrəniz uğurla təyin edildi. İndi hesabınıza daxil ola bilərsiniz.</p>
-                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>Daxil ol</button>
+                    <p className="lp-form-title">{t.fResetSentTitle}</p>
+                    <p className="lp-form-hint">{t.fResetSentHint}</p>
+                    <button className="lp-submit-btn" type="button" style={{ marginTop: "1rem" }} onClick={() => { setResetSuccess(false); setBooksView("signin"); setBooksNotice(""); }}>{t.fResetSentBtn}</button>
                   </div>
                 </div>
               ) : (
@@ -16597,11 +17416,11 @@ function renderItemsCatalog() {
                 className={`lp-legal-link${booksView === legalItem.pageId ? " active" : ""}`}
                 href={legalItem.href}
               >
-                {legalItem.label}
+                {getLegalNavLabel(legalItem.id, hubLang)}
               </a>
             ))}
           </div>
-          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, {at.copyright}</small>
         </footer>
 
       </div>
@@ -16619,8 +17438,8 @@ function renderItemsCatalog() {
             <div className="bill-hub-card" onClick={() => setBankView("banks")}>
               <div className="bill-hub-icon">🏦</div>
               <div className="bill-hub-info">
-                <h3>Banklar</h3>
-                <p>Bankların siyahısı və rekvizitlərinin idarəsi.</p>
+                <h3>{at.hub_bankList}</h3>
+                <p>{at.hub_bankListDesc}</p>
                 <span className="bill-hub-count">{state.bankingAccounts.length} {at.hub_bankCount}</span>
               </div>
               <span className="bill-hub-arrow">→</span>
@@ -16661,7 +17480,7 @@ function renderItemsCatalog() {
               <h2>{at.bankJournalTitle}</h2>
               <div style={{ display: "flex", gap: "0.6rem" }}>
                 <button className="ghost-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankFormOrigin("journal"); setBankView("form"); }}>+ Yeni bank</button>
-                <button className="primary-btn" type="button" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankTxAccountSearch(""); setBankView("tx-form"); }}>+ Yeni əməliyyat</button>
+                <button className="primary-btn" type="button" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankTxAccountSearch(""); setBankView("tx-form"); }}>{at.bank_newTx}</button>
               </div>
             </div>
           </div>
@@ -16692,15 +17511,15 @@ function renderItemsCatalog() {
           {/* Totals row */}
           <div className="bank-tx-totals">
             <div className="bank-tx-total-card bank-tx-total-card--credit">
-              <span className="bank-tx-total-label">↓ Ümumi mədaxil</span>
+              <span className="bank-tx-total-label">↓ {at.bank_totalIn}</span>
               <strong>{currency(totalCredit, state.settings.currency)}</strong>
             </div>
             <div className="bank-tx-total-card bank-tx-total-card--debit">
-              <span className="bank-tx-total-label">↑ Ümumi məxaric</span>
+              <span className="bank-tx-total-label">↑ {at.bank_totalOut}</span>
               <strong>{currency(totalDebit, state.settings.currency)}</strong>
             </div>
             <div className="bank-tx-total-card bank-tx-total-card--net">
-              <span className="bank-tx-total-label">= Xalis qalıq</span>
+              <span className="bank-tx-total-label">= {at.bank_netBalance}</span>
               <strong style={{ color: totalCredit - totalDebit >= 0 ? "var(--success)" : "var(--danger)" }}>{currency(totalCredit - totalDebit, state.settings.currency)}</strong>
             </div>
           </div>
@@ -16708,13 +17527,13 @@ function renderItemsCatalog() {
           {/* Transaction feed */}
           <div className="bank-tx-feed-wrap">
             <div className="bank-tx-feed-header">
-              <h3>Əməliyyatlar <span className="bank-tx-feed-count">{state.bankTransactions.length}</span></h3>
+              <h3>{at.bank_txFeedTitle} <span className="bank-tx-feed-count">{state.bankTransactions.length}</span></h3>
             </div>
             {txSorted.length === 0 ? (
               <div className="bank-tx-feed-empty">
                 <span>💳</span>
-                <p>Hələ heç bir əməliyyat yoxdur</p>
-                <button className="primary-btn" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView("tx-form"); }}>İlk əməliyyatı əlavə et</button>
+                <p>{at.bank_noTxYet}</p>
+                <button className="primary-btn" onClick={() => { setBankTxDraft({ date: today(), amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: state.bankingAccounts[0]?.id || "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView("tx-form"); }}>{at.bank_addFirst}</button>
               </div>
             ) : (
               <div className="bank-tx-feed">
@@ -16878,11 +17697,11 @@ function renderItemsCatalog() {
                 <div className="bank-tx-type-toggle">
                   <button type="button" className={"bank-tx-type-btn" + (bankTxDraft.transactionType === "Mədaxil" ? " bank-tx-type-btn--active bank-tx-type-btn--credit" : "")} onClick={() => setBankTxDraft((c) => ({ ...c, transactionType: "Mədaxil" }))}>
                     <span className="bank-tx-type-icon">↓</span>
-                    <span>Mədaxil</span>
+                    <span>{at.opt_bankIn}</span>
                   </button>
                   <button type="button" className={"bank-tx-type-btn" + (bankTxDraft.transactionType === "Məxaric" ? " bank-tx-type-btn--active bank-tx-type-btn--debit" : "")} onClick={() => setBankTxDraft((c) => ({ ...c, transactionType: "Məxaric" }))}>
                     <span className="bank-tx-type-icon">↑</span>
-                    <span>Məxaric</span>
+                    <span>{at.opt_bankOut}</span>
                   </button>
                 </div>
 
@@ -16905,9 +17724,9 @@ function renderItemsCatalog() {
 
                   {/* Bank account selector */}
                   <label className="bank-tx-field">
-                    <span className="bank-tx-field-label">🏦 Bank hesabı</span>
+                    <span className="bank-tx-field-label">🏦 {at.bank_accFieldLabel}</span>
                     <select value={bankTxDraft.bankAccountId} onChange={(e) => setBankTxDraft((c) => ({ ...c, bankAccountId: e.target.value }))} required>
-                      <option value="">Hesab seçin...</option>
+                      <option value="">{at.bank_selectAccount}</option>
                       {state.bankingAccounts.map((acc) => (
                         <option key={acc.id} value={acc.id}>{getBankDisplayName(acc)} — {getBankDisplayCode(acc)}</option>
                       ))}
@@ -16916,17 +17735,17 @@ function renderItemsCatalog() {
 
                   {/* Chart of accounts — Hesab with search */}
                   <div className="bank-tx-field bank-tx-field--acc">
-                    <span className="bank-tx-field-label">📊 Hesab (müxabirləşmə)</span>
+                    <span className="bank-tx-field-label">📊 {at.bank_coaFieldLabel}</span>
                     <div className="bank-tx-acc-selector" style={{ position: "relative" }}>
                       <div className={"bank-tx-acc-trigger" + (bankTxAccountOpen ? " bank-tx-acc-trigger--open" : "")} onClick={() => setBankTxAccountOpen((o) => !o)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setBankTxAccountOpen((o) => !o); }}>
-                        {selectedAcc ? <><span className="bank-tx-acc-code">{selectedAcc.accountCode}</span><span className="bank-tx-acc-name">{selectedAcc.accountName}</span></> : <span className="bank-tx-acc-placeholder">Hesab seçin...</span>}
+                        {selectedAcc ? <><span className="bank-tx-acc-code">{selectedAcc.accountCode}</span><span className="bank-tx-acc-name">{selectedAcc.accountName}</span></> : <span className="bank-tx-acc-placeholder">{at.bank_selectAccount}</span>}
                         <span className="bank-tx-acc-chevron">{bankTxAccountOpen ? "▲" : "▼"}</span>
                       </div>
                       {bankTxAccountOpen && (
                         <div className="bank-tx-acc-dropdown">
-                          <input autoFocus className="bank-tx-acc-search" type="text" placeholder="Hesab axtar..." value={bankTxAccountSearch} onChange={(e) => setBankTxAccountSearch(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                          <input autoFocus className="bank-tx-acc-search" type="text" placeholder={at.bank_searchAccount} value={bankTxAccountSearch} onChange={(e) => setBankTxAccountSearch(e.target.value)} onClick={(e) => e.stopPropagation()} />
                           <div className="bank-tx-acc-list">
-                            {filteredAccOptions.length === 0 && <div className="bank-tx-acc-empty">Tapılmadı</div>}
+                            {filteredAccOptions.length === 0 && <div className="bank-tx-acc-empty">{at.bank_notFound}</div>}
                             {filteredAccOptions.map((a) => (
                               <div key={a.id} className={"bank-tx-acc-option" + (bankTxDraft.accountCode === a.accountCode ? " bank-tx-acc-option--selected" : "")} onClick={() => { setBankTxDraft((c) => ({ ...c, accountCode: a.accountCode })); setBankTxAccountOpen(false); setBankTxAccountSearch(""); }}>
                                 <span className="bank-tx-acc-code">{a.accountCode}</span>
@@ -16942,19 +17761,19 @@ function renderItemsCatalog() {
 
                   {/* Category */}
                   <label className="bank-tx-field">
-                    <span className="bank-tx-field-label">🏷 Kateqoriya</span>
+                    <span className="bank-tx-field-label">🏷 {col("Kateqoriya")}</span>
                     <select value={bankTxDraft.category} onChange={(e) => setBankTxDraft((c) => ({ ...c, category: e.target.value }))}>
-                      <option value="">Seçin...</option>
+                      <option value="">{at.bank_selectCategory}</option>
                       {txCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </label>
 
                   <label className="bank-tx-field">
-                    <span className="bank-tx-field-label">🏢 Şirkət adı</span>
+                    <span className="bank-tx-field-label">🏢 {fld("Şirkət adı")}</span>
                     <input
                       list="bank-tx-company-options"
                       type="text"
-                      placeholder="Müştəri / şirkət adı"
+                      placeholder={at.bank_counterpartyPlaceholder}
                       value={bankTxDraft.counterpartyName || ""}
                       onChange={(e) => setBankTxDraft((c) => ({ ...c, counterpartyName: e.target.value }))}
                     />
@@ -16965,20 +17784,20 @@ function renderItemsCatalog() {
 
                   {/* Reference */}
                   <label className="bank-tx-field">
-                    <span className="bank-tx-field-label">🔖 Arayış / Sənəd №</span>
-                    <input type="text" placeholder="Məs. INV-0042" value={bankTxDraft.reference} onChange={(e) => setBankTxDraft((c) => ({ ...c, reference: e.target.value }))} />
+                    <span className="bank-tx-field-label">🔖 {at.bank_refFieldLabel}</span>
+                    <input type="text" placeholder={at.bank_referencePlaceholder} value={bankTxDraft.reference} onChange={(e) => setBankTxDraft((c) => ({ ...c, reference: e.target.value }))} />
                   </label>
 
                   {/* Description — full width */}
                   <label className="bank-tx-field bank-tx-field--full">
-                    <span className="bank-tx-field-label">📝 Təsvir</span>
-                    <textarea rows={3} placeholder="Əməliyyatın qısa təsviri..." value={bankTxDraft.description} onChange={(e) => setBankTxDraft((c) => ({ ...c, description: e.target.value }))} />
+                    <span className="bank-tx-field-label">📝 {at.opt_description}</span>
+                    <textarea rows={3} placeholder={at.bank_descriptionPlaceholder} value={bankTxDraft.description} onChange={(e) => setBankTxDraft((c) => ({ ...c, description: e.target.value }))} />
                   </label>
                 </div>
 
                 <div className="bank-tx-form-actions">
                   <button className="primary-btn bank-tx-submit-btn" type="submit">
-                    <span>{bankTxDraft.transactionType === "Mədaxil" ? "↓" : "↑"}</span> Yadda saxla
+                    <span>{bankTxDraft.transactionType === "Mədaxil" ? "↓" : "↑"}</span> {at.save}
                   </button>
                   <button className="ghost-btn" type="button" onClick={() => { setBankTxDraft({ date: "", amount: "", transactionType: "Mədaxil", description: "", counterpartyName: "", bankAccountId: "", accountCode: "", reference: "", category: "" }); setBankTxEditId(null); setBankView(bankTxEditId ? "journal" : "overview"); }}>{at.cancel}</button>
                 </div>
@@ -16995,17 +17814,17 @@ function renderItemsCatalog() {
           <div className="bill-journal-header">
             <button className="bill-back-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankView(bankFormOrigin || "banks"); }}>{at.back}</button>
             <div className="bill-journal-title-row">
-              <h2>{editingBank ? "Bankı düzəliş et" : "Yeni bank"}</h2>
+              <h2>{editingBank ? at.bank_editTitle : at.bank_newTitle}</h2>
             </div>
           </div>
           <div className="bill-form-panel">
             <form className="form-grid" onSubmit={submitBank}>
-              <label><span>Bankın adı</span><input value={bankDraft.bankName} onChange={(event) => setBankDraft((current) => ({ ...current, bankName: event.target.value }))} required /></label>
-              <label><span>Bankın VÖEN-i</span><input value={bankDraft.bankTaxId} onChange={(event) => setBankDraft((current) => ({ ...current, bankTaxId: event.target.value }))} /></label>
-              <label><span>Bankın kodu</span><input value={bankDraft.bankCode} onChange={(event) => setBankDraft((current) => ({ ...current, bankCode: event.target.value }))} /></label>
+              <label><span>{at.bank_bankName}</span><input value={bankDraft.bankName} onChange={(event) => setBankDraft((current) => ({ ...current, bankName: event.target.value }))} required /></label>
+              <label><span>{at.bank_bankTaxId}</span><input value={bankDraft.bankTaxId} onChange={(event) => setBankDraft((current) => ({ ...current, bankTaxId: event.target.value }))} /></label>
+              <label><span>{at.bank_bankCode}</span><input value={bankDraft.bankCode} onChange={(event) => setBankDraft((current) => ({ ...current, bankCode: event.target.value }))} /></label>
               <label><span>SWIFT</span><input value={bankDraft.swift} onChange={(event) => setBankDraft((current) => ({ ...current, swift: event.target.value }))} /></label>
-              <label><span>Müxbir hesab</span><input value={bankDraft.correspondentAccount} onChange={(event) => setBankDraft((current) => ({ ...current, correspondentAccount: event.target.value }))} /></label>
-              <label><span>Hesablaşma hesabı</span><input value={bankDraft.settlementAccount} onChange={(event) => setBankDraft((current) => ({ ...current, settlementAccount: event.target.value }))} /></label>
+              <label><span>{at.bank_correspondentAccount}</span><input value={bankDraft.correspondentAccount} onChange={(event) => setBankDraft((current) => ({ ...current, correspondentAccount: event.target.value }))} /></label>
+              <label><span>{at.bank_settlementAccount}</span><input value={bankDraft.settlementAccount} onChange={(event) => setBankDraft((current) => ({ ...current, settlementAccount: event.target.value }))} /></label>
               <div className="form-actions">
                 <button className="primary-btn" type="submit">{editingBank ? at.ic_updateBtn : at.save}</button>
                 <button className="ghost-btn" type="button" onClick={() => { setBankDraft(createEmptyBankDraft()); setEditingBank(null); setBankView(bankFormOrigin || "banks"); }}>{at.cancel}</button>
@@ -17296,16 +18115,17 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
   }
 
   async function exportHtmlAsExcel(title, html) {
+    const at = I18N[hubLang] || I18N.az;
     const safeTitle = title.toLowerCase().replace(/\s+/g, "-");
     const invoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
     if (invoke) {
       try {
         const filePath = await invoke("export_report_file", { fileName: safeTitle, content: html, extension: "xls" });
-        setBackupStatus({ tone: "success", message: `Hesabat Excel faylı yaradıldı: ${filePath}` });
+        setBackupStatus({ tone: "success", message: at.rpt_excelCreated.replace("{path}", filePath) });
         return;
       } catch (error) {
         const message = error?.message || String(error || "");
-        setBackupStatus({ tone: "warning", message: `Excel export alınmadı${message ? `: ${message}` : ""}. Brauzer üsulu ilə cəhd edilir.` });
+        setBackupStatus({ tone: "warning", message: at.rpt_excelFallback + (message ? `: ${message}` : "") });
       }
     }
 
@@ -17318,7 +18138,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setBackupStatus({ tone: "success", message: "Excel export hazırlandı." });
+    setBackupStatus({ tone: "success", message: at.rpt_excelReady });
   }
 
   async function exportReportExcel(title, rows) {
@@ -17412,9 +18232,10 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
   }
 
   function exportReportPdf(title, rows) {
+    const at = I18N[hubLang] || I18N.az;
     const printWindow = window.open("", "_blank", "width=980,height=720");
     if (!printWindow) {
-      setBackupStatus({ tone: "warning", message: "PDF görünüşü açıla bilmədi." });
+      setBackupStatus({ tone: "warning", message: at.rpt_pdfBlocked });
       return;
     }
     printWindow.document.write(buildReportDocument(title, rows, (amount) => currency(amount, state.settings.currency)));
@@ -17779,6 +18600,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
   }
 
   function toggleProfitLossCloseByRange(range) {
+    const at = I18N[hubLang] || I18N.az;
     const plan = buildProfitLossClosingPlan(range);
     const rangeYear = String(range.start).slice(0, 4);
     const existingAutoCloseJournal = state.manualJournals.find((j) =>
@@ -17791,23 +18613,23 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     );
 
     if (existingAutoCloseJournal) {
-      const confirmedReopen = window.confirm(`${range.start} - ${range.end} dövrü üçün bağlanışı geri açmaq istəyirsiniz?`);
+      const confirmedReopen = window.confirm(at.pl_confirmReopen.replace("{start}", range.start).replace("{end}", range.end));
       if (!confirmedReopen) return;
       setState((current) => ({
         ...current,
         manualJournals: current.manualJournals.filter((journal) => journal.id !== existingAutoCloseJournal.id)
       }));
-      window.alert("Bağlanış geri açıldı.");
+      window.alert(at.pl_alertReopened);
       return;
     }
 
     if (!plan.lines.length) {
-      window.alert("Seçilmiş il üçün bağlanacaq gəlir və ya xərc qalığı tapılmadı.");
+      window.alert(at.pl_alertNothingToClose);
       return;
     }
     if (!guardOperationAccess()) return;
 
-    const confirmed = window.confirm(`${range.start} - ${range.end} dövrü üçün gəlir və xərc hesabları 801 hesabına bağlanacaq. Davam edilsin?`);
+    const confirmed = window.confirm(at.pl_confirmClose.replace("{start}", range.start).replace("{end}", range.end));
     if (!confirmed) return;
 
     const reference = `P&L close ${plan.range.start} - ${plan.range.end}`;
@@ -17849,7 +18671,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
       };
     });
     markOperationUsage();
-    window.alert("Bağlanış yaradıldı.");
+    window.alert(at.pl_alertClosed);
   }
 
   function renderProfitLossReport() {
@@ -18031,8 +18853,8 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
         <section className="pl-note-card">
           <div className="pl-close-toolbar">
             <div className="pl-close-copy">
-              <strong>{at.pl_closeBtn || "Mənfəət / zərəri bağla"}</strong>
-              <p>{at.pl_closeHint || "Seçilmiş ilin gəlir və xərc hesablarını 801 hesabına avtomatik bağlayır."}</p>
+              <strong>{at.pl_closeBtn}</strong>
+              <p>{at.pl_closeHint}</p>
             </div>
             <div className="pl-close-actions">
               <label className="pl-close-year-field">
@@ -18047,23 +18869,20 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 onClick={() => toggleProfitLossCloseByRange(profitLossCloseRange)}
                 disabled={!hasProfitLossAutoClose && !profitLossClosingPlan.lines.length}
               >
-                {hasProfitLossAutoClose ? "✕ Bağlanışı ləğv et" : "Bağla"}
+                {hasProfitLossAutoClose ? at.pl_closeCancelBtn : at.pl_closeSaveBtn}
               </button>
             </div>
           </div>
           <div className="pl-note-head">
-            <strong>Əl ilə daxil edilən əməliyyatların təsiri</strong>
-            <span>{reportManualJournals.length} jurnal</span>
+            <strong>{at.pl_mjImpact}</strong>
+            <span>{at.pl_mjCount.replace("{n}", reportManualJournals.length)}</span>
           </div>
-          <p>
-            Bu hesabat yalnız gəlir və xərc hesablarına yazılan manual əməliyyatları sayır.
-            Yalnız balans hesabları ilə yazılmış jurnallar mənfəət və zərərə düşmür.
-          </p>
+          <p>{at.pl_mjNote}</p>
           <div className="pl-note-stats">
-            <span className="pl-note-chip income">Gəlir xətti: {manualJournalStats.income}</span>
-            <span className="pl-note-chip expense">Xərc xətti: {manualJournalStats.expense}</span>
-            <span className="pl-note-chip balance">Balans xətti: {manualJournalStats.balance}</span>
-            <span className="pl-note-chip neutral">Yalnız balans jurnalı: {manualJournalStats.balanceOnly}</span>
+            <span className="pl-note-chip income">{at.pl_mjIncomeLines} {manualJournalStats.income}</span>
+            <span className="pl-note-chip expense">{at.pl_mjExpenseLines} {manualJournalStats.expense}</span>
+            <span className="pl-note-chip balance">{at.pl_mjBalanceLines} {manualJournalStats.balance}</span>
+            <span className="pl-note-chip neutral">{at.pl_mjBalanceOnly} {manualJournalStats.balanceOnly}</span>
           </div>
         </section>
 
@@ -18579,20 +19398,20 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     }), { debit: 0, credit: 0 });
     const selectedAccountTitle = appliedAccountCardFilters.accountCode
       ? accountOptions.find((option) => option.code === appliedAccountCardFilters.accountCode)?.label || `${appliedAccountCardFilters.accountCode} - ${getAccountNameByCode(appliedAccountCardFilters.accountCode)}`
-      : "Hesab seçilməyib";
+      : at.acc_noAccount;
 
     return (
       <section className="view active">
         <div className="panel account-card-panel">
           <div className="panel-head">
             <div>
-              <h3>Hesab kartı</h3>
-              <p className="panel-copy">Dövr, hesab və alt bölmə seçərək xronoloji debet, kredit və qalıq dövriyyəsini izləyin.</p>
+              <h3>{at.acc_cardTitle}</h3>
+              <p className="panel-copy">{at.acc_cardDesc}</p>
             </div>
           </div>
           <div className="account-card-filter-grid">
             <label>
-              <span>Başlanğıc tarix</span>
+              <span>{col("Başlanğıc tarix")}</span>
               <input
                 type="date"
                 value={accountCardFilters.dateFrom}
@@ -18600,7 +19419,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               />
             </label>
             <label>
-              <span>Son tarix</span>
+              <span>{col("Son tarix")}</span>
               <input
                 type="date"
                 value={accountCardFilters.dateTo}
@@ -18608,12 +19427,12 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               />
             </label>
             <label>
-              <span>Hesab</span>
+              <span>{col("Hesab")}</span>
               <select
                 value={accountCardFilters.accountCode}
                 onChange={(event) => setAccountCardFilters((current) => ({ ...current, accountCode: event.target.value, entityName: "" }))}
               >
-                <option value="">Hesab seçin</option>
+                <option value="">{at.mj_selectAccount}</option>
                 {accountOptions.map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
               </select>
             </label>
@@ -18624,7 +19443,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 onChange={(event) => setAccountCardFilters((current) => ({ ...current, entityName: event.target.value }))}
                 disabled={!accountCardFilters.accountCode}
               >
-                <option value="">{accountCardFilters.accountCode ? `${entityLabel} seçin` : "Əvvəl hesab seçin"}</option>
+                <option value="">{accountCardFilters.accountCode ? `${entityLabel} ${at.selectPlaceholder}` : at.acc_selectFirst}</option>
                 {entityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
@@ -18634,7 +19453,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 type="button"
                 onClick={() => setAppliedAccountCardFilters({ ...accountCardFilters })}
               >
-                Tətbiq et
+                {at.acc_applyBtn}
               </button>
             </div>
           </div>
@@ -18648,19 +19467,19 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 <p className="panel-copy">
                   {appliedAccountCardFilters.entityName
                     ? `${entityLabel}: ${appliedAccountCardFilters.entityName}`
-                    : "Hesab üzrə ümumi dövriyyə"}
+                    : at.acc_overallTurnover}
                 </p>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 {appliedAccountCardFilters.accountCode && (
                   <>
                     <button className="ghost-btn compact-btn" type="button" onClick={() => {
-                      const headers = ["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"];
+                      const headers = [col("Tarix"), col("Sənəd"), col("Mənbə"), entityLabel, col("Debet"), col("Kredit"), col("Qalıq")];
                       const rows = [
                         [
                           appliedAccountCardFilters.dateFrom ? fmtDate(appliedAccountCardFilters.dateFrom) : "—",
-                          "Açılış qalığı",
-                          "Başlanğıc",
+                          at.rpt_openingBal,
+                          at.acc_startLabel,
                           appliedAccountCardFilters.entityName || "—",
                           "",
                           "",
@@ -18677,7 +19496,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                         ]),
                         [
                           "",
-                          "<strong>Cəmi / Son qalıq</strong>",
+                          `<strong>${at.acc_totalFinal}</strong>`,
                           "",
                           "",
                           `<strong>${currency(totals.debit, cur)}</strong>`,
@@ -18687,21 +19506,21 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                       ];
                       const printWindow = window.open("", "_blank", "width=980,height=720");
                       if (printWindow) {
-                        printWindow.document.write(buildTableReportDocument(`Hesab kartı: ${selectedAccountTitle}`, headers, rows));
+                        printWindow.document.write(buildTableReportDocument(`${at.acc_cardTitle}: ${selectedAccountTitle}`, headers, rows));
                         printWindow.document.close();
                         printWindow.focus();
                         setTimeout(() => printWindow.print(), 250);
                       }
                     }}>
-                      Çap et
+                      {at.acc_print}
                     </button>
                     <button className="primary-btn compact-btn" type="button" onClick={async () => {
-                      const headers = ["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"];
+                      const headers = [col("Tarix"), col("Sənəd"), col("Mənbə"), entityLabel, col("Debet"), col("Kredit"), col("Qalıq")];
                       const rows = [
                         [
                           appliedAccountCardFilters.dateFrom ? fmtDate(appliedAccountCardFilters.dateFrom) : "—",
-                          "Açılış qalığı",
-                          "Başlanğıc",
+                          at.rpt_openingBal,
+                          at.acc_startLabel,
                           appliedAccountCardFilters.entityName || "—",
                           "",
                           "",
@@ -18718,7 +19537,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                         ]),
                         [
                           "",
-                          "Cəmi / Son qalıq",
+                          at.acc_totalFinal,
                           "",
                           "",
                           totals.debit.toFixed(2),
@@ -18726,7 +19545,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                           (renderedRows.length ? renderedRows[renderedRows.length - 1].runningBalance : openingBalance).toFixed(2)
                         ]
                       ];
-                      const html = buildTableReportDocument(`Hesab kartı: ${selectedAccountTitle}`, headers, rows);
+                      const html = buildTableReportDocument(`${at.acc_cardTitle}: ${selectedAccountTitle}`, headers, rows);
                       await exportHtmlAsExcel(`hesab-karti-${appliedAccountCardFilters.accountCode}`, html);
                     }}>
                       Export
@@ -18740,30 +19559,30 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               <Fragment>
                 <div className="summary-grid compact">
                   <article className="summary-card">
-                    <span>Açılış qalığı</span>
+                    <span>{at.rpt_openingBal}</span>
                     <strong>{formatBalance(openingBalance)}</strong>
                   </article>
                   <article className="summary-card">
-                    <span>Dövr debeti</span>
+                    <span>{at.acc_periodDebit}</span>
                     <strong>{currency(totals.debit, cur)}</strong>
                   </article>
                   <article className="summary-card">
-                    <span>Dövr krediti</span>
+                    <span>{at.acc_periodCredit}</span>
                     <strong>{currency(totals.credit, cur)}</strong>
                   </article>
                   <article className="summary-card">
-                    <span>Son qalıq</span>
+                    <span>{at.rpt_closingBal}</span>
                     <strong>{formatBalance(renderedRows.length ? renderedRows[renderedRows.length - 1].runningBalance : openingBalance)}</strong>
                   </article>
                 </div>
                 <Table
-                  headers={["Tarix", "Sənəd", "Mənbə", entityLabel, "Debet", "Kredit", "Qalıq"]}
-                  emptyMessage="Seçilmiş kriteriyalara uyğun hesab kartı yazısı yoxdur."
+                  headers={[col("Tarix"), col("Sənəd"), col("Mənbə"), entityLabel, col("Debet"), col("Kredit"), col("Qalıq")]}
+                  emptyMessage={at.acc_noRows}
                   rows={[
                     <tr key="opening-balance">
                       <td>{appliedAccountCardFilters.dateFrom ? fmtDate(appliedAccountCardFilters.dateFrom) : "—"}</td>
-                      <td>Açılış qalığı</td>
-                      <td>Başlanğıc</td>
+                      <td>{at.rpt_openingBal}</td>
+                      <td>{at.acc_startLabel}</td>
                       <td>{appliedAccountCardFilters.entityName || "—"}</td>
                       <td>{currency(0, cur)}</td>
                       <td>{currency(0, cur)}</td>
@@ -18789,7 +19608,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
             ) : (
               <div className="nomen-empty">
                 <span className="nomen-empty-icon">📘</span>
-                <strong>Hesab seçin və `Tətbiq et` düyməsini basın.</strong>
+                <strong>{at.acc_selectPrompt}</strong>
               </div>
             )}
           </section>
@@ -18803,6 +19622,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
     const documents = state.documents.filter((item) => matchesSearch(item, query));
     const categoryColors = { Faktura: "doc-cat-invoice", "Müqavilə": "doc-cat-contract", "Hesab əlavəsi": "doc-cat-attachment", "Qəbz": "doc-cat-receipt" };
     const categoryIcons = { Faktura: "🧾", "Müqavilə": "📄", "Hesab əlavəsi": "📎", "Qəbz": "🖨️" };
+    const docCatLabel = { Faktura: at.doc_catInvoice, "Müqavilə": at.doc_catContract, "Hesab əlavəsi": at.doc_catAttachment, "Qəbz": at.doc_catReceipt };
 
     // ── Overview ──
     if (documentView === "overview") {
@@ -18814,7 +19634,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
               <div className="bill-hub-info">
                 <h3>{at.hub_docsArchive}</h3>
                 <p>{at.hub_docsArchiveDesc}</p>
-                <span className="bill-hub-count">{state.documents.length} sənəd</span>
+                <span className="bill-hub-count">{state.documents.length} {at.doc_unit}</span>
               </div>
               <span className="bill-hub-arrow">→</span>
             </div>
@@ -18845,7 +19665,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 <button className="ghost-btn" onClick={() => setDocumentView("overview")}>{at.back}</button>
                 <div>
                   <h2 className="doc-journal-title">{at.hub_docsArchive}</h2>
-                  <p className="doc-journal-sub">Cəmi {state.documents.length} sənəd</p>
+                  <p className="doc-journal-sub">{state.documents.length} {at.doc_unit}</p>
                 </div>
               </div>
               <button className="primary-btn" onClick={() => { setDocumentDraft({ title: "", relatedTo: "", category: "Faktura", fileData: null }); setEditingDocument(null); setDocumentView("form"); }}>{at.hub_docsNew}</button>
@@ -18857,7 +19677,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 <div key={cat} className={`doc-kpi-card doc-kpi-${cat === "Faktura" ? "blue" : cat === "Müqavilə" ? "purple" : cat === "Hesab əlavəsi" ? "teal" : "amber"}`}>
                   <span className="doc-kpi-icon">{categoryIcons[cat]}</span>
                   <span className="doc-kpi-count">{catCounts[cat] || 0}</span>
-                  <span className="doc-kpi-lbl">{cat}</span>
+                  <span className="doc-kpi-lbl">{docCatLabel[cat] || cat}</span>
                 </div>
               ))}
             </div>
@@ -18880,14 +19700,14 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                     <div className="doc-card-body">
                       <div className="doc-card-title">{record.title}</div>
                       <div className="doc-card-meta">
-                        <span className={`doc-cat-badge ${categoryColors[record.category] || ""}`}>{record.category}</span>
+                        <span className={`doc-cat-badge ${categoryColors[record.category] || ""}`}>{docCatLabel[record.category] || record.category}</span>
                         <span className="doc-card-related">📎 {record.relatedTo}</span>
                         <span className="doc-card-date">🗓 {fmtDate(record.updatedAt)}</span>
                       </div>
                     </div>
                     <div className="doc-card-actions">
                       {record.fileData?.dataUrl && (
-                        <a className="table-btn" href={record.fileData.dataUrl} download={record.fileData.name} title={record.fileData.name}>⬇ Yüklə</a>
+                        <a className="table-btn" href={record.fileData.dataUrl} download={record.fileData.name} title={record.fileData.name}>{at.doc_download}</a>
                       )}
                       <button className="table-btn" onClick={() => { setDocumentDraft({ title: record.title, relatedTo: record.relatedTo, category: record.category, fileData: record.fileData || null }); setEditingDocument(record.id); setDocumentView("form"); }}>{at.edit}</button>
                       <button className="table-btn danger-btn" onClick={() => { setState((c) => ({ ...c, documents: c.documents.filter((d) => d.id !== record.id) })); if (editingDocument === record.id) { setDocumentDraft({ title: "", relatedTo: "", category: "Faktura", fileData: null }); setEditingDocument(null); } }}>{at.delete}</button>
@@ -18909,14 +19729,14 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
             <button className="ghost-btn" onClick={() => { setDocumentDraft({ title: "", relatedTo: "", category: "Faktura", fileData: null }); setEditingDocument(null); setDocumentView("journal"); }}>{at.back}</button>
             <div>
               <h2 className="doc-form-title">{editingDocument ? at.formTitle_docEdit : at.formTitle_docNew}</h2>
-              <p className="doc-form-sub">{editingDocument ? "Mövcud sənədin məlumatlarını yenilə" : "Arxivə yeni sənəd daxil et"}</p>
+              <p className="doc-form-sub">{editingDocument ? at.doc_formEditSub : at.doc_formNewSub}</p>
             </div>
           </div>
           <div className="doc-form-body">
             <form className="bill-form-panel" onSubmit={(e) => { submitDocument(e); setDocumentView("journal"); }}>
               <div className="form-grid">
-                <label><span>{at.formField_title}</span><input value={documentDraft.title} onChange={(e) => setDocumentDraft((c) => ({ ...c, title: e.target.value }))} placeholder="Sənədin adı" required /></label>
-                <label><span>{at.formField_relSection}</span><input value={documentDraft.relatedTo} onChange={(e) => setDocumentDraft((c) => ({ ...c, relatedTo: e.target.value }))} placeholder="Müştəri, təchizatçı və s." required /></label>
+                <label><span>{at.formField_title}</span><input value={documentDraft.title} onChange={(e) => setDocumentDraft((c) => ({ ...c, title: e.target.value }))} placeholder={at.doc_titlePlaceholder} required /></label>
+                <label><span>{at.formField_relSection}</span><input value={documentDraft.relatedTo} onChange={(e) => setDocumentDraft((c) => ({ ...c, relatedTo: e.target.value }))} placeholder={at.doc_relatedPlaceholder} required /></label>
                 <label><span>{at.formField_category}</span>
                   <select value={documentDraft.category} onChange={(e) => setDocumentDraft((c) => ({ ...c, category: e.target.value }))}>
                     <option value="Faktura">{at.docCatInvoice}</option>
@@ -18929,7 +19749,7 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
 
               {/* ── Fayl yükləmə ── */}
               <div className="doc-upload-section">
-                <p className="doc-upload-label">Fayl yüklə</p>
+                <p className="doc-upload-label">{at.doc_uploadLabel}</p>
                 <input
                   ref={docFileInputRef}
                   type="file"
@@ -18960,8 +19780,8 @@ tbody td{border:1px solid #d7deea;padding:10px 12px;vertical-align:top}
                 ) : (
                   <div className="doc-upload-zone" onClick={() => docFileInputRef.current?.click()}>
                     <span className="doc-upload-zone-icon">☁️</span>
-                    <p>Fayl seçmək üçün klikləyin</p>
-                    <span className="doc-upload-zone-hint">PDF, Word, Excel, şəkil və s.</span>
+                    <p>{at.doc_uploadClick}</p>
+                    <span className="doc-upload-zone-hint">{at.doc_uploadHint}</span>
                   </div>
                 )}
               </div>
@@ -18981,22 +19801,22 @@ function renderSettings() {
     const activeLangObj = APP_LANGS.find((l) => l.code === hubLang) || APP_LANGS[0];
     const internalUsersCount = authUsers.filter((user) => isInternalUser(user)).length;
     const companySnapshot = [
-      { label: "Şirkət", value: state.settings.companyName || "Qeyd olunmayıb" },
-      { label: "Forma", value: state.settings.entityType || "Qeyd olunmayıb" },
-      { label: "VÖEN", value: state.settings.taxId || "Qeyd olunmayıb" },
-      { label: "Valyuta", value: state.settings.currency || "Qeyd olunmayıb" },
+      { label: at.settings_companyName, value: state.settings.companyName || at.settings_notSet },
+      { label: at.settings_entityType, value: state.settings.entityType || at.settings_notSet },
+      { label: at.settings_taxId, value: state.settings.taxId || at.settings_notSet },
+      { label: at.settings_currency, value: state.settings.currency || at.settings_notSet },
     ];
     const operationSnapshot = [
-      { label: "Faktura prefiksi", value: state.settings.invoicePrefix || "—" },
-      { label: "Kotirovka prefiksi", value: state.settings.quotePrefix || "—" },
-      { label: "Ödəniş müddəti", value: state.settings.defaultPaymentTerm || "—" },
-      { label: "Vergi etiketi", value: state.settings.defaultTaxLabel || "—" },
+      { label: at.settings_invoicePrefix, value: state.settings.invoicePrefix || "—" },
+      { label: at.settings_quotePrefix, value: state.settings.quotePrefix || "—" },
+      { label: at.settings_paymentTerm, value: state.settings.defaultPaymentTerm || "—" },
+      { label: at.settings_taxLabel, value: state.settings.defaultTaxLabel || "—" },
     ];
     const safetySnapshot = [
-      { label: "Avtomatik backup", value: state.settings.autoBackup || "—" },
-      { label: "Aşağı stok xəbərdarlığı", value: state.settings.stockWarning || "—" },
-      { label: "Mənfi stok", value: state.settings.negativeStock || "—" },
-      { label: "İşçi sahəsi", value: state.settings.uiScale || "Avtomatik" },
+      { label: at.ops_autoBackup, value: state.settings.autoBackup || "—" },
+      { label: at.ops_stockWarning, value: state.settings.stockWarning || "—" },
+      { label: at.ops_negativeStock, value: state.settings.negativeStock || "—" },
+      { label: at.settings_uiScale, value: state.settings.uiScale || at.settings_uiAuto },
     ];
 
     if (!settingsTab) {
@@ -19004,9 +19824,9 @@ function renderSettings() {
         { icon: "🏢", color: "blue",   title: at.settings_companyInfo,  desc: at.settings_profileDesc,   badge: state.settings.companyName || at.settings_profileBadge, onClick: () => setSettingsTab("profile") },
         { icon: activeLangObj.flag, color: "violet", title: at.settings_language, desc: at.settings_languageDesc, badge: activeLangObj.label, onClick: () => setSettingsTab("language") },
         { icon: "⚙️", color: "slate",  title: at.settings_params,       desc: at.settings_paramsDesc,    badge: at.settings_paramsBtn, onClick: () => { setParamDiscountMode(null); setSettingsTab("params"); } },
-        { icon: "🔒", color: "red",    title: "Parol və təhlükəsizlik", desc: "Giriş parolunu dəyişin və hesab təhlükəsizliyini yeniləyin.", badge: "Dəyiş", onClick: () => setAccountPanel("changePassword") },
-        { icon: "👥", color: "green",  title: "Komanda",                desc: "Hesab üzvlərini əlavə edin, rollarını idarə edin.", badge: `${teamMembers.length || "—"} üzv`, onClick: () => { setSettingsTab("team"); loadTeamMembers(); } },
-        { icon: "🛡️", color: "amber",  title: at.settings_systemTitle,  desc: "Tətbiq məlumatlarını sıfırlayın, bərpa edin və ya yedəkləyin.", badge: "3 əməliyyat", onClick: () => setSettingsTab("system") },
+        { icon: "🔒", color: "red",    title: at.settings_security, desc: at.settings_securityDesc, badge: at.settings_securityBadge, onClick: () => setAccountPanel("changePassword") },
+        { icon: "👥", color: "green",  title: at.settings_team, desc: at.settings_teamDesc, badge: `${teamMembers.length || "—"} ${at.settings_memberUnit}`, onClick: () => { setSettingsTab("team"); loadTeamMembers(); } },
+        { icon: "🛡️", color: "amber",  title: at.settings_systemTitle, desc: at.settings_systemDesc2, badge: at.settings_systemBadge, onClick: () => setSettingsTab("system") },
       ];
       return (
         <section className="view active">
@@ -19014,7 +19834,7 @@ function renderSettings() {
             <header className="settings-page-header">
               <div>
                 <h2 className="settings-page-title">{at.nav.settings}</h2>
-                <p className="settings-page-sub">Şirkət profili, iş qaydaları, komanda, dil və sistem parametrlərini bir yerdə idarə edin.</p>
+                <p className="settings-page-sub">{at.settings_pageSub}</p>
               </div>
               <span className="settings-page-lang">{activeLangObj.flag} {activeLangObj.label}</span>
             </header>
@@ -19057,7 +19877,7 @@ function renderSettings() {
               onSubmit={saveSettingsToBackend}
             >
               {companySettingsError ? <p className="panel-copy">{companySettingsError}</p> : null}
-              {companySettingsLoading ? <p className="panel-copy">Şirkət məlumatları backend ilə sinxronlaşdırılır...</p> : null}
+              {companySettingsLoading ? <p className="panel-copy">{at.settings_syncing}</p> : null}
               <label><span>{at.settings_entityType}</span><select name="entityType" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.entityType || "Hüquqi şəxs"}><option value="Fiziki şəxs">{at.settings_entityIndiv}</option><option value="Hüquqi şəxs">{at.settings_entityCompany}</option></select></label>
               <label><span>{at.settings_companyOwnerName}</span><input name="companyName" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.companyName} required /></label>
               <label><span>{at.settings_taxId}</span><input name="taxId" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.taxId} placeholder="0000000000" /></label>
@@ -19067,8 +19887,8 @@ function renderSettings() {
               <label><span>{at.settings_uiScale}</span><select name="uiScale" disabled={profileSaved || companySettingsLoading} defaultValue={state.settings.uiScale || "Avtomatik"}><option value="Avtomatik">{at.settings_uiAuto}</option><option value="Kiçik">{at.settings_uiSmall}</option><option value="Standart">{at.settings_uiStandard}</option><option value="Böyük">{at.settings_uiLarge}</option></select></label>
               {profileSaved ? (
                 <div className="settings-saved-row">
-                  <span className="settings-saved-badge">✓ Yadda saxlanıldı</span>
-                  <button type="button" className="ghost-btn settings-edit-btn" onClick={() => setProfileSaved(false)} disabled={companySettingsLoading}>Dəyişiklik et</button>
+                  <span className="settings-saved-badge">{at.settings_savedBadge}</span>
+                  <button type="button" className="ghost-btn settings-edit-btn" onClick={() => setProfileSaved(false)} disabled={companySettingsLoading}>{at.settings_editBtn}</button>
                 </div>
               ) : (
                 <button className="primary-btn" type="submit" disabled={companySettingsLoading}>{at.save}</button>
@@ -19104,27 +19924,27 @@ function renderSettings() {
           {backBtn}
           <div className="panel">
             <div className="panel-head">
-              <div><h3>Komanda</h3><p className="panel-copy">Hesab üzvlərini idarə edin.</p></div>
+              <div><h3>{at.settings_team}</h3><p className="panel-copy">{at.settings_teamManageDesc}</p></div>
               <button className="primary-btn" type="button" onClick={() => { setTeamFormVisible((v) => !v); setTeamError(""); setTeamActionMsg(""); }}>
-                {teamFormVisible ? "Ləğv et" : "+ Üzv əlavə et"}
+                {teamFormVisible ? at.cancel : at.settings_addMember}
               </button>
             </div>
 
             {teamFormVisible && (
               <form onSubmit={submitNewTeamMember} className="form-grid" style={{ marginBottom: 24 }}>
-                <label><span>E-poçt</span><input type="email" value={teamDraft.email} onChange={(e) => setTeamDraft((d) => ({ ...d, email: e.target.value }))} required /></label>
-                <label><span>Ad Soyad</span><input type="text" value={teamDraft.fullName} onChange={(e) => setTeamDraft((d) => ({ ...d, fullName: e.target.value }))} /></label>
+                <label><span>{at.fld["E-poçt"]}</span><input type="email" value={teamDraft.email} onChange={(e) => setTeamDraft((d) => ({ ...d, email: e.target.value }))} required /></label>
+                <label><span>{at.settings_fullName}</span><input type="text" value={teamDraft.fullName} onChange={(e) => setTeamDraft((d) => ({ ...d, fullName: e.target.value }))} /></label>
                 <label>
-                  <span>Rol</span>
+                  <span>{at.settings_role}</span>
                   <select value={teamDraft.role} onChange={(e) => setTeamDraft((d) => ({ ...d, role: e.target.value }))}>
-                    <option value="OWNER">Sahib</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="ACCOUNTANT">Mühasib</option>
-                    <option value="VIEWER">İzləyici</option>
+                    <option value="OWNER">{at.settings_roleOwner}</option>
+                    <option value="ADMIN">{at.settings_roleAdmin}</option>
+                    <option value="ACCOUNTANT">{at.settings_roleAccountant}</option>
+                    <option value="VIEWER">{at.settings_roleViewer}</option>
                   </select>
                 </label>
-                <label><span>Şifrə</span><input type="password" value={teamDraft.password} onChange={(e) => setTeamDraft((d) => ({ ...d, password: e.target.value }))} required minLength={8} /></label>
-                <button className="primary-btn" type="submit" disabled={teamLoading}>{teamLoading ? "Əlavə edilir..." : "Əlavə et"}</button>
+                <label><span>{at.fld["Şifrə"]}</span><input type="password" value={teamDraft.password} onChange={(e) => setTeamDraft((d) => ({ ...d, password: e.target.value }))} required minLength={8} /></label>
+                <button className="primary-btn" type="submit" disabled={teamLoading}>{teamLoading ? at.settings_adding : at.settings_add}</button>
               </form>
             )}
 
@@ -19132,21 +19952,21 @@ function renderSettings() {
             {teamActionMsg ? <p style={{ color: "var(--success, #16a34a)", marginBottom: 12, fontSize: 13 }}>{teamActionMsg}</p> : null}
 
             {teamLoading && !teamFormVisible ? (
-              <p className="panel-copy">Yüklənir...</p>
+              <p className="panel-copy">{at.chipLoading}</p>
             ) : (
               <table className="bill-item-table" style={{ width: "100%" }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: "left", padding: "8px 4px" }}>E-poçt</th>
-                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Ad</th>
-                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Rol</th>
-                    <th style={{ textAlign: "left", padding: "8px 4px" }}>Status</th>
-                    <th style={{ textAlign: "right", padding: "8px 4px" }}>Əməliyyatlar</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>{at.fld["E-poçt"]}</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>{at.fld["Ad"]}</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>{at.settings_role}</th>
+                    <th style={{ textAlign: "left", padding: "8px 4px" }}>{at.col["Status"]}</th>
+                    <th style={{ textAlign: "right", padding: "8px 4px" }}>{at.settings_colActions}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {teamMembers.length === 0 ? (
-                    <tr><td colSpan={5} style={{ padding: "16px 4px", color: "var(--text-muted)", textAlign: "center" }}>Üzv tapılmadı</td></tr>
+                    <tr><td colSpan={5} style={{ padding: "16px 4px", color: "var(--text-muted)", textAlign: "center" }}>{at.settings_memberNotFound}</td></tr>
                   ) : teamMembers.map((m) => (
                     <tr key={m.id}>
                       <td style={{ padding: "8px 4px", fontSize: 13 }}>{m.email}</td>
@@ -19157,19 +19977,19 @@ function renderSettings() {
                           style={{ fontSize: 12, padding: "2px 4px" }}
                           onChange={(e) => updateTeamMemberRole(m.id, e.target.value)}
                         >
-                          <option value="OWNER">Sahib</option>
-                          <option value="ADMIN">Admin</option>
-                          <option value="ACCOUNTANT">Mühasib</option>
-                          <option value="VIEWER">İzləyici</option>
+                          <option value="OWNER">{at.settings_roleOwner}</option>
+                          <option value="ADMIN">{at.settings_roleAdmin}</option>
+                          <option value="ACCOUNTANT">{at.settings_roleAccountant}</option>
+                          <option value="VIEWER">{at.settings_roleViewer}</option>
                         </select>
                       </td>
                       <td style={{ padding: "8px 4px", fontSize: 12, color: m.isActive ? "var(--success, #16a34a)" : "var(--danger)" }}>
-                        {m.isActive ? "Aktiv" : "Deaktiv"}
+                        {m.isActive ? at.chipActive : at.statusPassive}
                       </td>
                       <td style={{ padding: "8px 4px", textAlign: "right" }}>
                         {m.isActive ? (
                           <button className="ghost-btn" type="button" style={{ fontSize: 12 }} onClick={() => deactivateTeamMember(m.id)}>
-                            Deaktiv et
+                            {at.settings_deactivate}
                           </button>
                         ) : null}
                       </td>
@@ -19246,8 +20066,8 @@ function renderSettings() {
             <div className="ops-footer">
               {paramsSaved ? (
                 <>
-                  <span className="ops-saved-msg">✓ Parametrlər saxlandı</span>
-                  <button className="ghost-btn" type="button" onClick={() => setParamsSaved(false)}>Dəyişiklik et</button>
+                  <span className="ops-saved-msg">{at.settings_savedBadge}</span>
+                  <button className="ghost-btn" type="button" onClick={() => setParamsSaved(false)}>{at.settings_editBtn}</button>
                 </>
               ) : (
                 <>
@@ -19366,15 +20186,15 @@ function renderSettings() {
               <form className="form-grid" onSubmit={submitPasswordChange}>
                 <label>
                   <span>{at.auth_currentPass}</span>
-                  <input type="password" value={passwordDraft.current} onChange={(e) => setPasswordDraft((d) => ({ ...d, current: e.target.value, notice: "", tone: "" }))} placeholder="Hazırkı parolunuzu daxil edin" required autoComplete="current-password" />
+                  <input type="password" value={passwordDraft.current} onChange={(e) => setPasswordDraft((d) => ({ ...d, current: e.target.value, notice: "", tone: "" }))} placeholder={at.auth_currentPassPh} required autoComplete="current-password" />
                 </label>
                 <label>
                   <span>{at.auth_newPass}</span>
-                  <input type="password" value={passwordDraft.next} onChange={(e) => setPasswordDraft((d) => ({ ...d, next: e.target.value, notice: "", tone: "" }))} placeholder="Ən azı 6 simvol" required autoComplete="new-password" />
+                  <input type="password" value={passwordDraft.next} onChange={(e) => setPasswordDraft((d) => ({ ...d, next: e.target.value, notice: "", tone: "" }))} placeholder={at.auth_minChars} required autoComplete="new-password" />
                 </label>
                 <label>
                   <span>{at.auth_confirmPass}</span>
-                  <input type="password" value={passwordDraft.confirm} onChange={(e) => setPasswordDraft((d) => ({ ...d, confirm: e.target.value, notice: "", tone: "" }))} placeholder="Yeni parolu yenidən yazın" required autoComplete="new-password" />
+                  <input type="password" value={passwordDraft.confirm} onChange={(e) => setPasswordDraft((d) => ({ ...d, confirm: e.target.value, notice: "", tone: "" }))} placeholder={at.auth_confirmPassPh} required autoComplete="new-password" />
                 </label>
                 {passwordDraft.notice ? (
                   <div className={`change-password-notice ${passwordDraft.tone}`}>{passwordDraft.notice}</div>
@@ -19416,7 +20236,7 @@ function renderSettings() {
                             <option value="monthly">{at.team_monthly}</option>
                           </select>
                           <input type="number" min="1" value={draft.durationDays} onChange={(event) => setAdminPlanDrafts((current) => ({ ...current, [user.email]: { ...draft, durationDays: event.target.value } }))} />
-                          <button className="ghost-btn compact-btn" type="button" onClick={() => applySubscriptionToUser(user.email, draft.planId, draft.billingCycle, Number(draft.durationDays || 30))}>Tətbiq et</button>
+                          <button className="ghost-btn compact-btn" type="button" onClick={() => applySubscriptionToUser(user.email, draft.planId, draft.billingCycle, Number(draft.durationDays || 30))}>{at.acc_applyBtn}</button>
                         </div>
                       </td>
                     </tr>
@@ -19446,15 +20266,15 @@ function renderSettings() {
                     }
                     return `${(fePlan?.monthlyPrice || 0).toFixed(2)} ${cur} / ay`;
                   })()}</strong></article>
-                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? "Limitsiz" : (paymentDraft.billingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)) : "—"}</strong></article>
+                  <article className="summary-card"><span>{at.sub_duration}</span><strong>{selectedPaymentPlan ? (selectedPaymentPlan.interval === "NONE" ? at.sub_labelUnlimited : (paymentDraft.billingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`)) : "—"}</strong></article>
                 </div>
                 <div className="payment-consent-card">
                   <label className="payment-consent-check">
                     <input type="checkbox" checked={paymentTermsAccepted} onChange={(event) => setPaymentTermsAccepted(event.target.checked)} />
-                    <span>Ödəniş şərtləri ilə tanış oldum və qəbul edirəm</span>
+                    <span>{at.pay_consentCheck}</span>
                   </label>
-                  <button type="button" className="text-btn payment-consent-link" onClick={() => setLegalOverlay("payment-terms")}>Ödəniş şərtləri</button>
-                  <p className="payment-consent-note">Davam etməzdən əvvəl ödəniş şərtlərini qəbul etməyiniz tələb olunur. Uğurlu ödənişdən sonra plan istifadəçi hesabında rəqəmsal olaraq aktivləşdirilir.</p>
+                  <button type="button" className="text-btn payment-consent-link" onClick={() => setLegalOverlay("payment-terms")}>{at.pay_consentLink}</button>
+                  <p className="payment-consent-note">{at.pay_consentNote}</p>
                 </div>
                 <div className="form-actions split-actions">
                   <button className="ghost-btn" type="button" onClick={() => setAccountPanel("plans")}>{at.sub_backToPlans}</button>
@@ -19526,10 +20346,10 @@ function renderSettings() {
                 </div>
                 <div className="summary-grid compact">
                   <article className="summary-card"><span>{at.sub_plan}</span><strong>{currentPlan.name}</strong></article>
-                  <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{String(currentPlan.id || "").toLowerCase() === "free_basic" ? "Pulsuz" : String(currentPlan.id || "").toLowerCase() === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
+                  <article className="summary-card"><span>{at.sub_priceModel}</span><strong>{String(currentPlan.id || "").toLowerCase() === "free_basic" ? at.sub_labelFree : String(currentPlan.id || "").toLowerCase() === "free" ? at.sub_free : currentBillingCycle === "demo" ? at.sub_demoFree : currentBillingCycle === "monthly" ? at.team_monthly : at.team_annual}</strong></article>
                   <article className="summary-card"><span>{at.sub_price}</span><strong>{getPlanPriceLabel(currentPlan, currentBillingCycle)}</strong></article>
-                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? "Müddətsiz" : currentPlan.id === "free" ? (demoTrialDaysLeft ? `${demoTrialDaysLeft.days}g ${demoTrialDaysLeft.hours}s ${demoTrialDaysLeft.minutes}d ${demoTrialDaysLeft.seconds}san` : `${remainingDays ?? 0} ${at.sub_days}`) : `${remainingDays ?? 0} ${at.sub_days}`}</strong></article>
-                  <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : "Limitsiz"}</strong></article>
+                  <article className="summary-card"><span>{at.sub_remaining}</span><strong>{currentPlan.id === "free_basic" ? at.sub_labelPermanent : currentPlan.id === "free" ? (demoTrialDaysLeft ? `${demoTrialDaysLeft.days}${at.trialDayLabel} ${demoTrialDaysLeft.hours}${at.trialHourLabel} ${demoTrialDaysLeft.minutes}${at.trialMinLabel} ${demoTrialDaysLeft.seconds}${at.trialSecLabel}` : `${remainingDays ?? 0} ${at.sub_days}`) : `${remainingDays ?? 0} ${at.sub_days}`}</strong></article>
+                  <article className="summary-card"><span>{at.sub_opLimit}</span><strong>{currentPlan.operationLimit != null ? Number(currentPlan.operationLimit).toLocaleString("en-US") : at.sub_labelUnlimited}</strong></article>
                   <article className="summary-card"><span>{at.sub_statusLabel}</span><strong>{currentUser.role === "super_admin" ? at.sub_fullAccess : at.statusActive}</strong></article>
                 </div>
               </section>
@@ -19537,16 +20357,16 @@ function renderSettings() {
                 <button className="ghost-btn" type="button" onClick={() => setAccountPanel("team")}>{at.team_manageBtn}</button>
               </div> : null}
               <div className="subscription-cycle-switch">
-                <button className={subscriptionBillingCycle === "annual" ? "primary-btn" : "ghost-btn"} type="button" onClick={() => setSubscriptionBillingCycle("annual")}>İllik</button>
-                <button className={subscriptionBillingCycle === "monthly" ? "primary-btn" : "ghost-btn"} type="button" onClick={() => setSubscriptionBillingCycle("monthly")}>1 aylıq</button>
+                <button className={subscriptionBillingCycle === "annual" ? "primary-btn" : "ghost-btn"} type="button" onClick={() => setSubscriptionBillingCycle("annual")}>{at.team_annual}</button>
+                <button className={subscriptionBillingCycle === "monthly" ? "primary-btn" : "ghost-btn"} type="button" onClick={() => setSubscriptionBillingCycle("monthly")}>{at.team_monthly}</button>
               </div>
               <div className="subscription-plan-grid">
                 {effectivePlans.length === 0 ? (
                   <article className="subscription-plan-card active">
                     <span>{at.sub_plan}</span>
                     <strong>—</strong>
-                    <p>Plan siyahısı backend `/plans` endpoint-indən yüklənmədi.</p>
-                    <small>Ödəniş və upgrade üçün əvvəlcə backend planlarını sinxron edin.</small>
+                    <p>{at.sub_noPlansError}</p>
+                    <small>{at.sub_noPlansHint}</small>
                   </article>
                 ) : effectivePlans.map((plan) => {
                   const planIsFree = ["FREE", "FREE_BASIC"].includes(String(plan.code || "").toUpperCase()) || Number(plan.priceMinor || 0) <= 0;
@@ -19556,15 +20376,15 @@ function renderSettings() {
                   const annualMonthlyPrice = planIsFree ? 0 : fePlan?.annualMonthlyPrice || 0;
                   const monthlyPrice = planIsFree ? 0 : fePlan?.monthlyPrice || 0;
                   const isFreeBasic = String(plan.code || "").toUpperCase() === "FREE_BASIC";
-                  const priceDisplay = isFreeBasic ? "Pulsuz" : planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} / il` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} / ay`;
-                  const durationDisplay = isFreeBasic ? "Limitsiz müddət" : planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`);
+                  const priceDisplay = isFreeBasic ? at.sub_labelFree : planIsFree ? at.sub_free : subscriptionBillingCycle === "annual" ? `${annualPrice.toFixed(2)} ${fePlan?.currency || "USD"} ${at.sub_perYear}` : `${monthlyPrice.toFixed(2)} ${fePlan?.currency || "USD"} ${at.sub_perMonth}`;
+                  const durationDisplay = isFreeBasic ? at.sub_unlimitedDuration : planIsFree ? at.sub_freeOps : (subscriptionBillingCycle === "annual" ? `365 ${at.sub_days}` : `30 ${at.sub_days}`);
                   const resolvedOperationLimit = plan.operationLimit ?? fePlan?.operationLimit ?? null;
-                  const operationLimitDisplay = resolvedOperationLimit != null ? Number(resolvedOperationLimit).toLocaleString("en-US") : "Limitsiz";
+                  const operationLimitDisplay = resolvedOperationLimit != null ? Number(resolvedOperationLimit).toLocaleString("en-US") : at.sub_labelUnlimited;
                   return (
                     <article className={`subscription-plan-card ${isCurrentBackendPlan ? "active" : ""}`} key={plan.code}>
                       <span>{plan.name || plan.code}</span>
                       <strong>{priceDisplay}</strong>
-                      {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent || "aylıq ekvivalent"}: ${annualMonthlyPrice.toFixed(2)} / ay</small> : null}
+                      {subscriptionBillingCycle === "annual" && annualMonthlyPrice < monthlyPrice ? <small className="annual-discount-badge">{at.sub_monthlyEquivalent}: ${annualMonthlyPrice.toFixed(2)} {at.sub_perMonth}</small> : null}
                       <small>{durationDisplay}</small>
                       <small>{at.sub_opLimit}: {operationLimitDisplay}</small>
                       <button className={isCurrentBackendPlan ? "ghost-btn" : "primary-btn"} type="button" onClick={async () => {
@@ -19573,27 +20393,27 @@ function renderSettings() {
                           try {
                             await apiSwitchToFree(updateBackendSession);
                             await syncBackendSubscription();
-                            setBooksNotice("Pulsuz plana keçdiniz.");
+                            setBooksNotice(at.sub_switchedToFree);
                           } catch {
-                            setBooksNotice("Keçid zamanı xəta baş verdi.");
+                            setBooksNotice(at.sub_switchError);
                           }
                           return;
                         }
                         if (planIsFree && !isFreeBasic) {
                           if (!backendSession?.accessToken) {
-                            setBooksNotice("Hesaba giriş tələb olunur. Zəhmət olmasa çıxıb yenidən daxil olun.");
+                            setBooksNotice(at.sub_authRequired);
                             return;
                           }
                           try {
                             await apiSwitchToDemo(updateBackendSession);
                             await syncBackendSubscription(backendSession);
-                            setBooksNotice("Demo plana keçdiniz. Qalıq sınaq müddətiniz bərpa edildi.");
+                            setBooksNotice(at.sub_switchedToDemo);
                           } catch (err) {
                             const msg = err?.message || "";
                             if (msg === "DEMO_EXPIRED") {
-                              setBooksNotice("Demo müddəti bitib. Davam etmək üçün ödənişli plan seçin.");
+                              setBooksNotice(at.sub_demoExpired);
                             } else {
-                              setBooksNotice(msg.includes("bitib") ? "Demo müddətiniz tamamilə bitib. Ödənişli plana keçin." : (msg || "Keçid zamanı xəta baş verdi."));
+                              setBooksNotice(msg.includes("bitib") ? at.sub_demoFullyExpired : (msg || at.sub_switchError));
                             }
                           }
                           return;
@@ -19602,7 +20422,7 @@ function renderSettings() {
                           openPaymentPanel(plan.code, subscriptionBillingCycle);
                           return;
                         }
-                        setBooksNotice("Super admin üçün backend ödəniş axını tətbiq edilmir.");
+                        setBooksNotice("Super admin: backend payment flow not applicable.");
                       }}>{isCurrentBackendPlan ? at.sub_isPlan : at.sub_activate}</button>
                     </article>
                   );
@@ -19644,12 +20464,12 @@ function renderSettings() {
     const cur = state.settings.currency;
     const fmtMinor = (minor) => currency((minor || 0) / 100, cur);
     const BUCKET_LABELS = {
-      CURRENT: "Cari",
-      DAYS_1_30: "1–30 gün",
-      DAYS_31_60: "31–60 gün",
-      DAYS_61_90: "61–90 gün",
-      DAYS_90_PLUS: "90+ gün",
-      NO_DUE_DATE: "Tarixsiz",
+      CURRENT: at.aging_current,
+      DAYS_1_30: at.aging_1_30,
+      DAYS_31_60: at.aging_31_60,
+      DAYS_61_90: at.aging_61_90,
+      DAYS_90_PLUS: at.aging_90plus,
+      NO_DUE_DATE: at.aging_noDate,
     };
     const BUCKET_KEYS = ["CURRENT", "DAYS_1_30", "DAYS_31_60", "DAYS_61_90", "DAYS_90_PLUS", "NO_DUE_DATE"];
 
@@ -19657,8 +20477,8 @@ function renderSettings() {
       return (
         <section className="view active">
           <div className="panel">
-            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
-            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>Yüklənir…</p>
+            <div className="panel-head"><div><h3>{at.aging_title}</h3></div></div>
+            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>{at.loading}</p>
           </div>
         </section>
       );
@@ -19668,7 +20488,7 @@ function renderSettings() {
       return (
         <section className="view active">
           <div className="panel">
-            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
+            <div className="panel-head"><div><h3>{at.aging_title}</h3></div></div>
             <p style={{ padding: "1.5rem", color: "var(--danger)" }}>{arAgingError}</p>
           </div>
         </section>
@@ -19679,8 +20499,8 @@ function renderSettings() {
       return (
         <section className="view active">
           <div className="panel">
-            <div className="panel-head"><div><h3>Debitor yaşlanma hesabatı</h3></div></div>
-            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>Məlumat tapılmadı.</p>
+            <div className="panel-head"><div><h3>{at.aging_title}</h3></div></div>
+            <p style={{ padding: "1.5rem", color: "var(--muted)" }}>{at.aging_noData}</p>
           </div>
         </section>
       );
@@ -19689,13 +20509,13 @@ function renderSettings() {
     const { asOfDate, summary, customers, invoices } = arAgingData;
 
     const summaryCards = [
-      { label: "Ümumi qalıq", value: fmtMinor(summary.totalOutstandingMinor), highlight: true },
-      { label: "Cari", value: fmtMinor(summary.buckets.CURRENT) },
-      { label: "1–30 gün", value: fmtMinor(summary.buckets.DAYS_1_30) },
-      { label: "31–60 gün", value: fmtMinor(summary.buckets.DAYS_31_60) },
-      { label: "61–90 gün", value: fmtMinor(summary.buckets.DAYS_61_90) },
-      { label: "90+ gün", value: fmtMinor(summary.buckets.DAYS_90_PLUS) },
-      { label: "Tarixsiz", value: fmtMinor(summary.buckets.NO_DUE_DATE) },
+      { label: at.aging_totalBalance, value: fmtMinor(summary.totalOutstandingMinor), highlight: true },
+      { label: at.aging_current, value: fmtMinor(summary.buckets.CURRENT) },
+      { label: at.aging_1_30, value: fmtMinor(summary.buckets.DAYS_1_30) },
+      { label: at.aging_31_60, value: fmtMinor(summary.buckets.DAYS_31_60) },
+      { label: at.aging_61_90, value: fmtMinor(summary.buckets.DAYS_61_90) },
+      { label: at.aging_90plus, value: fmtMinor(summary.buckets.DAYS_90_PLUS) },
+      { label: at.aging_noDate, value: fmtMinor(summary.buckets.NO_DUE_DATE) },
     ];
 
     return (
@@ -19703,8 +20523,8 @@ function renderSettings() {
         <div className="panel">
           <div className="panel-head">
             <div>
-              <h3>Debitor yaşlanma hesabatı</h3>
-              <p className="panel-copy">Tarix: {asOfDate} — Ödənilməmiş fakturalar ödəniş tarixinə görə qruplaşdırılır.</p>
+              <h3>{at.aging_title}</h3>
+              <p className="panel-copy">Tarix: {asOfDate} — {at.aging_desc}</p>
             </div>
             <button
               className="btn btn-sm"
@@ -19715,9 +20535,9 @@ function renderSettings() {
                 setArAgingError("");
                 apiGetAccountsReceivableAging(updateBackendSession)
                   .then((data) => { setArAgingData(data); setArAgingLoading(false); })
-                  .catch((err) => { setArAgingError(err?.message || "AR aging hesabatı yüklənmədi."); setArAgingLoading(false); });
+                  .catch((err) => { setArAgingError(err?.message || at.aging_loadError); setArAgingLoading(false); });
               }}
-            >Yenilə</button>
+            >{at.aging_refresh}</button>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.75rem", padding: "1.25rem 1.5rem" }}>
@@ -19731,17 +20551,17 @@ function renderSettings() {
 
           {customers && customers.length > 0 && (
             <div style={{ padding: "0 1.5rem 1.5rem" }}>
-              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>Müştəri üzrə icmal</h4>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>{at.aging_customerSummary}</h4>
               <div style={{ overflowX: "auto" }}>
                 <table className="data-table" style={{ width: "100%", minWidth: "720px" }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: "left" }}>Müştəri</th>
-                      <th style={{ textAlign: "right" }}>Ümumi</th>
+                      <th style={{ textAlign: "left" }}>{col("Müştəri")}</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_total}</th>
                       {BUCKET_KEYS.map((key) => (
                         <th key={key} style={{ textAlign: "right" }}>{BUCKET_LABELS[key]}</th>
                       ))}
-                      <th style={{ textAlign: "right" }}>Ən köhnə tarix</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_oldestDate}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -19765,19 +20585,19 @@ function renderSettings() {
 
           {invoices && invoices.length > 0 && (
             <div style={{ padding: "0 1.5rem 1.5rem" }}>
-              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>Faktura detalları</h4>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--text)" }}>{at.aging_invDetails}</h4>
               <div style={{ overflowX: "auto" }}>
                 <table className="data-table" style={{ width: "100%", minWidth: "820px" }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: "left" }}>Faktura №</th>
-                      <th style={{ textAlign: "left" }}>Müştəri</th>
-                      <th style={{ textAlign: "right" }}>Ödəniş tarixi</th>
-                      <th style={{ textAlign: "right" }}>Yekun</th>
-                      <th style={{ textAlign: "right" }}>Ödənilib</th>
-                      <th style={{ textAlign: "right" }}>Qalıq</th>
-                      <th style={{ textAlign: "right" }}>Gecikmə (gün)</th>
-                      <th style={{ textAlign: "left" }}>Status</th>
+                      <th style={{ textAlign: "left" }}>{at.aging_invNum}</th>
+                      <th style={{ textAlign: "left" }}>{col("Müştəri")}</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_dueDate}</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_subtotal}</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_paid}</th>
+                      <th style={{ textAlign: "right" }}>{col("Qalıq")}</th>
+                      <th style={{ textAlign: "right" }}>{at.aging_overdueDays}</th>
+                      <th style={{ textAlign: "left" }}>{col("Status")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -19790,7 +20610,7 @@ function renderSettings() {
                         <td style={{ textAlign: "right", color: "var(--success, #22c55e)" }}>{fmtMinor(inv.paidAmountMinor)}</td>
                         <td style={{ textAlign: "right", fontWeight: 600, color: inv.outstandingMinor > 0 ? "var(--danger, #ef4444)" : undefined }}>{fmtMinor(inv.outstandingMinor)}</td>
                         <td style={{ textAlign: "right", color: (inv.daysOverdue > 0) ? "var(--danger, #ef4444)" : "var(--muted)" }}>
-                          {inv.daysOverdue != null ? (inv.daysOverdue === 0 ? "Cari" : `${inv.daysOverdue}`) : "—"}
+                          {inv.daysOverdue != null ? (inv.daysOverdue === 0 ? at.aging_current : `${inv.daysOverdue}`) : "—"}
                         </td>
                         <td>
                           <span style={{ fontSize: "0.75rem", padding: "0.15rem 0.5rem", borderRadius: "999px", background: inv.bucket === "CURRENT" ? "var(--success-pale, #dcfce7)" : inv.bucket === "NO_DUE_DATE" ? "var(--surface-raised, #f1f5f9)" : "var(--danger-pale, #fee2e2)", color: inv.bucket === "CURRENT" ? "var(--success, #16a34a)" : inv.bucket === "NO_DUE_DATE" ? "var(--muted)" : "var(--danger, #dc2626)" }}>
@@ -19806,7 +20626,7 @@ function renderSettings() {
           )}
 
           {(!invoices || invoices.length === 0) && (
-            <p style={{ padding: "0 1.5rem 1.5rem", color: "var(--muted)" }}>Ödənilməmiş faktura yoxdur.</p>
+            <p style={{ padding: "0 1.5rem 1.5rem", color: "var(--muted)" }}>{at.aging_noPending}</p>
           )}
         </div>
       </section>
@@ -20039,6 +20859,12 @@ function renderSettings() {
     const activeThread = currentUser
       ? (userSupportThreads.find((thread) => thread.id === supportActiveThreadId) || null)
       : null;
+    const statusLabels = {
+      open: at.sup_statusOpen,
+      waiting_support: at.sup_statusWaitingSupport,
+      waiting_user: at.sup_statusWaitingUser,
+      closed: at.sup_statusClosed,
+    };
 
     return (
       <div className={`support-widget${supportWidgetOpen ? " open" : ""}`}>
@@ -20046,8 +20872,8 @@ function renderSettings() {
           <section className="support-widget-panel" onClick={(event) => event.stopPropagation()}>
             <div className="support-widget-head">
               <div>
-                <strong>Dəstək</strong>
-                <small>Real operator sizə buradan cavab verəcək</small>
+                <strong>{at.sup_title}</strong>
+                <small>{at.sup_tagline}</small>
               </div>
               <button className="icon-btn" type="button" onClick={() => setSupportWidgetOpen(false)}>×</button>
             </div>
@@ -20063,7 +20889,7 @@ function renderSettings() {
                       onClick={() => setSupportActiveThreadId(thread.id)}
                     >
                       <span>{thread.subject}</span>
-                      <small>{SUPPORT_STATUS_LABELS[thread.status] || thread.status}</small>
+                      <small>{statusLabels[thread.status] || thread.status}</small>
                       {thread.unreadForUser ? <span className="support-thread-unread">{thread.unreadForUser}</span> : null}
                     </button>
                   ))}
@@ -20079,9 +20905,9 @@ function renderSettings() {
                     <div className="support-message-list">
                       {activeThread.messages.map((message) => (
                         <article key={message.id} className={`support-message ${message.authorType === "admin" ? "admin" : "user"}`}>
-                          <strong>{message.authorType === "admin" ? "Dəstək komandası" : "Siz"}</strong>
+                          <strong>{message.authorType === "admin" ? at.sup_teamLabel : at.sup_youLabel}</strong>
                           <p>{message.body}</p>
-                          <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
+                          <small>{new Date(message.createdAt).toLocaleString()}</small>
                         </article>
                       ))}
                       <div ref={supportUserScrollRef} />
@@ -20090,46 +20916,46 @@ function renderSettings() {
                       <textarea
                         value={supportReplyDraft}
                         onChange={(event) => setSupportReplyDraft(event.target.value)}
-                        placeholder="Cavabınızı yazın..."
+                        placeholder={at.sup_replyPlaceholder}
                         rows={3}
                         onKeyDown={handleSupportTextareaKeyDown}
                       />
                       <div className="support-widget-actions">
                         {activeThread.status === "closed" ? (
-                          <button className="ghost-btn" type="button" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_support")}>Yenidən aç</button>
+                          <button className="ghost-btn" type="button" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_support")}>{at.sup_reopen}</button>
                         ) : null}
-                        <button className="primary-btn" type="submit" disabled={!supportReplyDraft.trim()}>Göndər</button>
+                        <button className="primary-btn" type="submit" disabled={!supportReplyDraft.trim()}>{at.sup_send}</button>
                       </div>
                     </form>
                   </>
                 ) : null}
 
-                <button className="ghost-btn support-new-thread-btn" type="button" onClick={() => setSupportActiveThreadId("new")}>Yeni müraciət</button>
+                <button className="ghost-btn support-new-thread-btn" type="button" onClick={() => setSupportActiveThreadId("new")}>{at.sup_newThread}</button>
               </>
             ) : null}
 
             {!activeThread ? (
               <form className="support-create-form" onSubmit={handleCreateSupportThread}>
-                <label><span>Mövzu</span><input value={supportDraft.subject} onChange={(event) => setSupportDraft((current) => ({ ...current, subject: event.target.value }))} placeholder="Qısa başlıq" required /></label>
+                <label><span>{at.sup_subject}</span><input value={supportDraft.subject} onChange={(event) => setSupportDraft((current) => ({ ...current, subject: event.target.value }))} placeholder={at.sup_subjectPlaceholder} required /></label>
                 <div className="support-create-grid">
-                  <label><span>Kateqoriya</span><select value={supportDraft.category} onChange={(event) => setSupportDraft((current) => ({ ...current, category: event.target.value }))}>{SUPPORT_CATEGORY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
-                  <label><span>Prioritet</span><select value={supportDraft.priority} onChange={(event) => setSupportDraft((current) => ({ ...current, priority: event.target.value }))}>{SUPPORT_PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+                  <label><span>{fld("Kateqoriya")}</span><select value={supportDraft.category} onChange={(event) => setSupportDraft((current) => ({ ...current, category: event.target.value }))}>{SUPPORT_CATEGORY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+                  <label><span>{at.sup_priority}</span><select value={supportDraft.priority} onChange={(event) => setSupportDraft((current) => ({ ...current, priority: event.target.value }))}>{SUPPORT_PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
                 </div>
                 <label>
-                  <span>Mesaj</span>
+                  <span>{at.sup_message}</span>
                   <textarea
                     value={supportDraft.message}
                     onChange={(event) => setSupportDraft((current) => ({ ...current, message: event.target.value }))}
                     onKeyDown={handleSupportTextareaKeyDown}
-                    placeholder="Problemi və ya sualınızı yazın..."
+                    placeholder={at.sup_messagePlaceholder}
                     rows={5}
                     required
                   />
                 </label>
-                <div className="support-widget-note">Kontekst avtomatik əlavə olunur: {getSupportContextLabel()}</div>
+                <div className="support-widget-note">{at.sup_contextAuto.replace("{context}", getSupportContextLabel())}</div>
                 <div className="support-widget-actions">
-                  {userSupportThreads.length > 0 ? <button className="ghost-btn" type="button" onClick={() => setSupportActiveThreadId(userSupportThreads[0].id)}>Mövcud yazışmaya qayıt</button> : null}
-                  <button className="primary-btn" type="submit">Müraciət göndər</button>
+                  {userSupportThreads.length > 0 ? <button className="ghost-btn" type="button" onClick={() => setSupportActiveThreadId(userSupportThreads[0].id)}>{at.sup_backToThread}</button> : null}
+                  <button className="primary-btn" type="submit">{at.sup_submit}</button>
                 </div>
               </form>
             ) : null}
@@ -20137,7 +20963,7 @@ function renderSettings() {
         ) : null}
 
         <button className="support-widget-trigger" type="button" onClick={() => setSupportWidgetOpen((current) => !current)}>
-          <span>Dəstək</span>
+          <span>{at.sup_title}</span>
           {supportUnreadCount > 0 ? <strong>{supportUnreadCount}</strong> : null}
         </button>
       </div>
@@ -20153,6 +20979,12 @@ function renderSettings() {
       || supportThreads.find((thread) => thread.id === supportAdminActiveThreadId)
       || supportThreads[0]
       || null;
+    const statusLabels = {
+      open: at.sup_statusOpen,
+      waiting_support: at.sup_statusWaitingSupport,
+      waiting_user: at.sup_statusWaitingUser,
+      closed: at.sup_statusClosed,
+    };
 
     return (
       <div className="iac-section">
@@ -20162,15 +20994,15 @@ function renderSettings() {
           <span className="iac-meta-count">{supportThreads.length} total</span>
         </div>
         <div className="support-admin-toolbar">
-          <button type="button" className={`support-filter-btn${supportAdminFilter === "open" ? " active" : ""}`} onClick={() => setSupportAdminFilter("open")}>Açıq</button>
-          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_support" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_support")}>Dəstək gözlənir</button>
-          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_user" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_user")}>İstifadəçi gözlənir</button>
-          <button type="button" className={`support-filter-btn${supportAdminFilter === "closed" ? " active" : ""}`} onClick={() => setSupportAdminFilter("closed")}>Bağlı</button>
-          <button type="button" className={`support-filter-btn${supportAdminFilter === "all" ? " active" : ""}`} onClick={() => setSupportAdminFilter("all")}>Hamısı</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "open" ? " active" : ""}`} onClick={() => setSupportAdminFilter("open")}>{at.sup_statusOpen}</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_support" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_support")}>{at.sup_statusWaitingSupport}</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "waiting_user" ? " active" : ""}`} onClick={() => setSupportAdminFilter("waiting_user")}>{at.sup_statusWaitingUser}</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "closed" ? " active" : ""}`} onClick={() => setSupportAdminFilter("closed")}>{at.sup_statusClosed}</button>
+          <button type="button" className={`support-filter-btn${supportAdminFilter === "all" ? " active" : ""}`} onClick={() => setSupportAdminFilter("all")}>{col("Hamısı")}</button>
         </div>
 
         {filteredThreads.length === 0 ? (
-          <div className="iac-fin-empty">Hələ support müraciəti yoxdur.</div>
+          <div className="iac-fin-empty">{at.sup_noThreads}</div>
         ) : (
           <div className="support-admin-layout">
             <div className="support-admin-list">
@@ -20189,7 +21021,7 @@ function renderSettings() {
                     {thread.unreadForAdmin ? <span className="support-admin-unread">{thread.unreadForAdmin}</span> : null}
                   </div>
                   <span>{thread.companyName}</span>
-                  <small>{thread.category} · {thread.priority} · {SUPPORT_STATUS_LABELS[thread.status] || thread.status}</small>
+                  <small>{thread.category} · {thread.priority} · {statusLabels[thread.status] || thread.status}</small>
                 </button>
               ))}
             </div>
@@ -20201,17 +21033,17 @@ function renderSettings() {
                     <p>{activeThread.companyName} · {activeThread.ownerEmail} · {activeThread.context}</p>
                   </div>
                   <div className="support-admin-status-actions">
-                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_user")}>Cavab verildi</button>
-                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "closed")}>Bağla</button>
-                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "open")}>Açıq saxla</button>
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "waiting_user")}>{at.sup_markedAnswered}</button>
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "closed")}>{at.close}</button>
+                    <button type="button" className="ghost-btn compact-btn" onClick={() => updateSupportThreadStatus(activeThread.id, "open")}>{at.sup_keepOpen}</button>
                   </div>
                 </div>
                 <div className="support-message-list admin">
                   {activeThread.messages.map((message) => (
                     <article key={message.id} className={`support-message ${message.authorType === "admin" ? "admin" : "user"}`}>
-                      <strong>{message.authorType === "admin" ? "Operator" : message.authorName || message.authorEmail}</strong>
+                      <strong>{message.authorType === "admin" ? at.sup_operatorLabel : message.authorName || message.authorEmail}</strong>
                       <p>{message.body}</p>
-                      <small>{new Date(message.createdAt).toLocaleString("az-AZ")}</small>
+                      <small>{new Date(message.createdAt).toLocaleString()}</small>
                     </article>
                   ))}
                   <div ref={supportAdminScrollRef} />
@@ -20220,12 +21052,12 @@ function renderSettings() {
                   <textarea
                     value={supportAdminReplyDraft}
                     onChange={(event) => setSupportAdminReplyDraft(event.target.value)}
-                    placeholder="İstifadəçiyə cavab yazın..."
+                    placeholder={at.sup_adminPlaceholder}
                     rows={4}
                     onKeyDown={handleSupportTextareaKeyDown}
                   />
                   <div className="support-widget-actions">
-                    <button type="submit" className="primary-btn" disabled={!supportAdminReplyDraft.trim()}>Cavab göndər</button>
+                    <button type="submit" className="primary-btn" disabled={!supportAdminReplyDraft.trim()}>{at.sup_adminSend}</button>
                   </div>
                 </form>
               </section>
@@ -20263,7 +21095,7 @@ function renderSettings() {
               <div className="lp-legal-head">
                 <div>
                   <h2>Page not found</h2>
-                  <p>İstədiyiniz hüquqi səhifə tapılmadı.</p>
+                  <p>{(I18N[hubLang] || I18N.az).legalNotFound}</p>
                 </div>
               </div>
             </div>
@@ -20341,7 +21173,7 @@ function renderSettings() {
               </a>
             ))}
           </div>
-          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, bütün hüquqlar qorunur</small>
+          <small>Tetavio ERP · Cloud Accounting Platform · © Tetavio MMC, {(I18N[lang] || I18N.az).copyright}</small>
         </footer>
       </div>
     );
@@ -20394,9 +21226,9 @@ function renderSettings() {
         <div className="trial-expired-overlay">
           <div className="trial-expired-modal">
             <div className="trial-expired-icon">⏰</div>
-            <h2 className="trial-expired-title">Sınaq müddəti bitdi</h2>
+            <h2 className="trial-expired-title">{at.trialExpiredTitle}</h2>
             <p className="trial-expired-body">
-              14 günlük Demo sınaq müddətiniz başa çatdı. Platformadan istifadəni davam etdirmək üçün ödənişli paketlərdən birini seçin.
+              {at.trialExpiredBody}
             </p>
             <div className="trial-expired-actions">
               <button
@@ -20404,14 +21236,14 @@ function renderSettings() {
                 type="button"
                 onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}
               >
-                Plan seç →
+                {at.trialExpiredCta}
               </button>
               <button
                 className="trial-expired-btn-ghost"
                 type="button"
                 onClick={logoutUser}
               >
-                Çıxış et
+                {at.menuLogout}
               </button>
             </div>
           </div>
@@ -20420,8 +21252,8 @@ function renderSettings() {
 
       {showTrialWarning && (
         <div className="trial-warning-bar">
-          <span>⚡ Sınaq müddətindən <strong>{trialDaysLeft.days}g {trialDaysLeft.hours}s {trialDaysLeft.minutes}d {trialDaysLeft.seconds}san</strong> qalıb — platformadan tam yararlanmaq üçün plan seçin.</span>
-          <button type="button" className="trial-warning-cta" onClick={() => setAccountPanel("plans")}>Plan seç</button>
+          <span>{at.trialWarningPre} <strong>{trialDaysLeft.days}{at.trialDayLabel} {trialDaysLeft.hours}{at.trialHourLabel} {trialDaysLeft.minutes}{at.trialMinLabel} {trialDaysLeft.seconds}{at.trialSecLabel}</strong> {at.trialWarningPost}</span>
+          <button type="button" className="trial-warning-cta" onClick={() => setAccountPanel("plans")}>{at.trialWarningCta}</button>
         </div>
       )}
 

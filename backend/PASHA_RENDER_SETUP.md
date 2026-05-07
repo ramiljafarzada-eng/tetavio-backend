@@ -1,6 +1,6 @@
 # PASHA Render Setup
 
-This project now uses the PASHA CardSuite ECOMM flow:
+This project uses the PASHA CardSuite ECOMM flow:
 
 1. Backend registers the payment with `MerchantHandler` using `command=V`
 2. Browser is redirected to PASHA `ClientHandler?trans_id=...`
@@ -8,67 +8,60 @@ This project now uses the PASHA CardSuite ECOMM flow:
 4. Backend completes the payment with `command=C`
 5. Backend redirects the user back to the frontend with `?payment=success|failed`
 
-## Required Render environment variables
+## Certificate files (do NOT commit to git)
 
-Set these on the Render backend service before enabling PASHA:
+```
+backend/certs/merchant.pem      ← signed merchant cert (CN=6000194, OU=tetavio.az), valid 2026-05-07 to 2028-05-06
+backend/certs/merchant.key      ← private key (generated with CSR)
+backend/certs/pashabank-ca.pem  ← Paşabank Root CA, valid to 2029-11-05
+```
+
+## Render deployment — Secret Files
+
+On Render, use **Secret Files** (Dashboard → Service → Environment → Secret Files):
+
+| Mount path | Local file |
+|---|---|
+| `/etc/secrets/merchant.pem` | `backend/certs/merchant.pem` |
+| `/etc/secrets/merchant.key` | `backend/certs/merchant.key` |
+| `/etc/secrets/pashabank-ca.pem` | `backend/certs/pashabank-ca.pem` |
+
+## Required Render environment variables
 
 ```env
 PAYMENT_GATEWAY=PASHA
 FRONTEND_PRODUCTION_URL=https://www.tetavio.com
 
+PASHA_TERMINAL_ID=6000194
 PASHA_MERCHANT_HANDLER_URL=https://ecomm.pashabank.az:18443/ecomm2/MerchantHandler
 PASHA_CLIENT_HANDLER_URL=https://ecomm.pashabank.az:8463/ecomm2/ClientHandler
-PASHA_TERMINAL_ID=<bank-terminal-id>
 
-PASHA_CA_PATH=<absolute path on server or mounted disk>
-PASHA_KEY_PASSPHRASE=<certificate password if required>
+PASHA_CERT_PATH=/etc/secrets/merchant.pem
+PASHA_KEY_PATH=/etc/secrets/merchant.key
+PASHA_CA_PATH=/etc/secrets/pashabank-ca.pem
 PASHA_REJECT_UNAUTHORIZED=true
-```
-
-Use one of the certificate modes below.
-
-## Certificate mode A: single PFX/P12 file
-
-```env
-PASHA_PFX_PATH=<absolute path to merchant certificate pfx/p12>
-PASHA_CERT_PATH=
-PASHA_KEY_PATH=
-```
-
-## Certificate mode B: PEM cert + PEM key
-
-```env
-PASHA_PFX_PATH=
-PASHA_CERT_PATH=<absolute path to merchant certificate pem>
-PASHA_KEY_PATH=<absolute path to merchant private key pem>
 ```
 
 ## Bank-side callback / return URL
 
 PASHA must be configured to return the browser to:
 
-```text
+```
 https://tetavio-backend.onrender.com/api/v1/payments/pasha/return
 ```
 
-If PASHA requires separate success/fail return URLs, use the same endpoint for both. The backend completes the transaction status itself with `command=C`.
-
 ## Before switching to PASHA
 
-Verify all of these:
-
-- `PAYMENT_GATEWAY=PASHA` is set on Render
-- terminal ID is the live/sandbox one provided by PASHA
-- certificate path variables point to real files accessible by the Render service
-- PASHA CA file is present
-- backend URL above is registered at PASHA as the return URL
-- one full sandbox payment completes successfully
-- after sandbox success, `/subscription/current` shows the upgraded plan
+- [ ] Secret Files uploaded on Render
+- [ ] All env vars set on Render
+- [ ] `PASHA_TERMINAL_ID=6000194` confirmed with bank
+- [ ] Return URL registered at PASHA
+- [ ] One full sandbox payment completes successfully
+- [ ] After sandbox success, `/subscription/current` shows the upgraded plan
 
 ## Expected symptom when config is incomplete
 
-If the frontend still says backend is in `MOCK` mode, Render is still running with:
+If the frontend still says backend is in `MOCK` mode, check:
 
-- `PAYMENT_GATEWAY` unset, or
-- `PAYMENT_GATEWAY=MOCK`, or
-- the frontend is still pointing to an older backend deployment
+- `PAYMENT_GATEWAY` is not set to `PASHA`, or
+- Certificate paths are wrong / files not mounted
