@@ -8,7 +8,7 @@ const I18N = {
     workspace: "İş sahəsi",
     btnProducts: "Ana səhifə", settings_systemTitle: "Sistem tənzimləmələri", btnReset: "Proqramı sıfırla", btnRestore: "Restore et", btnBackup: "Backup et",
     profileLabel: "Profilim",
-    menuPlan: "Planı dəyiş", menuTeam: "İstifadəçiləri idarə et", menuAdmin: "Super admin paneli", menuPass: "Parolu dəyiş", menuLogout: "Çıxış et", menuLanguage: "Dil", menuSignin: "Daxil ol", menuSignup: "Qeydiyyat",
+    menuPlan: "Planı dəyiş", menuTeam: "İstifadəçiləri idarə et", menuAdmin: "Super admin paneli", menuPass: "Parolu dəyiş", menuLogout: "Çıxış et", menuLanguage: "Dil", menuSignin: "Daxil ol", menuSignup: "Qeydiyyat", menuErp: "ERP-yə keçid",
     heroCompany: "Şirkət", heroCurrency: "Valyuta", heroFiscal: "Maliyyə ili", heroPlan: "Plan", heroDate: "Tarix",
 
     // ── Common buttons / labels ──────────────────────────────────
@@ -808,7 +808,7 @@ const I18N = {
     workspace: "Workspace",
     btnProducts: "Service catalog", settings_systemTitle: "System settings", btnReset: "Reset app", btnRestore: "Restore", btnBackup: "Backup",
     profileLabel: "My profile",
-    menuPlan: "Change plan", menuTeam: "Manage users", menuAdmin: "Super admin panel", menuPass: "Change password", menuLogout: "Sign out", menuLanguage: "Language", menuSignin: "Sign in", menuSignup: "Register",
+    menuPlan: "Change plan", menuTeam: "Manage users", menuAdmin: "Super admin panel", menuPass: "Change password", menuLogout: "Sign out", menuLanguage: "Language", menuSignin: "Sign in", menuSignup: "Register", menuErp: "Go to ERP",
     heroCompany: "Company", heroCurrency: "Currency", heroFiscal: "Fiscal year", heroPlan: "Plan", heroDate: "Date",
 
     save: "Save", cancel: "Cancel", edit: "Edit", delete: "Delete",
@@ -1517,7 +1517,7 @@ const I18N = {
     workspace: "Рабочая область",
     btnProducts: "Каталог услуг", settings_systemTitle: "Системные настройки", btnReset: "Сбросить", btnRestore: "Восстановить", btnBackup: "Резервная копия",
     profileLabel: "Мой профиль",
-    menuPlan: "Изменить тариф", menuTeam: "Управление пользователями", menuAdmin: "Панель супер-админа", menuPass: "Изменить пароль", menuLogout: "Выйти", menuLanguage: "Язык", menuSignin: "Войти", menuSignup: "Регистрация",
+    menuPlan: "Изменить тариф", menuTeam: "Управление пользователями", menuAdmin: "Панель супер-админа", menuPass: "Изменить пароль", menuLogout: "Выйти", menuLanguage: "Язык", menuSignin: "Войти", menuSignup: "Регистрация", menuErp: "Перейти в ERP",
     heroCompany: "Компания", heroCurrency: "Валюта", heroFiscal: "Финансовый год", heroPlan: "Тариф", heroDate: "Дата",
 
     save: "Сохранить", cancel: "Отмена", edit: "Редактировать", delete: "Удалить",
@@ -2225,7 +2225,7 @@ const I18N = {
     workspace: "Çalışma alanı",
     btnProducts: "Hizmet kataloğu", settings_systemTitle: "Sistem ayarları", btnReset: "Sıfırla", btnRestore: "Geri yükle", btnBackup: "Yedekle",
     profileLabel: "Profilim",
-    menuPlan: "Planı değiştir", menuTeam: "Kullanıcıları yönet", menuAdmin: "Süper yönetici paneli", menuPass: "Şifre değiştir", menuLogout: "Çıkış yap", menuLanguage: "Dil", menuSignin: "Giriş yap", menuSignup: "Kayıt ol",
+    menuPlan: "Planı değiştir", menuTeam: "Kullanıcıları yönet", menuAdmin: "Süper yönetici paneli", menuPass: "Şifre değiştir", menuLogout: "Çıkış yap", menuLanguage: "Dil", menuSignin: "Giriş yap", menuSignup: "Kayıt ol", menuErp: "ERP'ye geç",
     heroCompany: "Şirket", heroCurrency: "Para birimi", heroFiscal: "Mali yıl", heroPlan: "Plan", heroDate: "Tarih",
 
     save: "Kaydet", cancel: "İptal", edit: "Düzenle", delete: "Sil",
@@ -2933,7 +2933,7 @@ const I18N = {
     workspace: "Arbeitsbereich",
     btnProducts: "Dienstkatalog", settings_systemTitle: "Systemeinstellungen", btnReset: "App zurücksetzen", btnRestore: "Wiederherstellen", btnBackup: "Sichern",
     profileLabel: "Mein Profil",
-    menuPlan: "Plan ändern", menuTeam: "Benutzer verwalten", menuAdmin: "Super-Admin-Panel", menuPass: "Passwort ändern", menuLogout: "Abmelden", menuLanguage: "Sprache", menuSignin: "Anmelden", menuSignup: "Registrieren",
+    menuPlan: "Plan ändern", menuTeam: "Benutzer verwalten", menuAdmin: "Super-Admin-Panel", menuPass: "Passwort ändern", menuLogout: "Abmelden", menuLanguage: "Sprache", menuSignin: "Anmelden", menuSignup: "Registrieren", menuErp: "Zum ERP wechseln",
     heroCompany: "Unternehmen", heroCurrency: "Währung", heroFiscal: "Geschäftsjahr", heroPlan: "Tarif", heroDate: "Datum",
 
     save: "Speichern", cancel: "Abbrechen", edit: "Bearbeiten", delete: "Löschen",

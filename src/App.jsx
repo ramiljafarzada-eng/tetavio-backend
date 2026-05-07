@@ -15664,7 +15664,7 @@ function renderItemsCatalog() {
                         <small>{currentUser.email}</small>
                       </div>
                       <button className="profile-open-app-btn" type="button" onClick={() => { setProfileMenuOpen(false); setActiveProduct("books"); }}>
-                        ERP-yə keçid
+                        {at.menuErp}
                       </button>
                       {(currentUser.role === "super_admin" || !isInternalUser(currentUser)) ? (
                         <button className="profile-secondary-btn" type="button" onClick={() => { setAccountPanel("plans"); setProfileMenuOpen(false); }}>
