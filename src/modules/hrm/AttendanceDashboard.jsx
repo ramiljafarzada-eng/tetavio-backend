@@ -451,11 +451,14 @@ export default function AttendanceDashboard({ lang }) {
   const [showHoliday, setShowHoliday] = useState(false);
   const [editLog, setEditLog] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedLogs, setSelectedLogs] = useState(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
 
   const load = () => {
     setLoading(true);
     setError('');
+    setSelectedLogs(new Set());
     const dateFrom = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -463,6 +466,25 @@ export default function AttendanceDashboard({ lang }) {
       .then(setLogs)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+  };
+
+  const toggleLogSelect = (id) =>
+    setSelectedLogs((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const toggleAllLogs = () =>
+    setSelectedLogs(selectedLogs.size === logs.length ? new Set() : new Set(logs.map((l) => l.id)));
+
+  const bulkDelete = async () => {
+    if (selectedLogs.size === 0) return;
+    setBulkDeleting(true);
+    setError('');
+    try {
+      await Promise.all([...selectedLogs].map((id) => hrmDeleteAttendance(id)));
+      load();
+    } catch (err) {
+      setError(err.message);
+      setBulkDeleting(false);
+    }
   };
 
   useEffect(() => {
@@ -503,6 +525,21 @@ export default function AttendanceDashboard({ lang }) {
       {actionMsg && <div className="hrm-notice">{actionMsg}</div>}
       {error && <div className="hrm-error">{error}</div>}
 
+      {selectedLogs.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: 'rgba(220,38,38,0.07)', borderRadius: 8, marginBottom: 10, border: '1px solid rgba(220,38,38,0.18)' }}>
+          <span style={{ fontSize: '0.88rem', color: 'var(--muted)' }}>{selectedLogs.size} qeyd seçildi</span>
+          <button
+            className="ghost-btn"
+            style={{ color: '#dc2626', marginLeft: 'auto' }}
+            onClick={bulkDelete}
+            disabled={bulkDeleting}
+          >
+            {bulkDeleting ? 'Silinir...' : `Seçilənləri sil (${selectedLogs.size})`}
+          </button>
+          <button className="ghost-btn" style={{ fontSize: '0.8rem' }} onClick={() => setSelectedLogs(new Set())}>Ləğv et</button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
         <select className="hrm-select" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
           {ta.months.map((m, i) => (
@@ -523,6 +560,15 @@ export default function AttendanceDashboard({ lang }) {
           <table className="hrm-table">
             <thead>
               <tr>
+                <th style={{ width: 36, textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    style={{ width: 15, height: 15 }}
+                    checked={logs.length > 0 && selectedLogs.size === logs.length}
+                    ref={(el) => { if (el) el.indeterminate = selectedLogs.size > 0 && selectedLogs.size < logs.length; }}
+                    onChange={toggleAllLogs}
+                  />
+                </th>
                 <th>{ta.colEmployee}</th>
                 <th>{ta.manualDate}</th>
                 <th>{ta.manualCheckIn}</th>
@@ -534,10 +580,18 @@ export default function AttendanceDashboard({ lang }) {
             </thead>
             <tbody>
               {logs.length === 0 && (
-                <tr><td colSpan={7} className="hrm-empty">{ta.notFound}</td></tr>
+                <tr><td colSpan={8} className="hrm-empty">{ta.notFound}</td></tr>
               )}
               {logs.map((log) => (
-                <tr key={log.id}>
+                <tr key={log.id} style={selectedLogs.has(log.id) ? { background: 'rgba(220,38,38,0.04)' } : {}}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      style={{ width: 15, height: 15 }}
+                      checked={selectedLogs.has(log.id)}
+                      onChange={() => toggleLogSelect(log.id)}
+                    />
+                  </td>
                   <td>
                     {log.employee?.firstName} {log.employee?.lastName}
                     <div className="hrm-sub">{log.employee?.employeeCode}</div>
