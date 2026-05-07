@@ -249,7 +249,6 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
   const [selected, setSelected] = useState(new Set(employees.map((e) => e.id)));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState('');
 
   const toggleAll = () => setSelected(selected.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)));
   const toggleOne = (id) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
@@ -266,10 +265,10 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
   const submit = async (e) => {
     e.preventDefault();
     if (selected.size === 0) { setError('Ən az 1 işçi seçin'); return; }
-    setSaving(true); setError(''); setResult('');
+    setSaving(true); setError('');
     try {
       const tzOffset = -now.getTimezoneOffset();
-      const res = await hrmBulkAttendance({
+      await hrmBulkAttendance({
         employeeIds: [...selected],
         dateFrom,
         dateTo,
@@ -277,8 +276,8 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
         checkOutTime: checkOut || undefined,
         tzOffsetMinutes: tzOffset,
       });
-      setResult(`${res?.count ?? '?'} qeyd yazıldı (şənbə/bazar atlandı).`);
       onSaved();
+      onClose();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -291,7 +290,6 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
       <div className="hrm-modal" style={{ maxWidth: 540, width: '100%' }} onClick={(e) => e.stopPropagation()}>
         <h3>Toplu davamiyyət qeydi</h3>
         {error && <div className="hrm-error">{error}</div>}
-        {result && <div className="hrm-notice">{result}</div>}
         <form onSubmit={submit}>
           <div className="hrm-field">
             <label>Tarix aralığı</label>
@@ -342,7 +340,6 @@ function LeaveMarkModal({ employees, onClose, onSaved, ta, tc }) {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState('');
 
   const toggleAll = () => setSelected(selected.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)));
   const toggleOne = (id) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
@@ -365,7 +362,7 @@ function LeaveMarkModal({ employees, onClose, onSaved, ta, tc }) {
   const submit = async (e) => {
     e.preventDefault();
     if (selected.size === 0) { setError('Ən az 1 işçi seçin'); return; }
-    setSaving(true); setError(''); setResult('');
+    setSaving(true); setError('');
     try {
       const res = await hrmBulkAttendance({
         employeeIds: [...selected],
@@ -374,8 +371,8 @@ function LeaveMarkModal({ employees, onClose, onSaved, ta, tc }) {
         status,
         note: note || undefined,
       });
-      setResult(`${res?.count ?? '?'} qeyd yazıldı (şənbə/bazar atlandı).`);
       onSaved();
+      onClose();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -390,7 +387,6 @@ function LeaveMarkModal({ employees, onClose, onSaved, ta, tc }) {
       <div className="hrm-modal" style={{ maxWidth: 540, width: '100%' }} onClick={(e) => e.stopPropagation()}>
         <h3>Məzuniyyət / Xəstəlik / Ezamiyyət qeydi</h3>
         {error && <div className="hrm-error">{error}</div>}
-        {result && <div className="hrm-notice">{result}</div>}
         <form onSubmit={submit}>
           <div className="hrm-field">
             <label>Növ</label>
