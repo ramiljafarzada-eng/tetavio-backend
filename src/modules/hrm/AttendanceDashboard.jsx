@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { hrmCheckIn, hrmCheckOut, hrmListAttendance, hrmManualAttendance } from './hrm.api.js';
+import { hrmListEmployees, hrmManualAttendance, hrmListAttendance } from './hrm.api.js';
 import { HRM_I18N } from './hrm-i18n.js';
 
 const STATUS_COLOR = {
@@ -18,7 +18,70 @@ function fmtMin(min) {
   return h > 0 ? `${h}s ${m}d` : `${m}d`;
 }
 
-function ManualModal({ onClose, onSaved, ta, tc }) {
+function QuickCheckModal({ type, employees, onClose, onSaved, ta, tc }) {
+  const now = new Date();
+  const todayDate = now.toISOString().slice(0, 10);
+  const currentTime = now.toTimeString().slice(0, 5);
+
+  const [employeeId, setEmployeeId] = useState('');
+  const [time, setTime] = useState(currentTime);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const isoTime = `${todayDate}T${time}:00`;
+      await hrmManualAttendance({
+        employeeId,
+        date: todayDate,
+        ...(type === 'in' ? { checkIn: isoTime } : { checkOut: isoTime }),
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{type === 'in' ? ta.checkIn : ta.checkOut}</h3>
+        {error && <div className="hrm-error">{error}</div>}
+        <form onSubmit={submit}>
+          <div className="hrm-field">
+            <label>{ta.colEmployee}</label>
+            <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
+              <option value="">{tc.select}</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="hrm-field">
+            <label>{type === 'in' ? ta.manualCheckIn : ta.manualCheckOut}</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+          </div>
+          <div className="hrm-modal-footer">
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+            <button type="submit" className="primary-btn" disabled={saving}>
+              {saving ? tc.saving : tc.save}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ManualModal({ employees, onClose, onSaved, ta, tc }) {
   const [form, setForm] = useState({ employeeId: '', date: '', checkIn: '', checkOut: '', note: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -52,8 +115,15 @@ function ManualModal({ onClose, onSaved, ta, tc }) {
         {error && <div className="hrm-error">{error}</div>}
         <form onSubmit={submit}>
           <div className="hrm-field">
-            <label>{ta.manualEmployeeId}</label>
-            <input value={form.employeeId} onChange={(e) => set('employeeId', e.target.value)} required />
+            <label>{ta.colEmployee}</label>
+            <select value={form.employeeId} onChange={(e) => set('employeeId', e.target.value)} required>
+              <option value="">{tc.select}</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
@@ -135,11 +205,12 @@ export default function AttendanceDashboard({ lang }) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [rows, setRows] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [quickCheck, setQuickCheck] = useState(null); // 'in' | 'out' | null
   const [showManual, setShowManual] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
-  const [actionBusy, setActionBusy] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -153,34 +224,15 @@ export default function AttendanceDashboard({ lang }) {
       .finally(() => setLoading(false));
   };
 
+  useEffect(() => {
+    hrmListEmployees({ status: 'ACTIVE' }).then(setEmployees).catch(() => {});
+  }, []);
+
   useEffect(() => { load(); }, [year, month]);
 
-  const handleCheckIn = async () => {
-    setActionBusy('in');
-    setActionMsg('');
-    try {
-      await hrmCheckIn({ checkIn: new Date().toISOString() });
-      setActionMsg(ta.checkInDone);
-      load();
-    } catch (e) {
-      setActionMsg(`${tc.error}${e.message}`);
-    } finally {
-      setActionBusy('');
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setActionBusy('out');
-    setActionMsg('');
-    try {
-      await hrmCheckOut({ checkOut: new Date().toISOString() });
-      setActionMsg(ta.checkOutDone);
-      load();
-    } catch (e) {
-      setActionMsg(`${tc.error}${e.message}`);
-    } finally {
-      setActionBusy('');
-    }
+  const handleQuickSaved = (type) => {
+    setActionMsg(type === 'in' ? ta.checkInDone : ta.checkOutDone);
+    load();
   };
 
   return (
@@ -188,11 +240,11 @@ export default function AttendanceDashboard({ lang }) {
       <div className="hrm-panel-header">
         <h2 className="hrm-panel-title">{ta.title}</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className="ghost-btn" onClick={handleCheckIn} disabled={!!actionBusy}>
-            {actionBusy === 'in' ? '...' : ta.checkIn}
+          <button className="ghost-btn" onClick={() => { setActionMsg(''); setQuickCheck('in'); }}>
+            {ta.checkIn}
           </button>
-          <button className="ghost-btn" onClick={handleCheckOut} disabled={!!actionBusy}>
-            {actionBusy === 'out' ? '...' : ta.checkOut}
+          <button className="ghost-btn" onClick={() => { setActionMsg(''); setQuickCheck('out'); }}>
+            {ta.checkOut}
           </button>
           <button className="primary-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
         </div>
@@ -267,8 +319,25 @@ export default function AttendanceDashboard({ lang }) {
         </div>
       )}
 
+      {quickCheck && (
+        <QuickCheckModal
+          type={quickCheck}
+          employees={employees}
+          onClose={() => setQuickCheck(null)}
+          onSaved={() => handleQuickSaved(quickCheck)}
+          ta={ta}
+          tc={tc}
+        />
+      )}
+
       {showManual && (
-        <ManualModal onClose={() => setShowManual(false)} onSaved={load} ta={ta} tc={tc} />
+        <ManualModal
+          employees={employees}
+          onClose={() => setShowManual(false)}
+          onSaved={load}
+          ta={ta}
+          tc={tc}
+        />
       )}
     </div>
   );
