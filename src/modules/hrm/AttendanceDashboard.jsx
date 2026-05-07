@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import {
   hrmListEmployees,
   hrmManualAttendance,
@@ -88,6 +89,60 @@ function SheetView({ logs, employees, year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  const exportToExcel = () => {
+    const MONTH_NAMES = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
+
+    const logMap = {};
+    logs.forEach((log) => {
+      const day = parseInt(log.date?.slice(8, 10), 10);
+      if (!logMap[log.employeeId]) logMap[log.employeeId] = {};
+      logMap[log.employeeId][day] = log;
+    });
+
+    const header = [
+      'S/S', 'Soyadı, adı', 'Vəzifəsi', 'Əmək haqqı (₼)',
+      ...days.map(String),
+      'Cəmi saat', 'Cəmi gün', 'Məzuniyyət günü',
+    ];
+
+    const rows = employees.map((emp, idx) => {
+      const empLogs = logMap[emp.id] || {};
+      const allLogs = Object.values(empLogs);
+      const totalMinutes = allLogs.reduce((s, l) => s + (l.workedMinutes || 0), 0);
+      const presentDays = allLogs.filter((l) => ['PRESENT', 'LATE'].includes(l.status)).length;
+      const leaveDays = allLogs.filter((l) => ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP'].includes(l.status)).length;
+      const salary = emp.baseSalaryMinor ? (emp.baseSalaryMinor / 100) : 0;
+
+      return [
+        idx + 1,
+        `${emp.lastName} ${emp.firstName}`,
+        emp.position?.title || '',
+        salary,
+        ...days.map((d) => {
+          const log = empLogs[d];
+          return log ? (STATUS_ABBR[log.status] || '') : '';
+        }),
+        totalMinutes ? +(totalMinutes / 60).toFixed(1) : 0,
+        presentDays,
+        leaveDays,
+      ];
+    });
+
+    const wsData = [header, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 24 }, { wch: 18 }, { wch: 14 },
+      ...days.map(() => ({ wch: 4 })),
+      { wch: 10 }, { wch: 10 }, { wch: 16 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${MONTH_NAMES[month - 1]} ${year}`);
+    XLSX.writeFile(wb, `davamiyyat_${year}_${String(month).padStart(2, '0')}.xlsx`);
+  };
+
   const logMap = {};
   logs.forEach((log) => {
     const day = parseInt(log.date?.slice(8, 10), 10);
@@ -102,6 +157,10 @@ function SheetView({ logs, employees, year, month }) {
   };
 
   return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <button className="primary-btn" onClick={exportToExcel}>Excel-ə export et</button>
+      </div>
     <div style={{ overflowX: 'auto', fontSize: '0.82rem' }}>
       <table style={{ borderCollapse: 'collapse', minWidth: '100%', whiteSpace: 'nowrap' }}>
         <thead>
@@ -168,6 +227,7 @@ function SheetView({ logs, employees, year, month }) {
           <span key={k}><b style={{ color: STATUS_COLOR[k] }}>{v}</b> = {k === 'PRESENT' ? 'İşdə' : k === 'ABSENT' ? 'Yoxdur' : k === 'LATE' ? 'Gecikmiş' : k === 'HALF_DAY' ? 'Yarım gün' : k === 'ON_LEAVE' ? 'Məzuniyyət' : k === 'SICK_LEAVE' ? 'Xəstəlik' : k === 'BUSINESS_TRIP' ? 'Ezamiyyət' : 'Bayram'}</span>
         ))}
       </div>
+    </div>
     </div>
   );
 }
