@@ -17,6 +17,21 @@ const STATUS_COLOR = {
   HOLIDAY: '#94a3b8',
 };
 
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toLocalISO(localDate, timeStr) {
+  const offset = -new Date().getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const h = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const m = String(Math.abs(offset) % 60).padStart(2, '0');
+  return `${localDate}T${timeStr}:00${sign}${h}:${m}`;
+}
+
 function fmtTime(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
@@ -31,7 +46,7 @@ function fmtMin(min) {
 
 function QuickCheckModal({ type, employees, onClose, onSaved, ta, tc }) {
   const now = new Date();
-  const todayDate = now.toISOString().slice(0, 10);
+  const todayDate = localDateStr(now);
   const currentTime = now.toTimeString().slice(0, 5);
 
   const [employeeId, setEmployeeId] = useState('');
@@ -44,7 +59,7 @@ function QuickCheckModal({ type, employees, onClose, onSaved, ta, tc }) {
     setSaving(true);
     setError('');
     try {
-      const isoTime = `${todayDate}T${time}:00`;
+      const isoTime = toLocalISO(todayDate, time);
       await hrmManualAttendance({
         employeeId,
         date: todayDate,
@@ -106,8 +121,8 @@ function ManualModal({ employees, onClose, onSaved, ta, tc }) {
       await hrmManualAttendance({
         employeeId: form.employeeId,
         date: form.date,
-        checkIn: form.checkIn ? `${form.date}T${form.checkIn}:00` : undefined,
-        checkOut: form.checkOut ? `${form.date}T${form.checkOut}:00` : undefined,
+        checkIn: form.checkIn ? toLocalISO(form.date, form.checkIn) : undefined,
+        checkOut: form.checkOut ? toLocalISO(form.date, form.checkOut) : undefined,
         note: form.note || undefined,
       });
       onSaved();
@@ -169,9 +184,9 @@ function ManualModal({ employees, onClose, onSaved, ta, tc }) {
 }
 
 function EditModal({ log, employees, onClose, onSaved, ta, tc }) {
-  const logDate = log.date ? log.date.slice(0, 10) : '';
-  const [checkIn, setCheckIn] = useState(log.checkIn ? new Date(log.checkIn).toTimeString().slice(0, 5) : '');
-  const [checkOut, setCheckOut] = useState(log.checkOut ? new Date(log.checkOut).toTimeString().slice(0, 5) : '');
+  const logDate = log.date ? localDateStr(new Date(log.date)) : '';
+  const [checkIn, setCheckIn] = useState(log.checkIn ? new Date(log.checkIn).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
+  const [checkOut, setCheckOut] = useState(log.checkOut ? new Date(log.checkOut).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
   const [note, setNote] = useState(log.note || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -184,8 +199,8 @@ function EditModal({ log, employees, onClose, onSaved, ta, tc }) {
       await hrmUpdateAttendance(log.id, {
         employeeId: log.employeeId,
         date: logDate,
-        checkIn: checkIn ? `${logDate}T${checkIn}:00` : undefined,
-        checkOut: checkOut ? `${logDate}T${checkOut}:00` : undefined,
+        checkIn: checkIn ? toLocalISO(logDate, checkIn) : undefined,
+        checkOut: checkOut ? toLocalISO(logDate, checkOut) : undefined,
         note: note || undefined,
       });
       onSaved();
