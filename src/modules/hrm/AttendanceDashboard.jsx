@@ -156,9 +156,14 @@ function SheetView({ logs, employees, year, month }) {
     return d === 0 || d === 6;
   };
 
+  const MONTH_NAMES_AZ = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
+          Davamiyyət cədvəli — {MONTH_NAMES_AZ[month - 1]} {year}
+        </h3>
         <button className="primary-btn" onClick={exportToExcel}>Excel-ə export et</button>
       </div>
     <div style={{ overflowX: 'auto', fontSize: '0.82rem' }}>
