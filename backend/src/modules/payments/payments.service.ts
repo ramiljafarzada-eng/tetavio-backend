@@ -73,19 +73,30 @@ export class PaymentsService {
     });
 
     if (existing) {
-      return {
-        orderId: order.id,
-        paymentTransactionId: existing.id,
-        gateway: existing.gateway,
-        gatewayPaymentId: existing.gatewayPaymentId,
-        amountMinor: existing.amountMinor,
-        currency: existing.currency,
-        status: existing.status,
-        checkoutUrl: (existing.responsePayload as Record<string, unknown>)?.['checkoutUrl'] as string | undefined,
-        nextAction: {
-          type: 'OPEN_CHECKOUT',
-        },
-      };
+      const existingPayload = existing.responsePayload as Record<string, unknown> | null;
+      const expiresAt = existingPayload?.['expiresAt'];
+      const isExpired = expiresAt ? new Date(expiresAt as string) <= new Date() : true;
+
+      if (!isExpired) {
+        return {
+          orderId: order.id,
+          paymentTransactionId: existing.id,
+          gateway: existing.gateway,
+          gatewayPaymentId: existing.gatewayPaymentId,
+          amountMinor: existing.amountMinor,
+          currency: existing.currency,
+          status: existing.status,
+          checkoutUrl: existingPayload?.['checkoutUrl'] as string | undefined,
+          nextAction: {
+            type: 'OPEN_CHECKOUT',
+          },
+        };
+      }
+
+      await this.prisma.paymentTransaction.update({
+        where: { id: existing.id },
+        data: { status: PaymentStatus.FAILED },
+      });
     }
 
     const session = await activeGateway.createCheckoutSession({

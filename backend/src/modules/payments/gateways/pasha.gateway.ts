@@ -25,10 +25,10 @@ export class PashaGateway implements PaymentGateway {
     );
     const language = this.normalizeLanguage(input.language);
     const currency = this.normalizeCurrency(input.currency);
-    const amountMajor = this.minorToMajor(input.amountMinor);
+    const amountMinorStr = String(Math.round(input.amountMinor));
     const responseText = await this.sendMerchantRequest({
       command: 'V',
-      amount: amountMajor,
+      amount: amountMinorStr,
       currency,
       client_ip_addr: input.clientIpAddress ?? '127.0.0.1',
       description: input.description ?? 'Tetavio subscription payment',
@@ -95,10 +95,6 @@ export class PashaGateway implements PaymentGateway {
     }[normalized];
 
     return mapped ?? normalized;
-  }
-
-  private minorToMajor(amountMinor: number): string {
-    return String(Math.round(amountMinor) / 100);
   }
 
   private async sendMerchantRequest(
