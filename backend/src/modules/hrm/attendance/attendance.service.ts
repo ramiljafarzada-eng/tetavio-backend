@@ -171,56 +171,94 @@ export class AttendanceService {
     return log;
   }
 
+  private buildDateTimeFromTime(dateOnly: Date, timeStr: string, tzOffsetMinutes: number): Date {
+    const [h, m] = timeStr.split(':').map(Number);
+    return new Date(dateOnly.getTime() + h * 3600000 + m * 60000 - tzOffsetMinutes * 60000);
+  }
+
   async bulkEntry(user: JwtPayload, dto: BulkAttendanceDto) {
     const employees = await this.prisma.employee.findMany({
       where: { id: { in: dto.employeeIds }, accountId: user.accountId, deletedAt: null },
       include: { workSchedule: true },
     });
 
-    const dateOnly = new Date(dto.date);
-    const checkIn = dto.checkIn ? new Date(dto.checkIn) : null;
-    const checkOut = dto.checkOut ? new Date(dto.checkOut) : null;
+    const tzOffset = dto.tzOffsetMinutes ?? 0;
+    const start = new Date(dto.dateFrom + 'T00:00:00Z');
+    const end = new Date(dto.dateTo + 'T00:00:00Z');
 
-    const results = await Promise.all(
-      employees.map(async (emp) => {
-        const existing = await this.prisma.attendanceLog.findUnique({
-          where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
-        });
-        const effectiveCheckIn = checkIn ?? existing?.checkIn ?? null;
-        const effectiveCheckOut = checkOut ?? existing?.checkOut ?? null;
-        const schedule = this.buildScheduleConfig(emp.workSchedule);
-        const calc = this.engine.calculate(effectiveCheckIn, effectiveCheckOut, dateOnly, schedule);
+    // Generate all calendar dates in range
+    const dates: Date[] = [];
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      dates.push(new Date(d));
+    }
 
-        return this.prisma.attendanceLog.upsert({
-          where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
-          create: {
-            accountId: user.accountId,
-            employeeId: emp.id,
-            date: dateOnly,
-            checkIn: effectiveCheckIn,
-            checkOut: effectiveCheckOut,
-            workedMinutes: calc.workedMinutes || null,
-            lateMinutes: calc.lateMinutes,
-            overtimeMinutes: calc.overtimeMinutes,
-            status: calc.status as never,
-            note: dto.note,
-            source: 'MANUAL',
-          },
-          update: {
-            ...(checkIn !== null && { checkIn }),
-            ...(checkOut !== null && { checkOut }),
-            workedMinutes: calc.workedMinutes || null,
-            lateMinutes: calc.lateMinutes,
-            overtimeMinutes: calc.overtimeMinutes,
-            status: calc.status as never,
-            ...(dto.note !== undefined && { note: dto.note }),
-            source: 'MANUAL',
-          },
-        });
-      }),
+    // Prefetch existing logs in one query
+    const existingLogs = await this.prisma.attendanceLog.findMany({
+      where: {
+        accountId: user.accountId,
+        employeeId: { in: dto.employeeIds },
+        date: { gte: start, lte: end },
+      },
+    });
+    const existingMap = new Map(
+      existingLogs.map((l) => [`${l.employeeId}_${l.date.toISOString().slice(0, 10)}`, l]),
     );
 
-    return { count: results.length };
+    const ops: Promise<any>[] = [];
+
+    for (const emp of employees) {
+      const schedule = this.buildScheduleConfig(emp.workSchedule);
+      for (const dateOnly of dates) {
+        // Skip weekends (Sat=6, Sun=0→7)
+        const dow = dateOnly.getUTCDay() === 0 ? 7 : dateOnly.getUTCDay();
+        if (!schedule.workDays.includes(dow)) continue;
+
+        const existing = existingMap.get(`${emp.id}_${dateOnly.toISOString().slice(0, 10)}`);
+        // Skip days already marked as ON_LEAVE or HOLIDAY
+        if (existing && ['ON_LEAVE', 'HOLIDAY'].includes(existing.status)) continue;
+
+        const checkIn = dto.checkInTime
+          ? this.buildDateTimeFromTime(dateOnly, dto.checkInTime, tzOffset)
+          : (existing?.checkIn ?? null);
+        const checkOut = dto.checkOutTime
+          ? this.buildDateTimeFromTime(dateOnly, dto.checkOutTime, tzOffset)
+          : (existing?.checkOut ?? null);
+
+        const calc = this.engine.calculate(checkIn, checkOut, dateOnly, schedule);
+
+        ops.push(
+          this.prisma.attendanceLog.upsert({
+            where: { employeeId_date: { employeeId: emp.id, date: dateOnly } },
+            create: {
+              accountId: user.accountId,
+              employeeId: emp.id,
+              date: dateOnly,
+              checkIn,
+              checkOut,
+              workedMinutes: calc.workedMinutes || null,
+              lateMinutes: calc.lateMinutes,
+              overtimeMinutes: calc.overtimeMinutes,
+              status: calc.status as never,
+              note: dto.note,
+              source: 'MANUAL',
+            },
+            update: {
+              ...(dto.checkInTime !== undefined && { checkIn }),
+              ...(dto.checkOutTime !== undefined && { checkOut }),
+              workedMinutes: calc.workedMinutes || null,
+              lateMinutes: calc.lateMinutes,
+              overtimeMinutes: calc.overtimeMinutes,
+              status: calc.status as never,
+              ...(dto.note !== undefined && { note: dto.note }),
+              source: 'MANUAL',
+            },
+          }),
+        );
+      }
+    }
+
+    await Promise.all(ops);
+    return { count: ops.length };
   }
 
   async updateById(user: JwtPayload, id: string, dto: ManualAttendanceDto) {

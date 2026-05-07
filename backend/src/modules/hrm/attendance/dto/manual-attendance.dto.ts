@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsDateString, IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class ManualAttendanceDto {
   @ApiProperty()
@@ -42,19 +42,28 @@ export class BulkAttendanceDto {
   @IsUUID('all', { each: true })
   employeeIds!: string[];
 
-  @ApiProperty({ example: '2026-05-05' })
+  @ApiProperty({ example: '2026-05-01' })
   @IsDateString()
-  date!: string;
+  dateFrom!: string;
 
-  @ApiPropertyOptional({ example: '2026-05-05T09:00:00.000Z' })
-  @IsOptional()
+  @ApiProperty({ example: '2026-05-31' })
   @IsDateString()
-  checkIn?: string;
+  dateTo!: string;
 
-  @ApiPropertyOptional({ example: '2026-05-05T18:00:00.000Z' })
+  @ApiPropertyOptional({ example: '09:00' })
   @IsOptional()
-  @IsDateString()
-  checkOut?: string;
+  @IsString()
+  checkInTime?: string;
+
+  @ApiPropertyOptional({ example: '18:00' })
+  @IsOptional()
+  @IsString()
+  checkOutTime?: string;
+
+  @ApiPropertyOptional({ example: 240 })
+  @IsOptional()
+  @IsInt()
+  tzOffsetMinutes?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

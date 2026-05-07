@@ -3,6 +3,7 @@ import {
   hrmListEmployees,
   hrmManualAttendance,
   hrmBulkAttendance,
+  hrmMarkHoliday,
   hrmUpdateAttendance,
   hrmDeleteAttendance,
   hrmListAttendance,
@@ -45,47 +46,143 @@ function fmtMin(min) {
   return h > 0 ? `${h}s ${m}d` : `${m}d`;
 }
 
+function EmployeeCheckList({ employees, selected, onToggle, onToggleAll, tc }) {
+  const allSelected = selected.size === employees.length;
+  return (
+    <div className="hrm-field">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <label style={{ margin: 0 }}>{`İşçilər (${selected.size}/${employees.length})`}</label>
+        <button type="button" className="ghost-btn" style={{ padding: '2px 10px', fontSize: '0.8rem' }} onClick={onToggleAll}>
+          {allSelected ? 'Heçbirini seçmə' : 'Hamısını seç'}
+        </button>
+      </div>
+      <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: '4px 0' }}>
+        {employees.map((emp) => (
+          <label key={emp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={selected.has(emp.id)} onChange={() => onToggle(emp.id)} style={{ width: 15, height: 15, flexShrink: 0 }} />
+            <span style={{ fontSize: '0.88rem' }}>
+              {emp.firstName} {emp.lastName}
+              <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: '0.78rem' }}>({emp.employeeCode})</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BulkModal({ employees, onClose, onSaved, ta, tc }) {
   const now = new Date();
-  const todayDate = localDateStr(now);
+  const firstOfMonth = localDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  const lastOfMonth = localDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
-  const [date, setDate] = useState(todayDate);
+  const [dateFrom, setDateFrom] = useState(firstOfMonth);
+  const [dateTo, setDateTo] = useState(lastOfMonth);
   const [checkIn, setCheckIn] = useState('09:00');
   const [checkOut, setCheckOut] = useState('18:00');
   const [selected, setSelected] = useState(new Set(employees.map((e) => e.id)));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [result, setResult] = useState('');
 
-  const allSelected = selected.size === employees.length;
+  const toggleAll = () => setSelected(selected.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)));
+  const toggleOne = (id) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(employees.map((e) => e.id)));
-    }
-  };
-
-  const toggleOne = (id) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  const setThisMonth = () => { setDateFrom(firstOfMonth); setDateTo(lastOfMonth); };
+  const setToday = () => { const t = localDateStr(now); setDateFrom(t); setDateTo(t); };
+  const setThisWeek = () => {
+    const day = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    setDateFrom(localDateStr(mon)); setDateTo(localDateStr(fri));
   };
 
   const submit = async (e) => {
     e.preventDefault();
-    if (selected.size === 0) { setError(tc.selectEmployee || 'Ən az 1 işçi seçin'); return; }
-    setSaving(true);
-    setError('');
+    if (selected.size === 0) { setError('Ən az 1 işçi seçin'); return; }
+    setSaving(true); setError(''); setResult('');
     try {
-      await hrmBulkAttendance({
+      const tzOffset = -now.getTimezoneOffset();
+      const res = await hrmBulkAttendance({
         employeeIds: [...selected],
-        date,
-        checkIn: checkIn ? toLocalISO(date, checkIn) : undefined,
-        checkOut: checkOut ? toLocalISO(date, checkOut) : undefined,
+        dateFrom,
+        dateTo,
+        checkInTime: checkIn || undefined,
+        checkOutTime: checkOut || undefined,
+        tzOffsetMinutes: tzOffset,
       });
+      setResult(`${res?.count ?? '?'} qeyd yazıldı (şənbə/bazar atlandı).`);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="hrm-modal-backdrop" onClick={onClose}>
+      <div className="hrm-modal" style={{ maxWidth: 540, width: '100%' }} onClick={(e) => e.stopPropagation()}>
+        <h3>Toplu davamiyyət qeydi</h3>
+        {error && <div className="hrm-error">{error}</div>}
+        {result && <div className="hrm-notice">{result}</div>}
+        <form onSubmit={submit}>
+          <div className="hrm-field">
+            <label>Tarix aralığı</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} required style={{ flex: 1 }} />
+              <span style={{ color: 'var(--muted)' }}>—</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} required style={{ flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setToday}>Bu gün</button>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setThisWeek}>Bu həftə</button>
+              <button type="button" className="ghost-btn" style={{ fontSize: '0.78rem', padding: '2px 8px' }} onClick={setThisMonth}>Bu ay</button>
+            </div>
+          </div>
+          <div className="hrm-form-row">
+            <div className="hrm-field">
+              <label>{ta.manualCheckIn}</label>
+              <input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
+            </div>
+            <div className="hrm-field">
+              <label>{ta.manualCheckOut}</label>
+              <input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+            </div>
+          </div>
+          <EmployeeCheckList employees={employees} selected={selected} onToggle={toggleOne} onToggleAll={toggleAll} tc={tc} />
+          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: '4px 0 0' }}>Şənbə, bazar və mövcud məzuniyyət/bayram qeydləri atlanır.</p>
+          <div className="hrm-modal-footer">
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+            <button type="submit" className="primary-btn" disabled={saving || selected.size === 0}>
+              {saving ? tc.saving : `Qeyd et (${selected.size} işçi)`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function HolidayModal({ employees, onClose, onSaved, ta, tc }) {
+  const now = new Date();
+  const [date, setDate] = useState(localDateStr(now));
+  const [selected, setSelected] = useState(new Set(employees.map((e) => e.id)));
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const toggleAll = () => setSelected(selected.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)));
+  const toggleOne = (id) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (selected.size === 0) { setError('Ən az 1 işçi seçin'); return; }
+    setSaving(true); setError('');
+    try {
+      await Promise.all([...selected].map((empId) =>
+        hrmMarkHoliday({ employeeId: empId, date, status: 'HOLIDAY', note: note || undefined })
+      ));
       onSaved();
       onClose();
     } catch (err) {
@@ -98,53 +195,22 @@ function BulkModal({ employees, onClose, onSaved, ta, tc }) {
   return (
     <div className="hrm-modal-backdrop" onClick={onClose}>
       <div className="hrm-modal" style={{ maxWidth: 520, width: '100%' }} onClick={(e) => e.stopPropagation()}>
-        <h3>{ta.bulkTitle || 'Toplu davamiyyət qeydi'}</h3>
+        <h3>Bayram / İstirahət günü qeydi</h3>
         {error && <div className="hrm-error">{error}</div>}
         <form onSubmit={submit}>
           <div className="hrm-field">
-            <label>{ta.manualDate}</label>
+            <label>Tarix</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
-          <div className="hrm-form-row">
-            <div className="hrm-field">
-              <label>{ta.manualCheckIn}</label>
-              <input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
-            </div>
-            <div className="hrm-field">
-              <label>{ta.manualCheckOut}</label>
-              <input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
-            </div>
-          </div>
-
           <div className="hrm-field">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{ margin: 0 }}>{ta.colEmployee} ({selected.size}/{employees.length})</label>
-              <button type="button" className="ghost-btn" style={{ padding: '2px 10px', fontSize: '0.8rem' }} onClick={toggleAll}>
-                {allSelected ? (tc.deselectAll || 'Heçbirini seçmə') : (tc.selectAll || 'Hamısını seç')}
-              </button>
-            </div>
-            <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: '4px 0' }}>
-              {employees.map((emp) => (
-                <label key={emp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(emp.id)}
-                    onChange={() => toggleOne(emp.id)}
-                    style={{ width: 15, height: 15, flexShrink: 0 }}
-                  />
-                  <span style={{ fontSize: '0.88rem' }}>
-                    {emp.firstName} {emp.lastName}
-                    <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: '0.78rem' }}>({emp.employeeCode})</span>
-                  </span>
-                </label>
-              ))}
-            </div>
+            <label>Qeyd (isteğe bağlı)</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="məs. Novruz bayramı" maxLength={255} />
           </div>
-
+          <EmployeeCheckList employees={employees} selected={selected} onToggle={toggleOne} onToggleAll={toggleAll} tc={tc} />
           <div className="hrm-modal-footer">
             <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
             <button type="submit" className="primary-btn" disabled={saving || selected.size === 0}>
-              {saving ? tc.saving : `${tc.save} (${selected.size})`}
+              {saving ? tc.saving : `Bayram qeyd et (${selected.size})`}
             </button>
           </div>
         </form>
@@ -382,6 +448,7 @@ export default function AttendanceDashboard({ lang }) {
   const [quickCheck, setQuickCheck] = useState(null);
   const [showManual, setShowManual] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
+  const [showHoliday, setShowHoliday] = useState(false);
   const [editLog, setEditLog] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [actionMsg, setActionMsg] = useState('');
@@ -429,6 +496,7 @@ export default function AttendanceDashboard({ lang }) {
           </button>
           <button className="ghost-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
           <button className="primary-btn" onClick={() => setShowBulk(true)}>{ta.bulkEntry || 'Toplu qeyd'}</button>
+          <button className="ghost-btn" onClick={() => setShowHoliday(true)}>Bayram qeyd et</button>
         </div>
       </div>
 
@@ -523,6 +591,16 @@ export default function AttendanceDashboard({ lang }) {
         <BulkModal
           employees={employees}
           onClose={() => setShowBulk(false)}
+          onSaved={load}
+          ta={ta}
+          tc={tc}
+        />
+      )}
+
+      {showHoliday && (
+        <HolidayModal
+          employees={employees}
+          onClose={() => setShowHoliday(false)}
           onSaved={load}
           ta={ta}
           tc={tc}
