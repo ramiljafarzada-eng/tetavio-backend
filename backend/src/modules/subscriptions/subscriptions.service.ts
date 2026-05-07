@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DowngradeSubscriptionDto } from './dto/downgrade-subscription.dto';
 import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
 import { DEFAULT_OPERATION_LIMIT, PLAN_OPERATION_LIMITS } from '../../common/plan-limits';
+import { ANNUAL_PRICE_MINOR } from '../../common/plan-catalog';
 
 @Injectable()
 export class SubscriptionsService {
@@ -179,6 +180,10 @@ export class SubscriptionsService {
       };
     }
 
+    const isAnnual = dto.billingCycle === 'annual';
+    const annualPrice = ANNUAL_PRICE_MINOR[targetPlan.code];
+    const amountMinor = isAnnual && annualPrice ? annualPrice : targetPlan.priceMinor;
+
     const order = await this.prisma.order.create({
       data: {
         accountId: user.accountId,
@@ -186,7 +191,7 @@ export class SubscriptionsService {
         targetPlanId: targetPlan.id,
         type: OrderType.UPGRADE,
         status: OrderStatus.PENDING,
-        amountMinor: targetPlan.priceMinor,
+        amountMinor,
         currency: targetPlan.currency,
         idempotencyKey: randomUUID(),
       },

@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { CANONICAL_PLANS } from '../../../common/plan-catalog';
 
 const UPGRADE_TARGETS = CANONICAL_PLANS
@@ -11,4 +11,10 @@ export class UpgradeSubscriptionDto {
   @IsString()
   @IsIn(UPGRADE_TARGETS)
   targetPlanCode!: (typeof UPGRADE_TARGETS)[number];
+
+  @ApiPropertyOptional({ enum: ['monthly', 'annual'], default: 'monthly' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['monthly', 'annual'])
+  billingCycle?: 'monthly' | 'annual';
 }

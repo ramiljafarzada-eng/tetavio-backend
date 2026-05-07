@@ -5151,7 +5151,7 @@ function MainApp() {
       }
 
       const targetPlanCode = toBackendPlanCode(selectedPlan.code);
-      const upgrade = await apiUpgradeSubscription(targetPlanCode, updateBackendSession);
+      const upgrade = await apiUpgradeSubscription(targetPlanCode, updateBackendSession, paymentDraft.billingCycle);
       const checkout = await apiCheckout(upgrade.orderId, updateBackendSession);
 
       setCheckoutResult({

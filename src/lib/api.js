@@ -209,12 +209,12 @@ export function apiGetCurrentSubscription(onSessionUpdate) {
   return authRequest("/subscription/current", { method: "GET" }, onSessionUpdate);
 }
 
-export function apiUpgradeSubscription(targetPlanCode, onSessionUpdate) {
+export function apiUpgradeSubscription(targetPlanCode, onSessionUpdate, billingCycle) {
   return authRequest(
     "/subscription/upgrade",
     {
       method: "POST",
-      body: JSON.stringify({ targetPlanCode }),
+      body: JSON.stringify({ targetPlanCode, billingCycle: billingCycle || "monthly" }),
     },
     onSessionUpdate,
   );
