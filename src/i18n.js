@@ -3,7 +3,7 @@ const I18N = {
     // ── App chrome ──────────────────────────────────────────────
     brandSub: "Mühasibat proqramı",
     nav: { home: "İdarəetmə paneli", accountant: "Baş kitab", purchases: "Alış", sales: "Satış", banking: "Bank", reports: "Hesabatlar", hrm: "İnsan Resursları", warehouse: "Anbar", documents: "Sənədlər", settings: "Tənzimləmələr", goods: "Mal və xidmət" },
-    chipActive: "Aktiv", chipLoading: "Yüklənir",
+    chipActive: "Aktiv", chipLoading: "Yüklənir", chipDemoExpired: "Sınaq müddəti bitdi", chipDemoDaysLeft: (n) => `${n} gün qalıb`,
     profileIndiv: "Fərdi sahibkar profili aktivdir.", profileCompany: "Şirkət profili aktivdir.",
     workspace: "İş sahəsi",
     btnProducts: "Ana səhifə", settings_systemTitle: "Sistem tənzimləmələri", btnReset: "Proqramı sıfırla", btnRestore: "Restore et", btnBackup: "Backup et",
@@ -803,7 +803,7 @@ const I18N = {
   en: {
     brandSub: "Web-based accounting system",
     nav: { home: "Dashboard", accountant: "General Journal", purchases: "Purchases", sales: "Sales", banking: "Banking", reports: "Reports", hrm: "Human Resources", warehouse: "Warehouse", documents: "Documents", settings: "Settings", goods: "Products & Services" },
-    chipActive: "Active", chipLoading: "Loading",
+    chipActive: "Active", chipLoading: "Loading", chipDemoExpired: "Trial expired", chipDemoDaysLeft: (n) => `${n} days left`,
     profileIndiv: "Individual entrepreneur profile active.", profileCompany: "Company profile active.",
     workspace: "Workspace",
     btnProducts: "Service catalog", settings_systemTitle: "System settings", btnReset: "Reset app", btnRestore: "Restore", btnBackup: "Backup",
@@ -1512,7 +1512,7 @@ const I18N = {
   ru: {
     brandSub: "Веб-система бухгалтерского учёта",
     nav: { home: "Панель управления", accountant: "Главная книга", purchases: "Закупки", sales: "Продажи", banking: "Банк", reports: "Отчёты", hrm: "Кадры", warehouse: "Склад", documents: "Документы", settings: "Настройки", goods: "Товары и услуги" },
-    chipActive: "Активен", chipLoading: "Загрузка",
+    chipActive: "Активен", chipLoading: "Загрузка", chipDemoExpired: "Пробный период истёк", chipDemoDaysLeft: (n) => `Осталось ${n} дн.`,
     profileIndiv: "Профиль ИП активен.", profileCompany: "Профиль компании активен.",
     workspace: "Рабочая область",
     btnProducts: "Каталог услуг", settings_systemTitle: "Системные настройки", btnReset: "Сбросить", btnRestore: "Восстановить", btnBackup: "Резервная копия",
@@ -2220,7 +2220,7 @@ const I18N = {
   tr: {
     brandSub: "Web tabanlı muhasebe sistemi",
     nav: { home: "Kontrol paneli", accountant: "Genel Yardımcı", purchases: "Satın alma", sales: "Satış", banking: "Banka", reports: "Raporlar", hrm: "İnsan Kaynakları", warehouse: "Depo", documents: "Belgeler", settings: "Ayarlar", goods: "Ürünler ve hizmetler" },
-    chipActive: "Aktif", chipLoading: "Yükleniyor",
+    chipActive: "Aktif", chipLoading: "Yükleniyor", chipDemoExpired: "Deneme süresi bitti", chipDemoDaysLeft: (n) => `${n} gün kaldı`,
     profileIndiv: "Bireysel girişimci profili aktif.", profileCompany: "Şirket profili aktif.",
     workspace: "Çalışma alanı",
     btnProducts: "Hizmet kataloğu", settings_systemTitle: "Sistem ayarları", btnReset: "Sıfırla", btnRestore: "Geri yükle", btnBackup: "Yedekle",
@@ -2928,7 +2928,7 @@ const I18N = {
   de: {
     brandSub: "Webbasiertes Buchhaltungssystem",
     nav: { home: "Übersicht", accountant: "Hauptbuch", purchases: "Einkauf", sales: "Verkauf", banking: "Bankwesen", reports: "Berichte", hrm: "Personal", warehouse: "Lager", documents: "Dokumente", settings: "Einstellungen", goods: "Produkte & Dienstleistungen" },
-    chipActive: "Aktiv", chipLoading: "Laden",
+    chipActive: "Aktiv", chipLoading: "Laden", chipDemoExpired: "Testzeitraum abgelaufen", chipDemoDaysLeft: (n) => `Noch ${n} Tage`,
     profileIndiv: "Einzelunternehmer-Profil aktiv.", profileCompany: "Unternehmensprofil aktiv.",
     workspace: "Arbeitsbereich",
     btnProducts: "Dienstkatalog", settings_systemTitle: "Systemeinstellungen", btnReset: "App zurücksetzen", btnRestore: "Wiederherstellen", btnBackup: "Sichern",

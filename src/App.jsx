@@ -4982,6 +4982,7 @@ function MainApp() {
   }
 
   function getPlanStatusText(user = currentUser) {
+    const t = I18N[hubLang] || I18N.az;
     if (backendSubscription?.plan?.code) {
       const planLabel = backendSubscription.plan?.name || "Plan";
       const planCode = String(backendSubscription.plan.code).toUpperCase();
@@ -4989,10 +4990,10 @@ function MainApp() {
         return "Free";
       }
       if (planCode === "FREE") {
-        if (backendSubscription.isTrialExpired) return `Demo • Sınaq müddəti bitdi`;
+        if (backendSubscription.isTrialExpired) return `Demo • ${t.chipDemoExpired}`;
         const remaining = formatRemainingTime(backendSubscription.currentPeriodEnd, trialTick);
-        if (!remaining) return "Demo • Aktiv";
-        return `Demo • ${remaining.days}g ${remaining.hours}s ${remaining.minutes}d ${remaining.seconds}san qalıb`;
+        if (!remaining) return `Demo • ${t.chipActive}`;
+        return `Demo • ${t.chipDemoDaysLeft(remaining.days)}`;
       }
       const endsAt = backendSubscription.currentPeriodEnd
         ? String(backendSubscription.currentPeriodEnd).slice(0, 10)
@@ -5007,8 +5008,8 @@ function MainApp() {
     const remainingDays = daysUntil(ownerUser?.subscription?.endsAt || user.subscription?.endsAt, timeTick);
     if (plan.id === "free") {
       const remaining = formatRemainingTime(ownerUser?.subscription?.endsAt || user.subscription?.endsAt, trialTick);
-      if (!remaining) return "Demo • Aktiv";
-      return `Demo • ${remaining.days}g ${remaining.hours}s ${remaining.minutes}d ${remaining.seconds}san qalıb`;
+      if (!remaining) return `Demo • ${t.chipActive}`;
+      return `Demo • ${t.chipDemoDaysLeft(remaining.days)}`;
     }
     const staffLabel = isInternalUser(user) && user.staffRole ? ` • ${user.staffRole}` : "";
     const remainingOperations = Math.max(0, Number(plan.operationLimit || 0) - Number(ownerUser?.operationsUsed || 0));
