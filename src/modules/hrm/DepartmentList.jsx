@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { hrmCreateDepartment, hrmDeleteDepartment, hrmListDepartments, hrmUpdateDepartment } from './hrm.api.js';
+import { HRM_I18N } from './hrm-i18n.js';
 
 const EMPTY = { name: '', description: '' };
 
-export default function DepartmentList() {
+export default function DepartmentList({ lang }) {
+  const t = HRM_I18N[lang] || HRM_I18N.az;
+  const td = t.departments;
+  const tc = t.common;
+
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,28 +66,28 @@ export default function DepartmentList() {
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">Şöbələr</h2>
-        <button className="primary-btn" onClick={openNew}>+ Yeni şöbə</button>
+        <h2 className="hrm-panel-title">{td.title}</h2>
+        <button className="primary-btn" onClick={openNew}>{td.addNew}</button>
       </div>
 
       {error && <div className="hrm-error">{error}</div>}
 
       {loading ? (
-        <div className="hrm-loading">Yüklənir...</div>
+        <div className="hrm-loading">{tc.loading}</div>
       ) : (
         <div className="hrm-table-wrapper">
           <table className="hrm-table">
             <thead>
               <tr>
-                <th>Ad</th>
-                <th>Menecer</th>
-                <th>İşçi sayı</th>
+                <th>{td.colName}</th>
+                <th>{td.colManager}</th>
+                <th>{tc.employeeCount}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {departments.length === 0 && (
-                <tr><td colSpan={4} className="hrm-empty">Şöbə tapılmadı</td></tr>
+                <tr><td colSpan={4} className="hrm-empty">{td.notFound}</td></tr>
               )}
               {departments.map((d) => (
                 <tr key={d.id}>
@@ -94,8 +99,8 @@ export default function DepartmentList() {
                   <td>{d._count?.employees ?? 0}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost-btn" onClick={() => openEdit(d)}>Düzəlt</button>
-                      <button className="ghost-btn" onClick={() => setDeleteId(d.id)}>Sil</button>
+                      <button className="ghost-btn" onClick={() => openEdit(d)}>{tc.edit}</button>
+                      <button className="ghost-btn" onClick={() => setDeleteId(d.id)}>{tc.delete}</button>
                     </div>
                   </td>
                 </tr>
@@ -108,11 +113,11 @@ export default function DepartmentList() {
       {modal !== null && (
         <div className="hrm-modal-backdrop" onClick={closeModal}>
           <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'new' ? 'Yeni şöbə' : 'Şöbəni düzəlt'}</h3>
+            <h3>{modal === 'new' ? td.newTitle : td.editTitle}</h3>
             {formError && <div className="hrm-error">{formError}</div>}
             <form onSubmit={submit}>
               <div className="hrm-field">
-                <label>Ad *</label>
+                <label>{td.colName} *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
@@ -120,7 +125,7 @@ export default function DepartmentList() {
                 />
               </div>
               <div className="hrm-field">
-                <label>Təsvir</label>
+                <label>{tc.description}</label>
                 <input
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
@@ -128,9 +133,9 @@ export default function DepartmentList() {
                 />
               </div>
               <div className="hrm-modal-footer">
-                <button type="button" className="ghost-btn" onClick={closeModal}>Ləğv</button>
+                <button type="button" className="ghost-btn" onClick={closeModal}>{tc.cancelShort}</button>
                 <button type="submit" className="primary-btn" disabled={saving}>
-                  {saving ? 'Saxlanılır...' : 'Saxla'}
+                  {saving ? tc.saving : tc.save}
                 </button>
               </div>
             </form>
@@ -141,11 +146,11 @@ export default function DepartmentList() {
       {deleteId && (
         <div className="hrm-modal-backdrop" onClick={() => setDeleteId(null)}>
           <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Şöbəni sil</h3>
-            <p>Bu şöbəni silmək istədiyinizə əminsiniz? Şöbədə işçilər varsa silinmir.</p>
+            <h3>{td.deleteTitle}</h3>
+            <p>{td.deleteBody}</p>
             <div className="hrm-modal-footer">
-              <button className="ghost-btn" onClick={() => setDeleteId(null)}>Ləğv</button>
-              <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>Sil</button>
+              <button className="ghost-btn" onClick={() => setDeleteId(null)}>{tc.cancelShort}</button>
+              <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>{tc.delete}</button>
             </div>
           </div>
         </div>

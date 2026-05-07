@@ -7,6 +7,7 @@ import {
   hrmListSchedules,
   hrmUpdateEmployee,
 } from './hrm.api.js';
+import { HRM_I18N } from './hrm-i18n.js';
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
@@ -16,7 +17,11 @@ const EMPTY = {
   baseSalaryMinor: '', hrmRole: 'EMPLOYEE',
 };
 
-export default function EmployeeForm({ employee, onSaved, onCancel }) {
+export default function EmployeeForm({ employee, onSaved, onCancel, lang }) {
+  const t = HRM_I18N[lang] || HRM_I18N.az;
+  const tf = t.employeeForm;
+  const tc = t.common;
+
   const [form, setForm] = useState(employee ? {
     ...EMPTY,
     ...employee,
@@ -94,91 +99,91 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">{employee ? 'İşçini düzəlt' : 'Yeni işçi'}</h2>
-        <button className="ghost-btn" onClick={onCancel}>← Geri</button>
+        <h2 className="hrm-panel-title">{employee ? tf.titleEdit : tf.titleNew}</h2>
+        <button className="ghost-btn" onClick={onCancel}>{tc.back}</button>
       </div>
 
       {error && <div className="hrm-error">{error}</div>}
 
       <form className="hrm-form" onSubmit={handleSubmit}>
         <div className="hrm-form-section">
-          <h3>Şəxsi məlumatlar</h3>
+          <h3>{tf.sectionPersonal}</h3>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Ad *</label>
+              <label>{tf.firstName}</label>
               <input {...f('firstName')} required maxLength={100} />
             </div>
             <div className="hrm-field">
-              <label>Soyad *</label>
+              <label>{tf.lastName}</label>
               <input {...f('lastName')} required maxLength={100} />
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Email</label>
+              <label>{tf.email}</label>
               <input type="email" {...f('email')} />
             </div>
             <div className="hrm-field">
-              <label>Telefon</label>
+              <label>{tf.phone}</label>
               <input {...f('phone')} placeholder="+994501234567" />
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Doğum tarixi</label>
+              <label>{tf.dateOfBirth}</label>
               <input type="date" {...f('dateOfBirth')} />
             </div>
             <div className="hrm-field">
-              <label>FİN</label>
+              <label>{tf.taxId}</label>
               <input {...f('taxId')} maxLength={50} placeholder="AA1234567" />
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>SSN</label>
+              <label>{tf.ssn}</label>
               <input {...f('ssn')} maxLength={50} placeholder="XXX-XX-XXXX" />
             </div>
             <div className="hrm-field">
-              <label>Şəxsiyyət vəsiqəsinin seriya və nömrəsi</label>
+              <label>{tf.idCardNumber}</label>
               <input {...f('idCardNumber')} maxLength={50} placeholder="AA 1234567" />
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Təhsil</label>
+              <label>{tf.education}</label>
               <select {...f('education')}>
-                <option value="">Seçin...</option>
-                <option value="Orta">Orta</option>
-                <option value="Orta ixtisas">Orta ixtisas</option>
-                <option value="Ali (bakalavr)">Ali (bakalavr)</option>
-                <option value="Ali (magistr)">Ali (magistr)</option>
-                <option value="Doktorantura">Doktorantura</option>
-                <option value="Digər">Digər</option>
+                <option value="">{tc.select}</option>
+                <option value="Orta">{tf.educationSecondary}</option>
+                <option value="Orta ixtisas">{tf.educationVocational}</option>
+                <option value="Ali (bakalavr)">{tf.educationBachelor}</option>
+                <option value="Ali (magistr)">{tf.educationMaster}</option>
+                <option value="Doktorantura">{tf.educationPhd}</option>
+                <option value="Digər">{tf.educationOther}</option>
               </select>
             </div>
             <div className="hrm-field">
-              <label>Bank hesabı (IBAN)</label>
+              <label>{tf.bankAccount}</label>
               <input {...f('bankAccount')} maxLength={100} />
             </div>
           </div>
         </div>
 
         <div className="hrm-form-section">
-          <h3>İş məlumatları</h3>
+          <h3>{tf.sectionWork}</h3>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Şöbə</label>
+              <label>{tf.department}</label>
               <select {...f('departmentId')}>
-                <option value="">Seçin...</option>
+                <option value="">{tc.select}</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
             </div>
             <div className="hrm-field">
-              <label>Vəzifə</label>
+              <label>{tf.position}</label>
               <select {...f('positionId')}>
-                <option value="">Seçin...</option>
+                <option value="">{tc.select}</option>
                 {positions.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
@@ -187,18 +192,18 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>İş cədvəli</label>
+              <label>{tf.workSchedule}</label>
               <select {...f('workScheduleId')}>
-                <option value="">Seçin...</option>
+                <option value="">{tc.select}</option>
                 {schedules.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}{s.isDefault ? ' (default)' : ''}</option>
                 ))}
               </select>
             </div>
             <div className="hrm-field">
-              <label>Rəhbər</label>
+              <label>{tf.manager}</label>
               <select {...f('managerId')}>
-                <option value="">Seçin...</option>
+                <option value="">{tc.select}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeCode})</option>
                 ))}
@@ -207,39 +212,39 @@ export default function EmployeeForm({ employee, onSaved, onCancel }) {
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>HRM Rolu</label>
+              <label>{tf.hrmRole}</label>
               <select {...f('hrmRole')}>
-                <option value="EMPLOYEE">İşçi</option>
-                <option value="MANAGER">Menecer</option>
-                <option value="HR">HR</option>
+                <option value="EMPLOYEE">{tf.roleEmployee}</option>
+                <option value="MANAGER">{tf.roleManager}</option>
+                <option value="HR">{tf.roleHR}</option>
               </select>
             </div>
             <div className="hrm-field">
-              <label>İstihdam növü *</label>
+              <label>{tf.employmentType}</label>
               <select {...f('employmentType')} required>
-                <option value="FULL_TIME">Tam ştat</option>
-                <option value="PART_TIME">Yarı ştat</option>
-                <option value="CONTRACT">Müqavilə</option>
-                <option value="INTERN">Təcrübəçi</option>
+                <option value="FULL_TIME">{tf.employmentFull}</option>
+                <option value="PART_TIME">{tf.employmentPart}</option>
+                <option value="CONTRACT">{tf.employmentContract}</option>
+                <option value="INTERN">{tf.employmentIntern}</option>
               </select>
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Başlama tarixi *</label>
+              <label>{tf.startDate}</label>
               <input type="date" {...f('startDate')} required />
             </div>
             <div className="hrm-field">
-              <label>Əsas maaş (AZN) *</label>
+              <label>{tf.baseSalary}</label>
               <input type="number" step="0.01" min="0" {...f('baseSalaryMinor')} required placeholder="0.00" />
             </div>
           </div>
         </div>
 
         <div className="hrm-form-footer">
-          <button type="button" className="ghost-btn" onClick={onCancel} disabled={saving}>Ləğv et</button>
+          <button type="button" className="ghost-btn" onClick={onCancel} disabled={saving}>{tc.cancel}</button>
           <button type="submit" className="primary-btn" disabled={saving}>
-            {saving ? 'Saxlanılır...' : 'Saxla'}
+            {saving ? tc.saving : tc.save}
           </button>
         </div>
       </form>

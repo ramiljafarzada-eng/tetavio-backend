@@ -1,15 +1,6 @@
 import { useEffect, useState } from 'react';
 import { hrmCreateSchedule, hrmDeleteSchedule, hrmListSchedules, hrmUpdateSchedule } from './hrm.api.js';
-
-const DAYS = [
-  { val: '1', label: 'B.e' },
-  { val: '2', label: 'Ç.a' },
-  { val: '3', label: 'Çər' },
-  { val: '4', label: 'C.a' },
-  { val: '5', label: 'Cüm' },
-  { val: '6', label: 'Şnb' },
-  { val: '0', label: 'Baz' },
-];
+import { HRM_I18N } from './hrm-i18n.js';
 
 const EMPTY = {
   name: '',
@@ -25,7 +16,16 @@ function parseDays(str) {
   return (str || '').split(',').filter(Boolean);
 }
 
-function DayPicker({ value, onChange }) {
+function DayPicker({ value, onChange, ts }) {
+  const DAYS = [
+    { val: '1', label: ts.dayMon },
+    { val: '2', label: ts.dayTue },
+    { val: '3', label: ts.dayWed },
+    { val: '4', label: ts.dayThu },
+    { val: '5', label: ts.dayFri },
+    { val: '6', label: ts.daySat },
+    { val: '0', label: ts.daySun },
+  ];
   const selected = parseDays(value);
   const toggle = (v) => {
     const next = selected.includes(v) ? selected.filter((d) => d !== v) : [...selected, v];
@@ -48,12 +48,25 @@ function DayPicker({ value, onChange }) {
   );
 }
 
-function dayNames(str) {
+function dayNames(str, ts) {
+  const DAYS = [
+    { val: '1', label: ts.dayMon },
+    { val: '2', label: ts.dayTue },
+    { val: '3', label: ts.dayWed },
+    { val: '4', label: ts.dayThu },
+    { val: '5', label: ts.dayFri },
+    { val: '6', label: ts.daySat },
+    { val: '0', label: ts.daySun },
+  ];
   const sel = parseDays(str);
   return DAYS.filter((d) => sel.includes(d.val)).map((d) => d.label).join(', ') || '—';
 }
 
-export default function WorkScheduleList() {
+export default function WorkScheduleList({ lang }) {
+  const t = HRM_I18N[lang] || HRM_I18N.az;
+  const ts = t.schedules;
+  const tc = t.common;
+
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -125,30 +138,30 @@ export default function WorkScheduleList() {
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">İş Cədvəlləri</h2>
-        <button className="primary-btn" onClick={openNew}>+ Yeni cədvəl</button>
+        <h2 className="hrm-panel-title">{ts.title}</h2>
+        <button className="primary-btn" onClick={openNew}>{ts.addNew}</button>
       </div>
 
       {error && <div className="hrm-error">{error}</div>}
 
       {loading ? (
-        <div className="hrm-loading">Yüklənir...</div>
+        <div className="hrm-loading">{tc.loading}</div>
       ) : (
         <div className="hrm-table-wrapper">
           <table className="hrm-table">
             <thead>
               <tr>
-                <th>Ad</th>
-                <th>İş saatları</th>
-                <th>İş günləri</th>
-                <th>Gecikmə icazəsi</th>
-                <th>İşçi sayı</th>
+                <th>{ts.colName}</th>
+                <th>{ts.colWorkHours}</th>
+                <th>{ts.colWorkDays}</th>
+                <th>{ts.colGrace}</th>
+                <th>{tc.employeeCount}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {schedules.length === 0 && (
-                <tr><td colSpan={6} className="hrm-empty">İş cədvəli tapılmadı</td></tr>
+                <tr><td colSpan={6} className="hrm-empty">{ts.notFound}</td></tr>
               )}
               {schedules.map((s) => (
                 <tr key={s.id}>
@@ -157,13 +170,13 @@ export default function WorkScheduleList() {
                     {s.isDefault && <span className="hrm-badge" style={{ background: '#059669', marginLeft: 6 }}>Default</span>}
                   </td>
                   <td>{s.workStartTime} – {s.workEndTime}</td>
-                  <td>{dayNames(s.workDays)}</td>
-                  <td>{s.gracePeriodMin} dəq</td>
+                  <td>{dayNames(s.workDays, ts)}</td>
+                  <td>{ts.minutesSuffix(s.gracePeriodMin)}</td>
                   <td>{s._count?.employees ?? 0}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost-btn" onClick={() => openEdit(s)}>Düzəlt</button>
-                      <button className="ghost-btn" onClick={() => setDeleteId(s.id)}>Sil</button>
+                      <button className="ghost-btn" onClick={() => openEdit(s)}>{tc.edit}</button>
+                      <button className="ghost-btn" onClick={() => setDeleteId(s.id)}>{tc.delete}</button>
                     </div>
                   </td>
                 </tr>
@@ -176,36 +189,36 @@ export default function WorkScheduleList() {
       {modal !== null && (
         <div className="hrm-modal-backdrop" onClick={closeModal}>
           <div className="hrm-modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'new' ? 'Yeni iş cədvəli' : 'Cədvəli düzəlt'}</h3>
+            <h3>{modal === 'new' ? ts.newTitle : ts.editTitle}</h3>
             {formError && <div className="hrm-error">{formError}</div>}
             <form onSubmit={submit}>
               <div className="hrm-field">
-                <label>Ad *</label>
+                <label>{ts.colName} *</label>
                 <input value={form.name} onChange={(e) => set('name', e.target.value)} required maxLength={100} />
               </div>
               <div className="hrm-form-row">
                 <div className="hrm-field">
-                  <label>Başlama saatı *</label>
+                  <label>{ts.startTime}</label>
                   <input type="time" value={form.workStartTime} onChange={(e) => set('workStartTime', e.target.value)} required />
                 </div>
                 <div className="hrm-field">
-                  <label>Bitmə saatı *</label>
+                  <label>{ts.endTime}</label>
                   <input type="time" value={form.workEndTime} onChange={(e) => set('workEndTime', e.target.value)} required />
                 </div>
               </div>
               <div className="hrm-form-row">
                 <div className="hrm-field">
-                  <label>Nahar fasiləsi (dəq)</label>
+                  <label>{ts.breakMinutes}</label>
                   <input type="number" min={0} max={480} value={form.breakMinutes} onChange={(e) => set('breakMinutes', e.target.value)} />
                 </div>
                 <div className="hrm-field">
-                  <label>Gecikmə icazəsi (dəq)</label>
+                  <label>{ts.graceMinutes}</label>
                   <input type="number" min={0} max={120} value={form.gracePeriodMin} onChange={(e) => set('gracePeriodMin', e.target.value)} />
                 </div>
               </div>
               <div className="hrm-field">
-                <label>İş günləri</label>
-                <DayPicker value={form.workDays} onChange={(v) => set('workDays', v)} />
+                <label>{ts.workDaysLabel}</label>
+                <DayPicker value={form.workDays} onChange={(v) => set('workDays', v)} ts={ts} />
               </div>
               <div className="hrm-field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
@@ -214,12 +227,12 @@ export default function WorkScheduleList() {
                   checked={form.isDefault}
                   onChange={(e) => set('isDefault', e.target.checked)}
                 />
-                <label htmlFor="isDefault" style={{ marginBottom: 0 }}>Default cədvəl kimi təyin et</label>
+                <label htmlFor="isDefault" style={{ marginBottom: 0 }}>{ts.setDefault}</label>
               </div>
               <div className="hrm-modal-footer">
-                <button type="button" className="ghost-btn" onClick={closeModal}>Ləğv</button>
+                <button type="button" className="ghost-btn" onClick={closeModal}>{tc.cancelShort}</button>
                 <button type="submit" className="primary-btn" disabled={saving}>
-                  {saving ? 'Saxlanılır...' : 'Saxla'}
+                  {saving ? tc.saving : tc.save}
                 </button>
               </div>
             </form>
@@ -230,11 +243,11 @@ export default function WorkScheduleList() {
       {deleteId && (
         <div className="hrm-modal-backdrop" onClick={() => setDeleteId(null)}>
           <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Cədvəli sil</h3>
-            <p>Bu iş cədvəlini silmək istədiyinizə əminsiniz? İşçilərin cədvəl təyinatı ləğv olacaq.</p>
+            <h3>{ts.deleteTitle}</h3>
+            <p>{ts.deleteBody}</p>
             <div className="hrm-modal-footer">
-              <button className="ghost-btn" onClick={() => setDeleteId(null)}>Ləğv</button>
-              <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>Sil</button>
+              <button className="ghost-btn" onClick={() => setDeleteId(null)}>{tc.cancelShort}</button>
+              <button className="primary-btn" style={{ background: '#dc2626' }} onClick={confirmDelete}>{tc.delete}</button>
             </div>
           </div>
         </div>

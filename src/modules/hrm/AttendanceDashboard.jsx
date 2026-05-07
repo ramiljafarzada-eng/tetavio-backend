@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hrmCheckIn, hrmCheckOut, hrmListAttendance, hrmManualAttendance } from './hrm.api.js';
+import { HRM_I18N } from './hrm-i18n.js';
 
-const STATUS_LABEL = {
-  PRESENT: 'İşdə',
-  ABSENT: 'Yoxdur',
-  LATE: 'Gecikmiş',
-  HALF_DAY: 'Yarım gün',
-  ON_LEAVE: 'Məzuniyyətdə',
-  HOLIDAY: 'İstirahət',
-};
 const STATUS_COLOR = {
   PRESENT: '#059669',
   ABSENT: '#dc2626',
@@ -25,7 +18,7 @@ function fmtMin(min) {
   return h > 0 ? `${h}s ${m}d` : `${m}d`;
 }
 
-function ManualModal({ onClose, onSaved }) {
+function ManualModal({ onClose, onSaved, ta, tc }) {
   const [form, setForm] = useState({ employeeId: '', date: '', checkIn: '', checkOut: '', note: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -55,37 +48,37 @@ function ManualModal({ onClose, onSaved }) {
   return (
     <div className="hrm-modal-backdrop" onClick={onClose}>
       <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Manual Davamiyyət</h3>
+        <h3>{ta.manualTitle}</h3>
         {error && <div className="hrm-error">{error}</div>}
         <form onSubmit={submit}>
           <div className="hrm-field">
-            <label>İşçi ID *</label>
+            <label>{ta.manualEmployeeId}</label>
             <input value={form.employeeId} onChange={(e) => set('employeeId', e.target.value)} required />
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Tarix *</label>
+              <label>{ta.manualDate}</label>
               <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} required />
             </div>
           </div>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Giriş saatı</label>
+              <label>{ta.manualCheckIn}</label>
               <input type="time" value={form.checkIn} onChange={(e) => set('checkIn', e.target.value)} />
             </div>
             <div className="hrm-field">
-              <label>Çıxış saatı</label>
+              <label>{ta.manualCheckOut}</label>
               <input type="time" value={form.checkOut} onChange={(e) => set('checkOut', e.target.value)} />
             </div>
           </div>
           <div className="hrm-field">
-            <label>Qeyd</label>
+            <label>{ta.manualNote}</label>
             <input value={form.note} onChange={(e) => set('note', e.target.value)} maxLength={255} />
           </div>
           <div className="hrm-modal-footer">
-            <button type="button" className="ghost-btn" onClick={onClose}>Ləğv</button>
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
             <button type="submit" className="primary-btn" disabled={saving}>
-              {saving ? 'Saxlanılır...' : 'Saxla'}
+              {saving ? tc.saving : tc.save}
             </button>
           </div>
         </form>
@@ -124,7 +117,20 @@ function buildSummary(logs) {
   }));
 }
 
-export default function AttendanceDashboard() {
+export default function AttendanceDashboard({ lang }) {
+  const t = HRM_I18N[lang] || HRM_I18N.az;
+  const ta = t.attendance;
+  const tc = t.common;
+
+  const STATUS_LABEL = {
+    PRESENT: ta.statusPresent,
+    ABSENT: ta.statusAbsent,
+    LATE: ta.statusLate,
+    HALF_DAY: ta.statusHalfDay,
+    ON_LEAVE: ta.statusOnLeave,
+    HOLIDAY: ta.statusHoliday,
+  };
+
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -154,10 +160,10 @@ export default function AttendanceDashboard() {
     setActionMsg('');
     try {
       await hrmCheckIn({});
-      setActionMsg('Giriş qeyd edildi.');
+      setActionMsg(ta.checkInDone);
       load();
     } catch (e) {
-      setActionMsg(`Xəta: ${e.message}`);
+      setActionMsg(`${tc.error}${e.message}`);
     } finally {
       setActionBusy('');
     }
@@ -168,29 +174,27 @@ export default function AttendanceDashboard() {
     setActionMsg('');
     try {
       await hrmCheckOut({});
-      setActionMsg('Çıxış qeyd edildi.');
+      setActionMsg(ta.checkOutDone);
       load();
     } catch (e) {
-      setActionMsg(`Xəta: ${e.message}`);
+      setActionMsg(`${tc.error}${e.message}`);
     } finally {
       setActionBusy('');
     }
   };
 
-  const months = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
-
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">Davamiyyət</h2>
+        <h2 className="hrm-panel-title">{ta.title}</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="ghost-btn" onClick={handleCheckIn} disabled={!!actionBusy}>
-            {actionBusy === 'in' ? '...' : 'Giriş qeyd et'}
+            {actionBusy === 'in' ? '...' : ta.checkIn}
           </button>
           <button className="ghost-btn" onClick={handleCheckOut} disabled={!!actionBusy}>
-            {actionBusy === 'out' ? '...' : 'Çıxış qeyd et'}
+            {actionBusy === 'out' ? '...' : ta.checkOut}
           </button>
-          <button className="primary-btn" onClick={() => setShowManual(true)}>Manual daxil et</button>
+          <button className="primary-btn" onClick={() => setShowManual(true)}>{ta.manualEntry}</button>
         </div>
       </div>
 
@@ -203,7 +207,7 @@ export default function AttendanceDashboard() {
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
         >
-          {months.map((m, i) => (
+          {ta.months.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m}</option>
           ))}
         </select>
@@ -219,24 +223,24 @@ export default function AttendanceDashboard() {
       </div>
 
       {loading ? (
-        <div className="hrm-loading">Yüklənir...</div>
+        <div className="hrm-loading">{tc.loading}</div>
       ) : (
         <div className="hrm-table-wrapper">
           <table className="hrm-table">
             <thead>
               <tr>
-                <th>İşçi</th>
-                <th>İşdə oldu</th>
-                <th>Gecikdi</th>
-                <th>Məzuniyyət</th>
-                <th>Yox idi</th>
-                <th>Orta iş saatı</th>
-                <th>Son status</th>
+                <th>{ta.colEmployee}</th>
+                <th>{ta.colPresent}</th>
+                <th>{ta.colLate}</th>
+                <th>{ta.colLeave}</th>
+                <th>{ta.colAbsent}</th>
+                <th>{ta.colAvgHours}</th>
+                <th>{ta.colLastStatus}</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={7} className="hrm-empty">Bu ay üçün davamiyyət məlumatı yoxdur</td></tr>
+                <tr><td colSpan={7} className="hrm-empty">{ta.notFound}</td></tr>
               )}
               {rows.map((row) => (
                 <tr key={row.employee?.id}>
@@ -264,7 +268,7 @@ export default function AttendanceDashboard() {
       )}
 
       {showManual && (
-        <ManualModal onClose={() => setShowManual(false)} onSaved={load} />
+        <ManualModal onClose={() => setShowManual(false)} onSaved={load} ta={ta} tc={tc} />
       )}
     </div>
   );

@@ -8,15 +8,15 @@ import {
   hrmRunPayroll,
   hrmSeedAccounts,
 } from './hrm.api.js';
+import { HRM_I18N } from './hrm-i18n.js';
 
-const STATUS_LABEL = { DRAFT: 'Qaralama', APPROVED: 'Təsdiqlənmiş', PAID: 'Ödənilmiş', CANCELLED: 'Ləğv' };
 const STATUS_COLOR = { DRAFT: '#94a3b8', APPROVED: '#3b82f6', PAID: '#059669', CANCELLED: '#dc2626' };
 
 function fmt(minor) {
   return (minor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2 }) + ' ₼';
 }
 
-function RunPayrollModal({ onClose, onCreated }) {
+function RunPayrollModal({ onClose, onCreated, tp, tc }) {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,23 +40,23 @@ function RunPayrollModal({ onClose, onCreated }) {
   return (
     <div className="hrm-modal-backdrop" onClick={onClose}>
       <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Yeni Payroll</h3>
+        <h3>{tp.runModalTitle}</h3>
         {error && <div className="hrm-error">{error}</div>}
         <form onSubmit={submit}>
           <div className="hrm-form-row">
             <div className="hrm-field">
-              <label>Başlama tarixi</label>
+              <label>{tp.periodStart}</label>
               <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} required />
             </div>
             <div className="hrm-field">
-              <label>Bitmə tarixi</label>
+              <label>{tp.periodEnd}</label>
               <input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} required />
             </div>
           </div>
           <div className="hrm-modal-footer">
-            <button type="button" className="ghost-btn" onClick={onClose}>Ləğv</button>
+            <button type="button" className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
             <button type="submit" className="primary-btn" disabled={loading}>
-              {loading ? 'Hesablanır...' : 'Yarad'}
+              {loading ? tp.calculating : tp.create}
             </button>
           </div>
         </form>
@@ -65,7 +65,12 @@ function RunPayrollModal({ onClose, onCreated }) {
   );
 }
 
-function PayrollDetail({ payroll, onBack, onRefresh }) {
+function PayrollDetail({ payroll, onBack, onRefresh, tp, tc }) {
+  const STATUS_LABEL = {
+    DRAFT: tp.statusDraft, APPROVED: tp.statusApproved,
+    PAID: tp.statusPaid, CANCELLED: tp.statusCancelled,
+  };
+
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -99,8 +104,8 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
     finally { setAction(''); setShowPay(false); }
   };
 
-  if (loading) return <div className="hrm-loading">Yüklənir...</div>;
-  if (!detail) return <div className="hrm-error">{error || 'Yüklənmədi'}</div>;
+  if (loading) return <div className="hrm-loading">{tc.loading}</div>;
+  if (!detail) return <div className="hrm-error">{error || tp.loadError}</div>;
 
   const byEmployee = {};
   (detail.items || []).forEach((item) => {
@@ -123,22 +128,22 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
             {STATUS_LABEL[detail.status]}
           </span>
         </div>
-        <button className="ghost-btn" onClick={onBack}>← Geri</button>
+        <button className="ghost-btn" onClick={onBack}>{tc.back}</button>
       </div>
 
       {error && <div className="hrm-error">{error}</div>}
 
       <div className="hrm-payroll-summary">
         <div className="hrm-kpi">
-          <span>Ümumi brüt</span>
+          <span>{tp.detailGross}</span>
           <strong>{fmt(detail.totalGrossMinor)}</strong>
         </div>
         <div className="hrm-kpi">
-          <span>Çıxılmalar</span>
+          <span>{tp.detailDeductions}</span>
           <strong>{fmt(detail.totalDeductionsMinor)}</strong>
         </div>
         <div className="hrm-kpi">
-          <span>Xalis ödəniş</span>
+          <span>{tp.detailNet}</span>
           <strong>{fmt(detail.totalNetMinor)}</strong>
         </div>
       </div>
@@ -147,12 +152,12 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
         <table className="hrm-table">
           <thead>
             <tr>
-              <th>İşçi</th>
-              <th>Əsas maaş</th>
-              <th>DSMF (işçi)</th>
-              <th>DSMF (i/g)</th>
-              <th>Gəlir vergisi</th>
-              <th>Xalis maaş</th>
+              <th>{tp.colEmployee}</th>
+              <th>{tp.colBaseSalary}</th>
+              <th>{tp.colDsmfEmp}</th>
+              <th>{tp.colDsmfEr}</th>
+              <th>{tp.colTax}</th>
+              <th>{tp.colNetSalary}</th>
             </tr>
           </thead>
           <tbody>
@@ -180,7 +185,7 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
       {detail.status === 'DRAFT' && (
         <div className="hrm-form-footer">
           <button className="primary-btn" onClick={approve} disabled={!!action}>
-            {action === 'approve' ? 'Təsdiq edilir...' : 'Təsdiqlə (Journal Entry yarat)'}
+            {action === 'approve' ? tp.approving : tp.approveBtn}
           </button>
         </div>
       )}
@@ -188,7 +193,7 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
       {detail.status === 'APPROVED' && (
         <div className="hrm-form-footer">
           <button className="primary-btn" onClick={() => setShowPay(true)} disabled={!!action}>
-            {action === 'pay' ? 'Ödənilir...' : 'Ödə (Bank çıxarışı yarat)'}
+            {action === 'pay' ? tp.paying : tp.payBtn}
           </button>
         </div>
       )}
@@ -198,13 +203,15 @@ function PayrollDetail({ payroll, onBack, onRefresh }) {
           totalNetMinor={detail.totalNetMinor}
           onPay={pay}
           onClose={() => setShowPay(false)}
+          tp={tp}
+          tc={tc}
         />
       )}
     </div>
   );
 }
 
-function PayModal({ totalNetMinor, onPay, onClose }) {
+function PayModal({ totalNetMinor, onPay, onClose, tp, tc }) {
   const [bankAccountId, setBankAccountId] = useState('');
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -219,15 +226,15 @@ function PayModal({ totalNetMinor, onPay, onClose }) {
   return (
     <div className="hrm-modal-backdrop" onClick={onClose}>
       <div className="hrm-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Əməkhaqqı Ödənişi</h3>
-        <p>Ümumi xalis ödəniş: <strong>{(totalNetMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼</strong></p>
+        <h3>{tp.payModalTitle}</h3>
+        <p>{tp.payModalNet} <strong>{(totalNetMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2 })} ₼</strong></p>
         {loading ? (
-          <div className="hrm-loading">Yüklənir...</div>
+          <div className="hrm-loading">{tc.loading}</div>
         ) : (
           <div className="hrm-field">
-            <label>Bank hesabı (isteğe bağlı)</label>
+            <label>{tp.bankAccount}</label>
             <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}>
-              <option value="">Seçin...</option>
+              <option value="">{tc.select}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.name} — {a.currency}</option>
               ))}
@@ -235,15 +242,24 @@ function PayModal({ totalNetMinor, onPay, onClose }) {
           </div>
         )}
         <div className="hrm-modal-footer">
-          <button className="ghost-btn" onClick={onClose}>Ləğv</button>
-          <button className="primary-btn" onClick={() => onPay(bankAccountId || undefined)}>Ödə</button>
+          <button className="ghost-btn" onClick={onClose}>{tc.cancelShort}</button>
+          <button className="primary-btn" onClick={() => onPay(bankAccountId || undefined)}>{tp.payNow}</button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function PayrollDashboard() {
+export default function PayrollDashboard({ lang }) {
+  const t = HRM_I18N[lang] || HRM_I18N.az;
+  const tp = t.payroll;
+  const tc = t.common;
+
+  const STATUS_LABEL = {
+    DRAFT: tp.statusDraft, APPROVED: tp.statusApproved,
+    PAID: tp.statusPaid, CANCELLED: tp.statusCancelled,
+  };
+
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -267,9 +283,9 @@ export default function PayrollDashboard() {
     setSeedMsg('');
     try {
       const res = await hrmSeedAccounts();
-      setSeedMsg(`${res.results?.filter((r) => r.created).length || 0} yeni hesab yaradıldı`);
+      setSeedMsg(tp.seedResult(res.results?.filter((r) => r.created).length || 0));
     } catch (e) {
-      setSeedMsg(`Xəta: ${e.message}`);
+      setSeedMsg(`${tc.error}${e.message}`);
     } finally {
       setSeeding(false);
     }
@@ -281,6 +297,8 @@ export default function PayrollDashboard() {
         payroll={selected}
         onBack={() => setSelected(null)}
         onRefresh={load}
+        tp={tp}
+        tc={tc}
       />
     );
   }
@@ -288,12 +306,12 @@ export default function PayrollDashboard() {
   return (
     <div className="hrm-panel">
       <div className="hrm-panel-header">
-        <h2 className="hrm-panel-title">Əməkhaqqı (Payroll)</h2>
+        <h2 className="hrm-panel-title">{tp.title}</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="ghost-btn" onClick={seed} disabled={seeding}>
-            {seeding ? '...' : 'Mühasibat hesablarını yarat'}
+            {seeding ? '...' : tp.seedAccounts}
           </button>
-          <button className="primary-btn" onClick={() => setShowRun(true)}>+ Yeni payroll</button>
+          <button className="primary-btn" onClick={() => setShowRun(true)}>{tp.addNew}</button>
         </div>
       </div>
 
@@ -301,23 +319,23 @@ export default function PayrollDashboard() {
       {error && <div className="hrm-error">{error}</div>}
 
       {loading ? (
-        <div className="hrm-loading">Yüklənir...</div>
+        <div className="hrm-loading">{tc.loading}</div>
       ) : (
         <div className="hrm-table-wrapper">
           <table className="hrm-table">
             <thead>
               <tr>
-                <th>Dövr</th>
-                <th>Brüt</th>
-                <th>Xalis</th>
-                <th>Status</th>
-                <th>Tarix</th>
+                <th>{tp.colPeriod}</th>
+                <th>{tp.colGross}</th>
+                <th>{tp.colNet}</th>
+                <th>{tp.colStatus}</th>
+                <th>{tp.colDate}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {payrolls.length === 0 && (
-                <tr><td colSpan={6} className="hrm-empty">Payroll tapılmadı</td></tr>
+                <tr><td colSpan={6} className="hrm-empty">{tp.notFound}</td></tr>
               )}
               {payrolls.map((p) => (
                 <tr key={p.id}>
@@ -331,7 +349,7 @@ export default function PayrollDashboard() {
                   </td>
                   <td>{new Date(p.createdAt).toLocaleDateString('az-AZ')}</td>
                   <td>
-                    <button className="ghost-btn" onClick={() => setSelected(p)}>Ətraflı</button>
+                    <button className="ghost-btn" onClick={() => setSelected(p)}>{tp.btnDetail}</button>
                   </td>
                 </tr>
               ))}
@@ -344,6 +362,8 @@ export default function PayrollDashboard() {
         <RunPayrollModal
           onClose={() => setShowRun(false)}
           onCreated={load}
+          tp={tp}
+          tc={tc}
         />
       )}
     </div>

@@ -8,16 +8,9 @@ import PayrollDashboard from './PayrollDashboard.jsx';
 import PositionList from './PositionList.jsx';
 import WorkScheduleList from './WorkScheduleList.jsx';
 import { initHrmApi } from './hrm.api.js';
+import { HRM_I18N } from './hrm-i18n.js';
 
-const VIEWS = [
-  { id: 'employees', label: 'İşçilər' },
-  { id: 'departments', label: 'Şöbələr' },
-  { id: 'positions', label: 'Vəzifələr' },
-  { id: 'schedules', label: 'İş Cədvəlləri' },
-  { id: 'attendance', label: 'Davamiyyət' },
-  { id: 'leave', label: 'Məzuniyyət' },
-  { id: 'payroll', label: 'Əməkhaqqı' },
-];
+const VIEW_IDS = ['employees', 'departments', 'positions', 'schedules', 'attendance', 'leave', 'payroll'];
 
 function reducer(state, action) {
   switch (action.type) {
@@ -28,7 +21,7 @@ function reducer(state, action) {
   }
 }
 
-export default function HrmModule({ backendSession, updateBackendSession }) {
+export default function HrmModule({ backendSession, updateBackendSession, lang }) {
   const [state, dispatch] = useReducer(reducer, {
     view: 'employees',
     editEmployee: null,
@@ -41,6 +34,7 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
     }
   }, [backendSession?.accessToken]);
 
+  const t = HRM_I18N[lang] || HRM_I18N.az;
   const handleSaved = () => dispatch({ type: 'SET_VIEW', payload: 'employees' });
   const handleBack = () => dispatch({ type: 'SET_VIEW', payload: 'employees' });
 
@@ -48,13 +42,13 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
     <div className="hrm-module">
       <div className="hrm-sidebar">
         <div className="hrm-sidebar-title">HRM</div>
-        {VIEWS.map((v) => (
+        {VIEW_IDS.map((id) => (
           <button
-            key={v.id}
-            className={`hrm-nav-item ${state.view === v.id ? 'active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_VIEW', payload: v.id })}
+            key={id}
+            className={`hrm-nav-item ${state.view === id ? 'active' : ''}`}
+            onClick={() => dispatch({ type: 'SET_VIEW', payload: id })}
           >
-            {v.label}
+            {t.nav[id]}
           </button>
         ))}
       </div>
@@ -62,23 +56,25 @@ export default function HrmModule({ backendSession, updateBackendSession }) {
       <div className="hrm-content">
         {state.view === 'employees' && (
           <EmployeeList
+            lang={lang}
             onEdit={(emp) => dispatch({ type: 'EDIT_EMPLOYEE', payload: emp })}
             onNew={() => dispatch({ type: 'NEW_EMPLOYEE' })}
           />
         )}
         {state.view === 'employee-form' && (
           <EmployeeForm
+            lang={lang}
             employee={state.editEmployee}
             onSaved={handleSaved}
             onCancel={handleBack}
           />
         )}
-        {state.view === 'departments' && <DepartmentList />}
-        {state.view === 'positions' && <PositionList />}
-        {state.view === 'schedules' && <WorkScheduleList />}
-        {state.view === 'attendance' && <AttendanceDashboard />}
-        {state.view === 'leave' && <LeaveDashboard />}
-        {state.view === 'payroll' && <PayrollDashboard />}
+        {state.view === 'departments' && <DepartmentList lang={lang} />}
+        {state.view === 'positions' && <PositionList lang={lang} />}
+        {state.view === 'schedules' && <WorkScheduleList lang={lang} />}
+        {state.view === 'attendance' && <AttendanceDashboard lang={lang} />}
+        {state.view === 'leave' && <LeaveDashboard lang={lang} />}
+        {state.view === 'payroll' && <PayrollDashboard lang={lang} />}
       </div>
     </div>
   );
