@@ -154,7 +154,7 @@ export const HRM_I18N = {
       manualCheckIn: 'Giriş saatı',
       manualCheckOut: 'Çıxış saatı',
       manualNote: 'Qeyd',
-      statusPresent: 'İşdə',
+      statusPresent: 'İşdə oldu',
       statusAbsent: 'Yoxdur',
       statusLate: 'Gecikmiş',
       statusHalfDay: 'Yarım gün',
