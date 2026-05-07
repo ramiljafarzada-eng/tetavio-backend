@@ -159,7 +159,7 @@ export default function AttendanceDashboard({ lang }) {
     setActionBusy('in');
     setActionMsg('');
     try {
-      await hrmCheckIn({});
+      await hrmCheckIn({ checkIn: new Date().toISOString() });
       setActionMsg(ta.checkInDone);
       load();
     } catch (e) {
@@ -173,7 +173,7 @@ export default function AttendanceDashboard({ lang }) {
     setActionBusy('out');
     setActionMsg('');
     try {
-      await hrmCheckOut({});
+      await hrmCheckOut({ checkOut: new Date().toISOString() });
       setActionMsg(ta.checkOutDone);
       load();
     } catch (e) {
