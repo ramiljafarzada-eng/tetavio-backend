@@ -173,27 +173,38 @@ export class PashaGateway implements PaymentGateway {
     });
   }
 
+  private readCertMaterial(pathKey: string, b64Key: string): Buffer | undefined {
+    const path = this.configService.get<string>(pathKey);
+    if (path) return readFileSync(path);
+    const b64 = this.configService.get<string>(b64Key);
+    if (b64) return Buffer.from(b64, 'base64');
+    return undefined;
+  }
+
   private buildTlsOptions(): https.RequestOptions {
     const pfxPath = this.configService.get<string>('PASHA_PFX_PATH');
-    const certPath = this.configService.get<string>('PASHA_CERT_PATH');
-    const keyPath = this.configService.get<string>('PASHA_KEY_PATH');
-    const caPath = this.configService.get<string>('PASHA_CA_PATH');
+    const pfxB64 = this.configService.get<string>('PASHA_PFX_B64');
     const passphrase = this.configService.get<string>('PASHA_KEY_PASSPHRASE');
     const rejectUnauthorized =
       this.configService.get<string>('PASHA_REJECT_UNAUTHORIZED', 'true') !==
       'false';
 
-    if (!pfxPath && (!certPath || !keyPath)) {
+    const pfx = pfxPath ? readFileSync(pfxPath) : pfxB64 ? Buffer.from(pfxB64, 'base64') : undefined;
+    const cert = this.readCertMaterial('PASHA_CERT_PATH', 'PASHA_CERT_B64');
+    const key = this.readCertMaterial('PASHA_KEY_PATH', 'PASHA_KEY_B64');
+    const ca = this.readCertMaterial('PASHA_CA_PATH', 'PASHA_CA_B64');
+
+    if (!pfx && (!cert || !key)) {
       throw new ServiceUnavailableException(
         'PASHA certificate configuration is missing. Please contact support.',
       );
     }
 
     return {
-      ...(pfxPath ? { pfx: readFileSync(pfxPath) } : {}),
-      ...(certPath ? { cert: readFileSync(certPath) } : {}),
-      ...(keyPath ? { key: readFileSync(keyPath) } : {}),
-      ...(caPath ? { ca: readFileSync(caPath) } : {}),
+      ...(pfx ? { pfx } : {}),
+      ...(cert ? { cert } : {}),
+      ...(key ? { key } : {}),
+      ...(ca ? { ca } : {}),
       ...(passphrase ? { passphrase } : {}),
       rejectUnauthorized,
       minVersion: 'TLSv1.2',
