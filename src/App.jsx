@@ -2744,6 +2744,9 @@ function MainApp() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [langSubOpen, setLangSubOpen] = useState(false);
   const [appNavOpen, setAppNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return window.localStorage.getItem("tetavio-sidebar-collapsed") === "1"; } catch { return false; }
+  });
   const [accountPanel, setAccountPanel] = useState(null);
   const [passwordDraft, setPasswordDraft] = useState({ current: "", next: "", confirm: "", notice: "", tone: "" });
   const [subscriptionBillingCycle, setSubscriptionBillingCycle] = useState("monthly");
@@ -21238,7 +21241,7 @@ function renderSettings() {
   const showTrialWarning = !trialIsExpired && trialDaysLeft !== null && trialDaysLeft.totalSeconds > 0 && trialDaysLeft.totalSeconds <= 3 * 86400 && backendSubscription?.plan?.code === "FREE";
 
   return (
-    <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (langSubOpen) setLangSubOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
+    <div className={`app-shell${appNavOpen ? " mobile-nav-open" : ""}${sidebarCollapsed ? " sidebar-collapsed" : ""}`} data-ui-scale={state.settings.uiScale || "Avtomatik"} onClick={() => { if (hubLangOpen) setHubLangOpen(false); if (profileMenuOpen) setProfileMenuOpen(false); if (langSubOpen) setLangSubOpen(false); if (appNavOpen) setAppNavOpen(false); }}>
       <button className={`mobile-nav-overlay${appNavOpen ? " visible" : ""}`} type="button" aria-label={appMenuLabel} onClick={() => setAppNavOpen(false)} />
 
       {trialIsExpired && (
@@ -21342,9 +21345,14 @@ function renderSettings() {
         ) : (
           <>
             <header className="topbar">
-              <div>
-                <p className="eyebrow">{at.workspace}</p>
-                <h1>{pageTitle}</h1>
+              <div className="topbar-left">
+                <button className="sidebar-toggle-btn" type="button" title={sidebarCollapsed ? at.nav?.expandSidebar || "Sidebarı aç" : at.nav?.collapseSidebar || "Sidebarı bağla"} onClick={(e) => { e.stopPropagation(); const next = !sidebarCollapsed; setSidebarCollapsed(next); try { window.localStorage.setItem("tetavio-sidebar-collapsed", next ? "1" : "0"); } catch {} }}>
+                  {sidebarCollapsed ? "▶" : "◀"}
+                </button>
+                <div>
+                  <p className="eyebrow">{at.workspace}</p>
+                  <h1>{pageTitle}</h1>
+                </div>
               </div>
               <div className="topbar-actions">
                 <button className="mobile-nav-trigger" type="button" aria-label={appMenuLabel} onClick={(event) => { event.stopPropagation(); setAppNavOpen((current) => !current); }}>
@@ -21404,7 +21412,11 @@ function renderSettings() {
                       </div>
                     ) : null}
                   </div>
-                ) : null}
+                ) : (
+                  <button className="ghost-btn" onClick={() => { setActiveProduct("booksLanding"); setBooksView("signin"); setBooksNotice(""); }}>
+                    {at.menuSignin}
+                  </button>
+                )}
               </div>
             </header>
             {backupStatus.message ? (
