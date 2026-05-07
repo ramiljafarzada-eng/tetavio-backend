@@ -1499,7 +1499,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
-  padding: var(--space-xl);
+  padding: var(--space-sm) var(--space-xl);
   border-radius: var(--radius-xl);
   position: sticky;
   top: var(--space-xl);
