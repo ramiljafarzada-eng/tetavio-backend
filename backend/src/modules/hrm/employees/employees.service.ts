@@ -116,6 +116,7 @@ export class EmployeesService {
       include: {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, title: true } },
+        workSchedule: { select: { id: true, name: true, workDays: true } },
         manager: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],

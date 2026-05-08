@@ -74,31 +74,78 @@ function EmployeeCheckList({ employees, selected, onToggle, onToggleAll, tc }) {
   );
 }
 
-const STATUS_ABBR = {
-  PRESENT: 'İ',
-  ABSENT: 'Y',
-  LATE: 'G',
-  HALF_DAY: 'YG',
+// Letters used only for non-work statuses; work days show hours (8/7/5)
+const LEAVE_ABBR = {
   ON_LEAVE: 'M',
   SICK_LEAVE: 'X',
   BUSINESS_TRIP: 'E',
   HOLIDAY: 'B',
+  ABSENT: 'Y',
 };
+const REST_ABBR = 'İ'; // İstirahət — non-work day
+
+function parseWorkDays(workSchedule) {
+  if (!workSchedule?.workDays) return [1, 2, 3, 4, 5];
+  return workSchedule.workDays.split(',').map(Number).filter(Boolean);
+}
+
+// Returns scheduled hours for this day, or null if it is a rest day.
+// Both 5-day (5×8=40h) and 6-day (5×7+5=40h) schedules total exactly 40h/week.
+// If the next calendar day is a HOLIDAY, this day is shortened by 1h (bayram öncəsi günü).
+function scheduledHours(workDays, jsDay, preHoliday = false) {
+  const ourDay = jsDay === 0 ? 7 : jsDay; // JS Sun=0 → 7
+  if (!workDays.includes(ourDay)) return null; // rest day
+  const is6Day = workDays.includes(6);
+  let h = is6Day ? (jsDay === 6 ? 5 : 7) : 8;
+  if (preHoliday) h = Math.max(h - 1, 1); // shorten by 1h before holiday
+  return h;
+}
+
+function getCellInfo(log, workDays, jsDay, preHoliday = false) {
+  const hours = scheduledHours(workDays, jsDay, preHoliday);
+
+  if (hours === null) {
+    // Non-work day for this employee
+    if (log && LEAVE_ABBR[log.status]) return { text: LEAVE_ABBR[log.status], color: STATUS_COLOR[log.status] };
+    return { text: REST_ABBR, color: '#94a3b8' };
+  }
+
+  // Work day
+  if (log) {
+    if (LEAVE_ABBR[log.status]) return { text: LEAVE_ABBR[log.status], color: STATUS_COLOR[log.status] };
+    if (['PRESENT', 'LATE', 'HALF_DAY'].includes(log.status)) return { text: String(hours), color: '#059669' };
+  }
+  return { text: '', color: undefined };
+}
 
 function SheetView({ logs, employees, year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const MONTH_NAMES_AZ = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
+
+  const logMap = {};
+  logs.forEach((log) => {
+    const day = parseInt(log.date?.slice(8, 10), 10);
+    const empId = log.employeeId;
+    if (!logMap[empId]) logMap[empId] = {};
+    logMap[empId][day] = log;
+  });
+
+  // day-of-week for each day (JS: 0=Sun..6=Sat)
+  const dayOfWeek = (d) => new Date(year, month - 1, d).getDay();
+  const isWeekend = (d) => { const w = dayOfWeek(d); return w === 0 || w === 6; };
+
+  // Build per-employee holiday day sets to detect pre-holiday days
+  const getHolidayDays = (empLogs) => {
+    const s = new Set();
+    Object.entries(empLogs).forEach(([d, log]) => { if (log.status === 'HOLIDAY') s.add(Number(d)); });
+    return s;
+  };
+
+  // Is d a pre-holiday? i.e. d+1 is a holiday (same month) or d is last day and next month starts with holiday (simplified: same month only)
+  const isPreHoliday = (d, holidayDays) => holidayDays.has(d + 1);
 
   const exportToExcel = () => {
-    const MONTH_NAMES = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
-
-    const logMap = {};
-    logs.forEach((log) => {
-      const day = parseInt(log.date?.slice(8, 10), 10);
-      if (!logMap[log.employeeId]) logMap[log.employeeId] = {};
-      logMap[log.employeeId][day] = log;
-    });
-
     const header = [
       'S/S', 'Soyadı, adı', 'Vəzifəsi', 'Əmək haqqı (₼)',
       ...days.map(String),
@@ -107,6 +154,7 @@ function SheetView({ logs, employees, year, month }) {
 
     const rows = employees.map((emp, idx) => {
       const empLogs = logMap[emp.id] || {};
+      const workDays = parseWorkDays(emp.workSchedule);
       const allLogs = Object.values(empLogs);
       const totalMinutes = allLogs.reduce((s, l) => s + (l.workedMinutes || 0), 0);
       const presentDays = allLogs.filter((l) => ['PRESENT', 'LATE'].includes(l.status)).length;
@@ -119,8 +167,8 @@ function SheetView({ logs, employees, year, month }) {
         emp.position?.title || '',
         salary,
         ...days.map((d) => {
-          const log = empLogs[d];
-          return log ? (STATUS_ABBR[log.status] || '') : '';
+          const holidayDays = getHolidayDays(empLogs);
+          return getCellInfo(empLogs[d], workDays, dayOfWeek(d), isPreHoliday(d, holidayDays)).text;
         }),
         totalMinutes ? +(totalMinutes / 60).toFixed(1) : 0,
         presentDays,
@@ -128,35 +176,16 @@ function SheetView({ logs, employees, year, month }) {
       ];
     });
 
-    const wsData = [header, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Column widths
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
     ws['!cols'] = [
       { wch: 5 }, { wch: 24 }, { wch: 18 }, { wch: 14 },
       ...days.map(() => ({ wch: 4 })),
       { wch: 10 }, { wch: 10 }, { wch: 16 },
     ];
-
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${MONTH_NAMES[month - 1]} ${year}`);
+    XLSX.utils.book_append_sheet(wb, ws, `${MONTH_NAMES_AZ[month - 1]} ${year}`);
     XLSX.writeFile(wb, `davamiyyat_${year}_${String(month).padStart(2, '0')}.xlsx`);
   };
-
-  const logMap = {};
-  logs.forEach((log) => {
-    const day = parseInt(log.date?.slice(8, 10), 10);
-    const empId = log.employeeId;
-    if (!logMap[empId]) logMap[empId] = {};
-    logMap[empId][day] = log;
-  });
-
-  const isWeekend = (day) => {
-    const d = new Date(year, month - 1, day).getDay();
-    return d === 0 || d === 6;
-  };
-
-  const MONTH_NAMES_AZ = ['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
 
   return (
     <div>
@@ -166,73 +195,79 @@ function SheetView({ logs, employees, year, month }) {
         </h3>
         <button className="primary-btn" onClick={exportToExcel}>Excel-ə export et</button>
       </div>
-    <div style={{ overflowX: 'auto', fontSize: '0.82rem' }}>
-      <table style={{ borderCollapse: 'collapse', minWidth: '100%', whiteSpace: 'nowrap' }}>
-        <thead>
-          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--line)' }}>
-            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 2 }}>S/S</th>
-            <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 2, minWidth: 180 }}>Soyadı, adı</th>
-            <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', minWidth: 120 }}>Vəzifəsi</th>
-            <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid var(--line)', minWidth: 90 }}>Əmək haqqı</th>
-            {days.map((d) => (
-              <th key={d} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 28, fontSize: '0.75rem', background: isWeekend(d) ? 'rgba(148,163,184,0.13)' : 'var(--surface)' }}>
-                {d}
-              </th>
-            ))}
-            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi saat</th>
-            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi gün</th>
-            <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 90 }}>Məzuniyyət günü</th>
-          </tr>
-        </thead>
-        <tbody>
-          {employees.map((emp, idx) => {
-            const empLogs = logMap[emp.id] || {};
-            const allLogs = Object.values(empLogs);
-            const totalMinutes = allLogs.reduce((s, l) => s + (l.workedMinutes || 0), 0);
-            const presentDays = allLogs.filter((l) => ['PRESENT', 'LATE'].includes(l.status)).length;
-            const leaveDays = allLogs.filter((l) => ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP'].includes(l.status)).length;
-            const salary = emp.baseSalaryMinor ? (emp.baseSalaryMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+      <div style={{ overflowX: 'auto', fontSize: '0.82rem' }}>
+        <table style={{ borderCollapse: 'collapse', minWidth: '100%', whiteSpace: 'nowrap' }}>
+          <thead>
+            <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--line)' }}>
+              <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 2 }}>S/S</th>
+              <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 2, minWidth: 180 }}>Soyadı, adı</th>
+              <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid var(--line)', minWidth: 120 }}>Vəzifəsi</th>
+              <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid var(--line)', minWidth: 90 }}>Əmək haqqı</th>
+              {days.map((d) => (
+                <th key={d} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 28, fontSize: '0.75rem', background: isWeekend(d) ? 'rgba(148,163,184,0.13)' : 'var(--surface)' }}>
+                  {d}
+                </th>
+              ))}
+              <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi saat</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 72 }}>Cəmi gün</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', border: '1px solid var(--line)', minWidth: 90 }}>Məzuniyyət günü</th>
+            </tr>
+          </thead>
+          <tbody>
+            {employees.map((emp, idx) => {
+              const empLogs = logMap[emp.id] || {};
+              const workDays = parseWorkDays(emp.workSchedule);
+              const holidayDays = getHolidayDays(empLogs);
+              const allLogs = Object.values(empLogs);
+              const totalMinutes = allLogs.reduce((s, l) => s + (l.workedMinutes || 0), 0);
+              const presentDays = allLogs.filter((l) => ['PRESENT', 'LATE'].includes(l.status)).length;
+              const leaveDays = allLogs.filter((l) => ['ON_LEAVE', 'SICK_LEAVE', 'BUSINESS_TRIP'].includes(l.status)).length;
+              const salary = emp.baseSalaryMinor ? (emp.baseSalaryMinor / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
 
-            return (
-              <tr key={emp.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 1 }}>{idx + 1}</td>
-                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 1 }}>
-                  {emp.lastName} {emp.firstName}
-                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>{emp.employeeCode}</div>
-                </td>
-                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', color: 'var(--muted)' }}>{emp.position?.title || '—'}</td>
-                <td style={{ padding: '6px 10px', border: '1px solid var(--line)', textAlign: 'right' }}>{salary} ₼</td>
-                {days.map((d) => {
-                  const log = empLogs[d];
-                  const abbr = log ? (STATUS_ABBR[log.status] || '?') : '';
-                  const color = log ? STATUS_COLOR[log.status] : undefined;
-                  const bgWeekend = isWeekend(d) ? 'rgba(148,163,184,0.08)' : undefined;
-                  return (
-                    <td key={d} title={log?.status || ''} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 700, fontSize: '0.76rem', color, background: bgWeekend }}>
-                      {abbr}
-                    </td>
-                  );
-                })}
-                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
-                  {totalMinutes ? (totalMinutes / 60).toFixed(1) : '—'}
-                </td>
-                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
-                  {presentDays || '—'}
-                </td>
-                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600, color: leaveDays ? '#3b82f6' : undefined }}>
-                  {leaveDays || '—'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        {Object.entries(STATUS_ABBR).map(([k, v]) => (
-          <span key={k}><b style={{ color: STATUS_COLOR[k] }}>{v}</b> = {k === 'PRESENT' ? 'İşdə' : k === 'ABSENT' ? 'Yoxdur' : k === 'LATE' ? 'Gecikmiş' : k === 'HALF_DAY' ? 'Yarım gün' : k === 'ON_LEAVE' ? 'Məzuniyyət' : k === 'SICK_LEAVE' ? 'Xəstəlik' : k === 'BUSINESS_TRIP' ? 'Ezamiyyət' : 'Bayram'}</span>
-        ))}
+              return (
+                <tr key={emp.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 1 }}>{idx + 1}</td>
+                  <td style={{ padding: '6px 10px', border: '1px solid var(--line)', position: 'sticky', left: 36, background: 'var(--surface)', zIndex: 1 }}>
+                    {emp.lastName} {emp.firstName}
+                    <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>{emp.employeeCode}</div>
+                  </td>
+                  <td style={{ padding: '6px 10px', border: '1px solid var(--line)', color: 'var(--muted)' }}>{emp.position?.title || '—'}</td>
+                  <td style={{ padding: '6px 10px', border: '1px solid var(--line)', textAlign: 'right' }}>{salary} ₼</td>
+                  {days.map((d) => {
+                    const { text, color } = getCellInfo(empLogs[d], workDays, dayOfWeek(d), isPreHoliday(d, holidayDays));
+                    const bgWeekend = isWeekend(d) ? 'rgba(148,163,184,0.08)' : undefined;
+                    return (
+                      <td key={d} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 700, fontSize: '0.76rem', color, background: bgWeekend }}>
+                        {text}
+                      </td>
+                    );
+                  })}
+                  <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
+                    {totalMinutes ? (totalMinutes / 60).toFixed(1) : '—'}
+                  </td>
+                  <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600 }}>
+                    {presentDays || '—'}
+                  </td>
+                  <td style={{ padding: '6px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 600, color: leaveDays ? '#3b82f6' : undefined }}>
+                    {leaveDays || '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <span><b style={{ color: '#059669' }}>8</b> = İş günü (5 günlük, 8 saat)</span>
+          <span><b style={{ color: '#059669' }}>7</b> = İş günü (6 günlük, 7 saat)</span>
+          <span><b style={{ color: '#059669' }}>5</b> = Şənbə (6 günlük, 5 saat)</span>
+          <span><b style={{ color: '#94a3b8' }}>{REST_ABBR}</b> = İstirahət günü</span>
+          <span><b style={{ color: STATUS_COLOR.ON_LEAVE }}>M</b> = Məzuniyyət</span>
+          <span><b style={{ color: STATUS_COLOR.SICK_LEAVE }}>X</b> = Xəstəlik</span>
+          <span><b style={{ color: STATUS_COLOR.BUSINESS_TRIP }}>E</b> = Ezamiyyət</span>
+          <span><b style={{ color: STATUS_COLOR.HOLIDAY }}>B</b> = Bayram</span>
+          <span><b style={{ color: STATUS_COLOR.ABSENT }}>Y</b> = Yoxdur</span>
+        </div>
       </div>
-    </div>
     </div>
   );
 }
