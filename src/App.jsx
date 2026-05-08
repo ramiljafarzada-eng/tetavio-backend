@@ -2563,6 +2563,7 @@ function MainApp() {
   const [authUsers, setAuthUsers] = useState([normalizeAuthUser(SUPER_ADMIN)]);
   const [currentUser, setCurrentUser] = useState(null);
   const [backendSession, setBackendSession] = useState(null);
+  const backendSessionRef = useRef(null);
   const [backendPlans, setBackendPlans] = useState([]);
   const [backendSubscription, setBackendSubscription] = useState(null);
   const [backendOrders, setBackendOrders] = useState([]);
@@ -2757,9 +2758,7 @@ function MainApp() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [langSubOpen, setLangSubOpen] = useState(false);
   const [appNavOpen, setAppNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return window.localStorage.getItem("tetavio-sidebar-collapsed") === "1"; } catch { return false; }
-  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [accountPanel, setAccountPanel] = useState(null);
   const [passwordDraft, setPasswordDraft] = useState({ current: "", next: "", confirm: "", notice: "", tone: "" });
   const [subscriptionBillingCycle, setSubscriptionBillingCycle] = useState("monthly");
@@ -2807,10 +2806,10 @@ function MainApp() {
     setApiSession(session || null);
     try {
       if (session) {
-        window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
         syncBillsFromBackend(session);
       } else {
-        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
       }
     } catch {}
   }
@@ -4258,7 +4257,7 @@ function MainApp() {
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      const saved = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (saved) {
         const session = JSON.parse(saved);
         if (session?.accessToken) {
@@ -4273,6 +4272,49 @@ function MainApp() {
       window.localStorage.setItem(HUB_LANG_KEY, hubLang || "en");
     } catch { /* ignore */ }
   }, [hubLang]);
+
+  // Keep ref in sync so the inactivity timer always sees fresh session
+  useEffect(() => { backendSessionRef.current = backendSession; }, [backendSession]);
+
+  // Auto-logout after 30 minutes of inactivity
+  useEffect(() => {
+    if (!backendSession?.accessToken) return;
+
+    const TIMEOUT_MS = 30 * 60 * 1000;
+    let timer;
+
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const sess = backendSessionRef.current;
+        if (sess?.refreshToken) {
+          try { await apiLogout(sess.refreshToken); } catch {}
+        }
+        updateBackendSession(null);
+        setBackendSubscription(null);
+        setBackendOrders([]);
+        setBackendPlans([]);
+        setCheckoutResult(null);
+        setCurrentUser(null);
+        setProfileMenuOpen(false);
+        setState(normalizeAppState(createResetData()));
+        setActiveSection("home");
+        setActiveModule(null);
+        setActiveProduct("booksLanding");
+        setBooksView("signin");
+        setBooksNotice("Sessiyanız başa çatdı (30 dəq. fəaliyyətsizlik). Zəhmət olmasa yenidən daxil olun.");
+      }, TIMEOUT_MS);
+    };
+
+    const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"];
+    events.forEach((ev) => window.addEventListener(ev, reset, { passive: true }));
+    reset();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, reset));
+    };
+  }, [backendSession?.accessToken]);
 
   useEffect(() => {
     if (!backendSession?.accessToken || !currentUser) {
