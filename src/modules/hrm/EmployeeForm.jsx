@@ -145,7 +145,7 @@ export default function EmployeeForm({ employee, onSaved, onCancel, lang }) {
           <div className="hrm-form-row">
             <div className="hrm-field">
               <label>{tf.ssn}</label>
-              <input {...f('ssn')} maxLength={50} placeholder="XXX-XX-XXXX" />
+              <input {...f('ssn')} placeholder="0000000000000" />
             </div>
             <div className="hrm-field">
               <label>{tf.idCardNumber}</label>
