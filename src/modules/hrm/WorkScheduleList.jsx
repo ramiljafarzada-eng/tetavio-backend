@@ -9,6 +9,7 @@ const EMPTY = {
   breakMinutes: 60,
   workDays: '1,2,3,4,5',
   gracePeriodMin: 10,
+  saturdayEndTime: '',
   isDefault: false,
 };
 
@@ -95,6 +96,7 @@ export default function WorkScheduleList({ lang }) {
       breakMinutes: s.breakMinutes,
       workDays: s.workDays,
       gracePeriodMin: s.gracePeriodMin,
+      saturdayEndTime: s.saturdayEndTime || '',
       isDefault: s.isDefault,
     });
     setFormError('');
@@ -108,7 +110,12 @@ export default function WorkScheduleList({ lang }) {
     setSaving(true);
     setFormError('');
     try {
-      const payload = { ...form, breakMinutes: Number(form.breakMinutes), gracePeriodMin: Number(form.gracePeriodMin) };
+      const payload = {
+        ...form,
+        breakMinutes: Number(form.breakMinutes),
+        gracePeriodMin: Number(form.gracePeriodMin),
+        saturdayEndTime: form.saturdayEndTime || undefined,
+      };
       if (modal === 'new') {
         await hrmCreateSchedule(payload);
       } else {
@@ -220,6 +227,17 @@ export default function WorkScheduleList({ lang }) {
                 <label>{ts.workDaysLabel}</label>
                 <DayPicker value={form.workDays} onChange={(v) => set('workDays', v)} ts={ts} />
               </div>
+              {parseDays(form.workDays).includes('6') && (
+                <div className="hrm-field">
+                  <label>Şənbə günü çıxış saatı <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.82rem' }}>(boş qalarsa ümumi çıxış saatı tətbiq olunur)</span></label>
+                  <input
+                    type="time"
+                    value={form.saturdayEndTime}
+                    onChange={(e) => set('saturdayEndTime', e.target.value)}
+                    placeholder="14:00"
+                  />
+                </div>
+              )}
               <div className="hrm-field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="checkbox"

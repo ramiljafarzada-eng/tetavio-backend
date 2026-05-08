@@ -32,6 +32,11 @@ export class CreateScheduleDto {
   @Min(0)
   gracePeriodMin?: number;
 
+  @ApiPropertyOptional({ example: '14:00', description: 'End time for Saturday (6-day schedule)' })
+  @IsOptional()
+  @IsString()
+  saturdayEndTime?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

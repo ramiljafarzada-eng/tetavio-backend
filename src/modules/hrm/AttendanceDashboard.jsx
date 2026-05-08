@@ -89,20 +89,31 @@ function parseWorkDays(workSchedule) {
   return workSchedule.workDays.split(',').map(Number).filter(Boolean);
 }
 
-// Returns scheduled hours for this day, or null if it is a rest day.
-// Both 5-day (5×8=40h) and 6-day (5×7+5=40h) schedules total exactly 40h/week.
-// If the next calendar day is a HOLIDAY, this day is shortened by 1h (bayram öncəsi günü).
-function scheduledHours(workDays, jsDay, preHoliday = false) {
-  const ourDay = jsDay === 0 ? 7 : jsDay; // JS Sun=0 → 7
+// Calculates scheduled hours from actual schedule times.
+// Saturday uses saturdayEndTime when set; no break on short Saturday shift.
+// Pre-holiday days are shortened by 1h (Azerbaijani labor law).
+function scheduledHours(workSchedule, workDays, jsDay, preHoliday = false) {
+  const ourDay = jsDay === 0 ? 7 : jsDay;
   if (!workDays.includes(ourDay)) return null; // rest day
-  const is6Day = workDays.includes(6);
-  let h = is6Day ? (jsDay === 6 ? 5 : 7) : 8;
-  if (preHoliday) h = Math.max(h - 1, 1); // shorten by 1h before holiday
+
+  let h;
+  if (jsDay === 6 && workSchedule?.saturdayEndTime) {
+    const [sh, sm] = (workSchedule.workStartTime || '09:00').split(':').map(Number);
+    const [eh, em] = workSchedule.saturdayEndTime.split(':').map(Number);
+    h = Math.round((eh * 60 + em - sh * 60 - sm) / 60);
+  } else {
+    const [sh, sm] = (workSchedule?.workStartTime || '09:00').split(':').map(Number);
+    const [eh, em] = (workSchedule?.workEndTime || '18:00').split(':').map(Number);
+    const breakH = Math.round((workSchedule?.breakMinutes ?? 60) / 60);
+    h = Math.round((eh * 60 + em - sh * 60 - sm) / 60) - breakH;
+  }
+
+  if (preHoliday) h = Math.max(h - 1, 1);
   return h;
 }
 
-function getCellInfo(log, workDays, jsDay, preHoliday = false) {
-  const hours = scheduledHours(workDays, jsDay, preHoliday);
+function getCellInfo(log, workSchedule, workDays, jsDay, preHoliday = false) {
+  const hours = scheduledHours(workSchedule, workDays, jsDay, preHoliday);
 
   if (hours === null) {
     // Non-work day for this employee
@@ -168,7 +179,7 @@ function SheetView({ logs, employees, year, month }) {
         salary,
         ...days.map((d) => {
           const holidayDays = getHolidayDays(empLogs);
-          return getCellInfo(empLogs[d], workDays, dayOfWeek(d), isPreHoliday(d, holidayDays)).text;
+          return getCellInfo(empLogs[d], emp.workSchedule, workDays, dayOfWeek(d), isPreHoliday(d, holidayDays)).text;
         }),
         totalMinutes ? +(totalMinutes / 60).toFixed(1) : 0,
         presentDays,
@@ -234,7 +245,7 @@ function SheetView({ logs, employees, year, month }) {
                   <td style={{ padding: '6px 10px', border: '1px solid var(--line)', color: 'var(--muted)' }}>{emp.position?.title || '—'}</td>
                   <td style={{ padding: '6px 10px', border: '1px solid var(--line)', textAlign: 'right' }}>{salary} ₼</td>
                   {days.map((d) => {
-                    const { text, color } = getCellInfo(empLogs[d], workDays, dayOfWeek(d), isPreHoliday(d, holidayDays));
+                    const { text, color } = getCellInfo(empLogs[d], emp.workSchedule, workDays, dayOfWeek(d), isPreHoliday(d, holidayDays));
                     const bgWeekend = isWeekend(d) ? 'rgba(148,163,184,0.08)' : undefined;
                     return (
                       <td key={d} style={{ padding: '4px 2px', textAlign: 'center', border: '1px solid var(--line)', fontWeight: 700, fontSize: '0.76rem', color, background: bgWeekend }}>

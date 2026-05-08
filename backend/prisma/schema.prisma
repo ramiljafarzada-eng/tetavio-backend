@@ -759,8 +759,9 @@ model WorkSchedule {
   workEndTime    String     @map("work_end_time")
   breakMinutes   Int        @default(60) @map("break_minutes")
   workDays       String     @map("work_days")
-  gracePeriodMin Int        @default(10) @map("grace_period_min")
-  isDefault      Boolean    @default(false) @map("is_default")
+  gracePeriodMin   Int        @default(10) @map("grace_period_min")
+  saturdayEndTime  String?    @map("saturday_end_time")
+  isDefault        Boolean    @default(false) @map("is_default")
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 

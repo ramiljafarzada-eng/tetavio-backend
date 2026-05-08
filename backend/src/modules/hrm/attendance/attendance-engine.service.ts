@@ -6,6 +6,7 @@ export interface WorkScheduleConfig {
   breakMinutes: number;
   gracePeriodMin: number;
   workDays: number[];
+  saturdayEndTime?: string | null;
 }
 
 export interface AttendanceCalcResult {
@@ -55,7 +56,9 @@ export class AttendanceEngineService {
     }
 
     const schedStart = this.parseTime(date, schedule.workStartTime);
-    const schedEnd = this.parseTime(date, schedule.workEndTime);
+    // Use saturdayEndTime for Saturday (dow=6) when defined
+    const endTimeStr = (dow === 6 && schedule.saturdayEndTime) ? schedule.saturdayEndTime : schedule.workEndTime;
+    const schedEnd = this.parseTime(date, endTimeStr);
     const scheduledWorkMin =
       this.diffMinutes(schedStart, schedEnd) - schedule.breakMinutes;
 

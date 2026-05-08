@@ -38,6 +38,7 @@ export class AttendanceService {
     breakMinutes: number;
     gracePeriodMin: number;
     workDays: string;
+    saturdayEndTime?: string | null;
   } | null): WorkScheduleConfig {
     if (!workSchedule) return this.engine.defaultSchedule();
     return {
@@ -46,6 +47,7 @@ export class AttendanceService {
       breakMinutes: workSchedule.breakMinutes,
       gracePeriodMin: workSchedule.gracePeriodMin,
       workDays: this.engine.parseWorkDays(workSchedule.workDays),
+      saturdayEndTime: workSchedule.saturdayEndTime,
     };
   }
 
