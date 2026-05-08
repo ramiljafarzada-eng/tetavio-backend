@@ -23,6 +23,7 @@ export class SchedulesService {
         breakMinutes: dto.breakMinutes ?? 60,
         workDays: dto.workDays,
         gracePeriodMin: dto.gracePeriodMin ?? 10,
+        saturdayEndTime: dto.saturdayEndTime ?? null,
         isDefault: dto.isDefault ?? false,
       },
     });
@@ -54,6 +55,7 @@ export class SchedulesService {
         ...(dto.workDays !== undefined && { workDays: dto.workDays }),
         ...(dto.gracePeriodMin !== undefined && { gracePeriodMin: dto.gracePeriodMin }),
         ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+        ...(dto.saturdayEndTime !== undefined && { saturdayEndTime: dto.saturdayEndTime || null }),
       },
     });
   }
