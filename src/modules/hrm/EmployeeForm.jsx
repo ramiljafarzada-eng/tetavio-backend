@@ -139,7 +139,7 @@ export default function EmployeeForm({ employee, onSaved, onCancel, lang }) {
             </div>
             <div className="hrm-field">
               <label>{tf.taxId}</label>
-              <input {...f('taxId')} maxLength={50} placeholder="AA1234567" />
+              <input {...f('taxId')} maxLength={50} placeholder="XXXXXXX" />
             </div>
           </div>
           <div className="hrm-form-row">
